@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { Trash2, ArrowLeft } from 'lucide-react';
+import { formatCurrency } from '../utils/productUi';
 import CustomSelect from '../components/CustomSelect';
 
 const CartPage = () => {
@@ -45,7 +46,7 @@ const CartPage = () => {
                       </Link>
                     </div>
                     <div className="text-center w-full md:w-auto font-medium">
-                      ${item.price.toFixed(2)}
+                      {formatCurrency(item.price)}
                     </div>
                     <div className="flex justify-center w-full md:w-auto">
                       <CustomSelect
@@ -62,7 +63,7 @@ const CartPage = () => {
                     </div>
                     <div className="flex justify-between md:justify-end items-center w-full md:w-auto w-full font-bold">
                       <span className="md:hidden">Total: </span>
-                      ${(item.price * item.qty).toFixed(2)}
+                      {formatCurrency(item.price * item.qty)}
                       <button 
                         onClick={() => removeFromCart(item.product)}
                         className="ml-4 text-red-500 hover:text-red-700 transition-colors"
@@ -89,7 +90,7 @@ const CartPage = () => {
               
               <div className="flex justify-between mb-4 text-gray-600">
                 <span>Items ({cartItems.reduce((acc, item) => acc + item.qty, 0)})</span>
-                <span>${cartItems.reduce((acc, item) => acc + item.qty * item.price, 0).toFixed(2)}</span>
+                <span>{formatCurrency(cartItems.reduce((acc, item) => acc + item.qty * item.price, 0))}</span>
               </div>
               
               <div className="flex justify-between mb-6 text-gray-600">
@@ -99,7 +100,7 @@ const CartPage = () => {
               
               <div className="flex justify-between mb-8 pb-6 border-b border-gray-100 text-xl font-bold">
                 <span>Subtotal</span>
-                <span>${cartItems.reduce((acc, item) => acc + item.qty * item.price, 0).toFixed(2)}</span>
+                <span>{formatCurrency(cartItems.reduce((acc, item) => acc + item.qty * item.price, 0))}</span>
               </div>
               
               <button 

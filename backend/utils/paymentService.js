@@ -6,7 +6,7 @@ const isStripeConfigured = () => Boolean(process.env.STRIPE_SECRET_KEY);
 const isStripeWebhookConfigured = () =>
   Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
 
-const getStripeCurrency = () => (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+const getStripeCurrency = () => (process.env.STRIPE_CURRENCY || 'lkr').toLowerCase();
 
 const getStripeClient = () => {
   if (!isStripeConfigured()) {

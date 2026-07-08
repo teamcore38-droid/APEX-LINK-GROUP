@@ -81,7 +81,14 @@ export const normalizeProductPayload = (data) => {
 
 export const formatCurrency = (value = 0) => {
   const parsedValue = Number(value) || 0;
-  return `$${parsedValue.toFixed(2)}`;
+  try {
+    return new Intl.NumberFormat('en-LK', {
+      style: 'currency',
+      currency: 'LKR',
+    }).format(parsedValue);
+  } catch (e) {
+    return `LKR ${parsedValue.toFixed(2)}`;
+  }
 };
 
 export const slugifyProductName = (value = '') =>
