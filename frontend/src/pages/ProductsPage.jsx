@@ -254,22 +254,12 @@ const ProductsPage = () => {
   )?.label || 'Featured First';
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f8efe6] py-16">
+    <div className="relative min-h-screen overflow-hidden bg-[#f8efe6] py-8 sm:py-10">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#ead6c6] to-transparent opacity-70" />
       <div className="pointer-events-none absolute left-0 top-0 h-64 w-64 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-multiply" />
 
       <div className="relative z-10 container mx-auto max-w-7xl px-3 sm:px-4">
-        <div className="rounded-[36px] bg-[#3a1b12] px-6 py-14 text-center text-white shadow-[0_24px_60px_rgba(53, 26, 17,0.25)] sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">The Global Product Library</p>
-          <h1 className="mt-4 font-serif text-4xl font-bold text-[#fbf3ea] [text-shadow:0_4px_24px_rgba(0,0,0,0.35)] sm:text-6xl">
-            Shop our curated collection
-          </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-[#f5e7da] sm:text-base">
-            Explore premium products across textiles, food, technology, industrial equipment, and more — with refined filtering built for real shopping.
-          </p>
-        </div>
-
-        <div className="mt-6 rounded-[30px] bg-white p-3 shadow-[0_20px_60px_rgba(53,26,17,0.08)] sm:mt-10 sm:p-6">
+        <div className="rounded-[30px] bg-white p-3 shadow-[0_20px_60px_rgba(53,26,17,0.08)] sm:p-6">
           <div className="lg:hidden">
             <div className="grid grid-cols-3 gap-2" aria-label="Product controls">
               <button
