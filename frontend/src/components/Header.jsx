@@ -46,7 +46,7 @@ const Header = () => {
             <span className="whitespace-nowrap font-serif text-lg font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] xl:text-2xl xl:tracking-widest">
               APEX FASHION
             </span>
-            <span className="mt-0.5 hidden text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-accent/80 sm:block">
+            <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-[0.18em] text-brand-accent/80 sm:text-[10px] sm:tracking-[0.24em]">
               Curated. Modern. Global.
             </span>
           </span>
