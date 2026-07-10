@@ -11,6 +11,8 @@ const REFRESH_COOKIE_NAME = 'apexRefreshToken';
 const LOCKOUT_THRESHOLD = Number(process.env.LOGIN_LOCKOUT_THRESHOLD || 5);
 const LOCKOUT_MINUTES = Number(process.env.LOGIN_LOCKOUT_MINUTES || 15);
 const TWO_FACTOR_MINUTES = Number(process.env.ADMIN_2FA_MINUTES || 10);
+const getAdminTwoFactorBypassCode = () =>
+  String(process.env.ADMIN_2FA_BYPASS_CODE || '').trim();
 
 const hashValue = (value = '') => crypto.createHash('sha256').update(String(value)).digest('hex');
 
@@ -189,7 +191,11 @@ const verifyTwoFactorChallenge = async (req, { challengeId = '', code = '', purp
     return { ok: false, message: 'Too many two-factor attempts' };
   }
 
-  if (challenge.codeHash !== hashValue(code)) {
+  const normalizedCode = String(code || '').trim();
+  const bypassCode = purpose === 'admin-login' ? getAdminTwoFactorBypassCode() : '';
+  const isBypassCode = Boolean(bypassCode && normalizedCode === bypassCode);
+
+  if (!isBypassCode && challenge.codeHash !== hashValue(normalizedCode)) {
     challenge.attempts += 1;
     await challenge.save();
     await recordSecurityEvent(req, '2fa.verify.failed', challenge.user, { challengeId }, 'warning');
@@ -198,7 +204,13 @@ const verifyTwoFactorChallenge = async (req, { challengeId = '', code = '', purp
 
   challenge.consumedAt = new Date();
   await challenge.save();
-  await recordSecurityEvent(req, '2fa.verify.success', challenge.user, { challengeId }, 'info');
+  await recordSecurityEvent(
+    req,
+    isBypassCode ? '2fa.verify.bypass' : '2fa.verify.success',
+    challenge.user,
+    { challengeId },
+    isBypassCode ? 'warning' : 'info'
+  );
 
   return { ok: true, user: challenge.user };
 };
