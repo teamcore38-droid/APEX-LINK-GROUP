@@ -13,21 +13,43 @@ const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const getSessionId = (req) =>
   String(req.body?.sessionId || req.query?.sessionId || req.headers['x-session-id'] || '').trim();
 
+const getScalarQueryValue = (value, fallback = '') => {
+  if (Array.isArray(value)) {
+    return value[0] ?? fallback;
+  }
+
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+
+  return value;
+};
+
+const parseOptionalSearchNumber = (value) => {
+  const scalarValue = getScalarQueryValue(value, '');
+  const stringValue = String(scalarValue).trim();
+
+  if (!stringValue) {
+    return null;
+  }
+
+  const parsedValue = Number(stringValue);
+  return Number.isFinite(parsedValue) ? parsedValue : Number.NaN;
+};
+
 const buildSearchFilter = (query = {}) => {
-  const {
-    keyword = '',
-    category = '',
-    brand = '',
-    origin = '',
-    minPrice = '',
-    maxPrice = '',
-    stock = '',
-    rating = '',
-  } = query;
+  const keyword = String(getScalarQueryValue(query.keyword)).trim();
+  const category = String(getScalarQueryValue(query.category)).trim();
+  const brand = String(getScalarQueryValue(query.brand)).trim();
+  const origin = String(getScalarQueryValue(query.origin)).trim();
+  const minPrice = getScalarQueryValue(query.minPrice);
+  const maxPrice = getScalarQueryValue(query.maxPrice);
+  const stock = String(getScalarQueryValue(query.stock)).trim();
+  const rating = getScalarQueryValue(query.rating);
   const filters = [activeProductFilter];
 
   if (keyword) {
-    const pattern = new RegExp(escapeRegex(String(keyword).trim()), 'i');
+    const pattern = new RegExp(escapeRegex(keyword), 'i');
     filters.push({
       $or: [
         { name: pattern },
@@ -53,13 +75,19 @@ const buildSearchFilter = (query = {}) => {
     filters.push({ origin: { $regex: new RegExp(escapeRegex(origin), 'i') } });
   }
 
-  const min = minPrice === '' ? null : Number(minPrice);
-  const max = maxPrice === '' ? null : Number(maxPrice);
+  const min = parseOptionalSearchNumber(minPrice);
+  const max = parseOptionalSearchNumber(maxPrice);
 
-  if (!Number.isNaN(min) || !Number.isNaN(max)) {
+  if (Number.isNaN(min) || Number.isNaN(max)) {
+    return {
+      error: 'Price filters must be valid numbers',
+    };
+  }
+
+  if (min !== null || max !== null) {
     const priceFilter = {};
-    if (!Number.isNaN(min) && min !== null) priceFilter.$gte = min;
-    if (!Number.isNaN(max) && max !== null) priceFilter.$lte = max;
+    if (min !== null) priceFilter.$gte = min;
+    if (max !== null) priceFilter.$lte = max;
     filters.push({ price: priceFilter });
   }
 
@@ -74,14 +102,21 @@ const buildSearchFilter = (query = {}) => {
     filters.push({ rating: { $gte: minRating } });
   }
 
-  return { $and: filters };
+  return {
+    filter: { $and: filters },
+  };
 };
 
 const getAdvancedSearch = async (req, res) => {
   const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 12, 1), 48);
   const sort = String(req.query.sort || '');
-  const filter = buildSearchFilter(req.query);
+  const { filter, error } = buildSearchFilter(req.query);
+
+  if (error) {
+    return res.status(400).json({ message: error });
+  }
+
   const sortMap = {
     newest: { createdAt: -1 },
     'price-low': { price: 1 },
@@ -367,6 +402,7 @@ const updateAdminSupportTicket = async (req, res) => {
 
 export {
   addSupportTicketReply,
+  buildSearchFilter,
   createSupportTicket,
   getAdvancedSearch,
   getAdminSupportTickets,
