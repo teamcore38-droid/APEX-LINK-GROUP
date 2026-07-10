@@ -23,6 +23,12 @@ const STATUS_BADGES = {
 const AdminMessagesPage = () => {
   const { userInfo } = useAuth();
   const navigate = useNavigate();
+  const canManageMessages = Boolean(
+    userInfo?.isAdmin ||
+      userInfo?.permissions?.includes('orders:read') ||
+      userInfo?.permissions?.includes('orders:write') ||
+      userInfo?.permissions?.includes('*')
+  );
 
   const [messages, setMessages] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
@@ -37,13 +43,13 @@ const AdminMessagesPage = () => {
       return;
     }
 
-    if (!userInfo.isAdmin) {
+    if (!canManageMessages) {
       navigate('/profile');
     }
-  }, [navigate, userInfo]);
+  }, [canManageMessages, navigate, userInfo]);
 
   useEffect(() => {
-    if (!userInfo?.token || !userInfo.isAdmin) {
+    if (!userInfo?.token || !canManageMessages) {
       return;
     }
 
@@ -69,7 +75,7 @@ const AdminMessagesPage = () => {
     };
 
     loadMessages();
-  }, [statusFilter, userInfo]);
+  }, [canManageMessages, statusFilter, userInfo]);
 
   const updateMessageStatus = async (messageId, status) => {
     setActiveAction(`${messageId}:${status}`);

@@ -10,6 +10,8 @@ import {
   Loader2,
   Mail,
   Package,
+  ShieldCheck,
+  Store,
   RotateCcw,
   Search,
   ShoppingBag,
@@ -136,6 +138,8 @@ const buildProductUpdatePayload = (product, overrides = {}) => ({
   compareAtPrice: product.compareAtPrice ?? 0,
   weight: product.weight || '',
   countInStock: product.countInStock ?? 0,
+  lowStockThreshold: product.lowStockThreshold ?? 10,
+  variants: Array.isArray(product.variants) ? product.variants : [],
   image: product.image || '',
   images: Array.isArray(product.images) ? product.images : [],
   shortDescription: product.shortDescription || '',
@@ -190,12 +194,13 @@ const AdminDashboard = () => {
   });
   const [orderRefreshToken, setOrderRefreshToken] = useState(0);
   const [activeQuickAction, setActiveQuickAction] = useState('');
+  const canAccessAdmin = Boolean(userInfo?.isAdmin || userInfo?.isStaff || userInfo?.permissions?.length);
 
   useEffect(() => {
-    if (!userInfo || !userInfo.isAdmin) {
+    if (!userInfo || !canAccessAdmin) {
       navigate('/login');
     }
-  }, [navigate, userInfo]);
+  }, [canAccessAdmin, navigate, userInfo]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -565,6 +570,24 @@ const AdminDashboard = () => {
               className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
             >
               <Mail size={20} className="mr-3" /> Messages
+            </button>
+            <button
+              onClick={() => navigate('/admin/commerce')}
+              className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
+            >
+              <ShoppingBag size={20} className="mr-3" /> Commerce Ops
+            </button>
+            <button
+              onClick={() => navigate('/admin/vendors')}
+              className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
+            >
+              <Store size={20} className="mr-3" /> Marketplace Ops
+            </button>
+            <button
+              onClick={() => navigate('/admin/professional')}
+              className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
+            >
+              <ShieldCheck size={20} className="mr-3" /> Professional Admin
             </button>
           </div>
         </div>

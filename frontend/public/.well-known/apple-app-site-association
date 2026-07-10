@@ -1,0 +1,27 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.apexlinkgroup.app"],
+        "components": [
+          {
+            "/": "/product/*",
+            "comment": "Product deep links"
+          },
+          {
+            "/": "/orders/*",
+            "comment": "Order deep links"
+          },
+          {
+            "/": "/track-order",
+            "comment": "Order tracking"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAMID.com.apexlinkgroup.app"]
+  }
+}

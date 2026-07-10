@@ -44,8 +44,10 @@ export const createInitialProductForm = () => ({
   compareAtPrice: '',
   weight: '',
   countInStock: '0',
+  lowStockThreshold: '10',
   image: '',
   imageList: '',
+  variantsJson: '[]',
   shortDescription: '',
   description: '',
   origin: '',
@@ -79,15 +81,15 @@ export const normalizeProductPayload = (data) => {
   };
 };
 
-export const formatCurrency = (value = 0) => {
+export const formatCurrency = (value = 0, currency = 'LKR') => {
   const parsedValue = Number(value) || 0;
   try {
     return new Intl.NumberFormat('en-LK', {
       style: 'currency',
-      currency: 'LKR',
+      currency,
     }).format(parsedValue);
-  } catch (e) {
-    return `LKR ${parsedValue.toFixed(2)}`;
+  } catch {
+    return `${currency} ${parsedValue.toFixed(2)}`;
   }
 };
 
@@ -159,8 +161,10 @@ export const buildProductFormFromProduct = (product = {}) => ({
   compareAtPrice: product.compareAtPrice ?? '',
   weight: product.weight || '',
   countInStock: product.countInStock ?? 0,
+  lowStockThreshold: product.lowStockThreshold ?? 10,
   image: product.image || '',
   imageList: Array.isArray(product.images) ? product.images.filter((image) => image && image !== product.image).join('\n') : '',
+  variantsJson: JSON.stringify(product.variants || [], null, 2),
   shortDescription: product.shortDescription || '',
   description: product.description || '',
   origin: product.origin || '',
@@ -180,11 +184,13 @@ export const buildProductPayloadFromForm = (form) => ({
   compareAtPrice: form.compareAtPrice === '' ? 0 : Number(form.compareAtPrice),
   weight: form.weight.trim(),
   countInStock: Number(form.countInStock),
+  lowStockThreshold: Number(form.lowStockThreshold ?? 10),
   image: form.image.trim(),
   images: form.imageList
     .split('\n')
     .map((image) => image.trim())
     .filter(Boolean),
+  variants: JSON.parse(form.variantsJson || '[]'),
   shortDescription: form.shortDescription.trim(),
   description: form.description.trim(),
   origin: form.origin.trim(),

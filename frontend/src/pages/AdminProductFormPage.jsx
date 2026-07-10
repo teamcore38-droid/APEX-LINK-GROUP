@@ -30,6 +30,16 @@ const validateForm = (form) => {
     return 'Stock quantity cannot be negative.';
   }
 
+  if (Number.isNaN(Number(form.lowStockThreshold)) || Number(form.lowStockThreshold) < 0) {
+    return 'Low-stock threshold cannot be negative.';
+  }
+
+  try {
+    JSON.parse(form.variantsJson || '[]');
+  } catch {
+    return 'Variants must be valid JSON.';
+  }
+
   return '';
 };
 
@@ -38,6 +48,11 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const { id } = useParams();
   const { userInfo } = useAuth();
   const isEditMode = mode === 'edit';
+  const canManageCatalog = Boolean(
+    userInfo?.isAdmin ||
+      userInfo?.permissions?.includes('catalog:write') ||
+      userInfo?.permissions?.includes('*')
+  );
 
   const [form, setForm] = useState(createInitialProductForm());
   const [categories, setCategories] = useState([]);
@@ -55,13 +70,13 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
       return;
     }
 
-    if (!userInfo.isAdmin) {
+    if (!canManageCatalog) {
       navigate('/profile');
     }
-  }, [id, isEditMode, navigate, userInfo]);
+  }, [canManageCatalog, id, isEditMode, navigate, userInfo]);
 
   useEffect(() => {
-    if (!userInfo?.token || !userInfo.isAdmin) {
+    if (!userInfo?.token || !canManageCatalog) {
       return;
     }
 
@@ -107,18 +122,31 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     };
 
     initializeForm();
-  }, [id, isEditMode, userInfo]);
+  }, [canManageCatalog, id, isEditMode, userInfo]);
 
-  const previewProduct = useMemo(
-    () => ({
-      ...buildProductPayloadFromForm(form),
-      _id: id || 'preview',
-      rating: 5,
-      numReviews: 18,
-      images: buildProductPayloadFromForm(form).images,
-    }),
-    [form, id]
-  );
+  const previewProduct = useMemo(() => {
+    try {
+      const payload = buildProductPayloadFromForm(form);
+
+      return {
+        ...payload,
+        _id: id || 'preview',
+        rating: 5,
+        numReviews: 18,
+        images: payload.images,
+      };
+    } catch {
+      return {
+        _id: id || 'preview',
+        name: form.name || 'Product preview',
+        image: form.image,
+        images: [],
+        price: Number(form.price || 0),
+        countInStock: Number(form.countInStock || 0),
+        category: form.category,
+      };
+    }
+  }, [form, id]);
 
   const previewImages = useMemo(() => getProductImages(previewProduct), [previewProduct]);
 
@@ -414,6 +442,21 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="lowStockThreshold" className="mb-2 block text-sm font-semibold text-brand-dark">
+                    Low-Stock Alert Threshold
+                  </label>
+                  <input
+                    id="lowStockThreshold"
+                    name="lowStockThreshold"
+                    type="number"
+                    min="0"
+                    value={form.lowStockThreshold}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  />
+                </div>
               </div>
             </section>
 
@@ -450,6 +493,21 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   onChange={handleChange}
                   placeholder="One image URL per line"
                   className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="variantsJson" className="mb-2 block text-sm font-semibold text-brand-dark">
+                  Variants JSON
+                </label>
+                <textarea
+                  id="variantsJson"
+                  name="variantsJson"
+                  rows="8"
+                  value={form.variantsJson}
+                  onChange={handleChange}
+                  placeholder='[{"label":"500g pouch","sku":"SKU-500","weight":"500g","packaging":"Pouch","priceAdjustment":0,"countInStock":25}]'
+                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 font-mono text-xs text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 

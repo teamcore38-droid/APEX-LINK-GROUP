@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowRight,
+  Heart,
   Home,
   Loader2,
   LockKeyhole,
@@ -147,6 +148,8 @@ const ProfilePage = () => {
 
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
+  const [returnRequests, setReturnRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -196,13 +199,17 @@ const ProfilePage = () => {
           },
         };
 
-        const [profileResponse, ordersResponse] = await Promise.all([
+        const [profileResponse, ordersResponse, wishlistResponse, returnsResponse] = await Promise.all([
           axios.get('/api/users/profile', config),
           axios.get('/api/orders/myorders', config),
+          axios.get('/api/wishlist', config),
+          axios.get('/api/returns/my', config),
         ]);
 
         setProfile(profileResponse.data);
         setOrders(ordersResponse.data);
+        setWishlist(wishlistResponse.data);
+        setReturnRequests(returnsResponse.data);
         setProfileForm({
           name: profileResponse.data.name || '',
           email: profileResponse.data.email || '',
@@ -394,6 +401,53 @@ const ProfilePage = () => {
     } catch (defaultError) {
       console.error(defaultError);
       setAddressError(defaultError.response?.data?.message || 'Unable to update default address.');
+    }
+  };
+
+  const removeWishlistItem = async (productId) => {
+    try {
+      const { data } = await axios.delete(`/api/wishlist/${productId}`, {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+
+      setWishlist(data);
+    } catch (wishlistError) {
+      console.error(wishlistError);
+      setError(wishlistError.response?.data?.message || 'Unable to update wishlist.');
+    }
+  };
+
+  const requestReturn = async (order) => {
+    const reason = window.prompt('Why would you like to return this order?');
+
+    if (!reason) {
+      return;
+    }
+
+    try {
+      const { data } = await axios.post(
+        '/api/returns',
+        {
+          orderId: order._id,
+          reason,
+          resolution: 'Refund',
+          items: order.orderItems,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      setReturnRequests((current) => [data, ...current]);
+      setSearchParams({ tab: 'returns' });
+    } catch (returnError) {
+      console.error(returnError);
+      setError(returnError.response?.data?.message || 'Unable to create return request.');
     }
   };
 
@@ -968,11 +1022,101 @@ const ProfilePage = () => {
                               >
                                 Invoice
                               </Link>
+                              <button
+                                type="button"
+                                onClick={() => requestReturn(order)}
+                                className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-amber-700 transition-colors duration-200 hover:bg-amber-100"
+                              >
+                                Return
+                              </button>
                             </div>
                           </div>
                         </article>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'wishlist' && (
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Wishlist</p>
+                <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Saved for later</h2>
+
+                {wishlist.length === 0 ? (
+                  <div className="mt-6">
+                    <EmptyStateCard
+                      icon={Heart}
+                      title="Your wishlist is empty."
+                      body="Save products from the product page and they will appear here for quick access."
+                      actionLabel="Browse Products"
+                      onAction={() => navigate('/products')}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-6 grid gap-5 md:grid-cols-2">
+                    {wishlist.map((item) => (
+                      <article key={item._id} className="flex gap-4 rounded-[24px] border border-gray-100 bg-brand-light p-4">
+                        <img src={item.product?.image} alt={item.product?.name} className="h-24 w-24 rounded-2xl object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-serif text-xl font-bold text-brand-dark">{item.product?.name}</h3>
+                          <p className="mt-1 text-sm font-semibold text-brand-primary">{formatCurrency(item.product?.price || 0)}</p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <Link
+                              to={`/product/${item.product?._id}`}
+                              className="rounded-full bg-brand-primary px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white"
+                            >
+                              View
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => removeWishlistItem(item.product?._id)}
+                              className="rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'returns' && (
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Returns / RMA</p>
+                <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Return request history</h2>
+
+                {returnRequests.length === 0 ? (
+                  <div className="mt-6">
+                    <EmptyStateCard
+                      icon={Package}
+                      title="No return requests yet."
+                      body="Use the Return button from your order history when an order needs review."
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-4">
+                    {returnRequests.map((returnRequest) => (
+                      <article key={returnRequest._id} className="rounded-[24px] border border-gray-100 bg-brand-light p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="font-mono text-xs font-bold text-brand-primary">{returnRequest.order?._id || returnRequest.order}</p>
+                            <h3 className="mt-2 font-serif text-2xl font-bold text-brand-dark">{returnRequest.resolution}</h3>
+                          </div>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                            {returnRequest.status}
+                          </span>
+                        </div>
+                        <p className="mt-3 text-sm leading-7 text-gray-600">{returnRequest.reason}</p>
+                        {returnRequest.adminNote && (
+                          <p className="mt-3 rounded-2xl bg-white p-3 text-sm text-gray-600">{returnRequest.adminNote}</p>
+                        )}
+                      </article>
+                    ))}
                   </div>
                 )}
               </div>

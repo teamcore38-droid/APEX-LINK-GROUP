@@ -1,8 +1,13 @@
 import express from 'express';
 import {
   authUser,
+  verifyAdminTwoFactorLogin,
+  refreshAccessToken,
+  logoutUser,
   registerUser,
   getUserProfile,
+  getSecurityEvents,
+  updateAdminTwoFactor,
   updateUserProfile,
   getUserAddresses,
   createUserAddress,
@@ -25,7 +30,12 @@ const router = express.Router();
 
 router.route('/').post(authRegisterLimiter, registerUser);
 router.post('/login', authLoginLimiter, authUser);
+router.post('/login/2fa', authLoginLimiter, verifyAdminTwoFactorLogin);
+router.post('/refresh', refreshAccessToken);
+router.post('/logout', protect, logoutUser);
 router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
+router.route('/security/events').get(protect, getSecurityEvents);
+router.route('/security/2fa').put(protect, updateAdminTwoFactor);
 router
   .route('/addresses')
   .get(protect, getUserAddresses)

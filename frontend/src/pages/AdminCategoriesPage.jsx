@@ -26,6 +26,11 @@ const INITIAL_FORM = {
 const AdminCategoriesPage = () => {
   const navigate = useNavigate();
   const { userInfo } = useAuth();
+  const canManageCatalog = Boolean(
+    userInfo?.isAdmin ||
+      userInfo?.permissions?.includes('catalog:write') ||
+      userInfo?.permissions?.includes('*')
+  );
 
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(INITIAL_FORM);
@@ -42,10 +47,10 @@ const AdminCategoriesPage = () => {
       return;
     }
 
-    if (!userInfo.isAdmin) {
+    if (!canManageCatalog) {
       navigate('/profile');
     }
-  }, [navigate, userInfo]);
+  }, [canManageCatalog, navigate, userInfo]);
 
   const loadCategories = async () => {
     if (!userInfo?.token) {
@@ -72,7 +77,7 @@ const AdminCategoriesPage = () => {
   };
 
   useEffect(() => {
-    if (!userInfo?.token || !userInfo.isAdmin) {
+    if (!userInfo?.token || !canManageCatalog) {
       return;
     }
 
@@ -97,7 +102,7 @@ const AdminCategoriesPage = () => {
     };
 
     initializeCategories();
-  }, [userInfo]);
+  }, [canManageCatalog, userInfo]);
 
   const slugPreview = useMemo(
     () => slugifyCategoryName(form.slug || form.name),

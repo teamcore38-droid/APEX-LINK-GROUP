@@ -1,7 +1,33 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe } from 'lucide-react';
+import axios from 'axios';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const subscribe = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setMessage('');
+
+    try {
+      await axios.post('/api/marketing/newsletter', {
+        email,
+        source: 'footer',
+        tags: ['footer', 'storefront'],
+      });
+      setEmail('');
+      setMessage('Subscribed. Thank you.');
+    } catch (error) {
+      setMessage(error.response?.data?.message || 'Unable to subscribe right now.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <footer className="border-t border-brand-accent/20 bg-brand-dark py-12 text-brand-light">
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 md:grid-cols-4">
@@ -103,6 +129,30 @@ const Footer = () => {
               </Link>
             </li>
           </ul>
+
+          <form onSubmit={subscribe} className="mt-6">
+            <label className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-brand-accent/80">
+              Newsletter
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-gray-400 outline-none focus:border-brand-accent"
+              />
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-md bg-brand-accent px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-dark disabled:opacity-60"
+              >
+                Join
+              </button>
+            </div>
+            {message && <p className="mt-2 text-xs text-gray-300">{message}</p>}
+          </form>
         </div>
       </div>
 

@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
 import { slugify } from './categoryController.js';
+import { hasPermission } from '../utils/permissions.js';
+import { recordAuditLog } from '../utils/auditService.js';
 
 const PRODUCT_SORT_OPTIONS = {
   newest: { createdAt: -1 },
@@ -21,7 +23,10 @@ const DEFAULT_PRODUCT_IMAGE =
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildActiveProductFilter = () => ({
-  $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  $and: [
+    { $or: [{ isActive: true }, { isActive: { $exists: false } }] },
+    { $or: [{ approvalStatus: 'Approved' }, { approvalStatus: { $exists: false } }] },
+  ],
 });
 
 const parseBooleanValue = (value) => {
@@ -107,6 +112,43 @@ const normalizeImageList = (images = [], image = '') => {
   return [...uniqueImages];
 };
 
+const normalizeVariants = (variants = []) => {
+  const incomingVariants = Array.isArray(variants) ? variants : [];
+
+  return incomingVariants
+    .map((variant) => ({
+      _id: variant._id,
+      label: String(variant.label || '').trim(),
+      sku: String(variant.sku || '').trim(),
+      size: String(variant.size || '').trim(),
+      color: String(variant.color || '').trim(),
+      weight: String(variant.weight || '').trim(),
+      packaging: String(variant.packaging || '').trim(),
+      priceAdjustment: Number(variant.priceAdjustment || 0),
+      countInStock: Number(variant.countInStock || 0),
+      reservedStock: Number(variant.reservedStock || 0),
+      lowStockThreshold: Number(variant.lowStockThreshold ?? 5),
+      isActive: parseBooleanValue(variant.isActive) ?? true,
+    }))
+    .filter((variant) => variant.label);
+};
+
+const normalizeSeoPayload = (seo = {}, fallback = {}) => {
+  const keywords = Array.isArray(seo.keywords)
+    ? seo.keywords
+    : typeof seo.keywords === 'string'
+      ? seo.keywords.split(',')
+      : [];
+
+  return {
+    title: String(seo.title || fallback.title || '').trim(),
+    description: String(seo.description || fallback.description || '').trim(),
+    keywords: keywords.map((keyword) => String(keyword || '').trim()).filter(Boolean),
+    canonicalUrl: String(seo.canonicalUrl || '').trim(),
+    ogImage: String(seo.ogImage || fallback.ogImage || '').trim(),
+  };
+};
+
 const findCategoryByValue = async (value = '') => {
   const trimmedValue = String(value).trim();
 
@@ -140,7 +182,7 @@ const findProductByIdWithVisibility = async (productId, reqUser) => {
     return null;
   }
 
-  const filter = reqUser?.isAdmin
+  const filter = hasPermission(reqUser, 'catalog:read')
     ? { _id: productId }
     : {
         _id: productId,
@@ -199,6 +241,8 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
   const price = Number(payload.price);
   const countInStock = Number(payload.countInStock ?? 0);
   const compareAtPrice = Number(payload.compareAtPrice ?? 0);
+  const lowStockThreshold = Number(payload.lowStockThreshold ?? 10);
+  const variants = normalizeVariants(payload.variants);
 
   if (!name) {
     errors.push('Product name is required');
@@ -219,6 +263,20 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
   if (payload.compareAtPrice !== undefined && (Number.isNaN(compareAtPrice) || compareAtPrice < 0)) {
     errors.push('Compare-at price must be a valid non-negative number');
   }
+
+  if (Number.isNaN(lowStockThreshold) || lowStockThreshold < 0) {
+    errors.push('Low-stock threshold must be a valid non-negative number');
+  }
+
+  variants.forEach((variant) => {
+    if (Number.isNaN(variant.priceAdjustment)) {
+      errors.push(`Variant ${variant.label} price adjustment must be a valid number`);
+    }
+
+    if (Number.isNaN(variant.countInStock) || variant.countInStock < 0) {
+      errors.push(`Variant ${variant.label} stock cannot be negative`);
+    }
+  });
 
   if (!slug) {
     errors.push('A valid product slug is required');
@@ -245,6 +303,8 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       price: Number.isNaN(price) ? 0 : price,
       compareAtPrice: Number.isNaN(compareAtPrice) ? 0 : compareAtPrice,
       countInStock: Number.isNaN(countInStock) ? 0 : countInStock,
+      lowStockThreshold: Number.isNaN(lowStockThreshold) ? 10 : lowStockThreshold,
+      variants,
       image: String(payload.image || '').trim(),
       images: normalizeImageList(payload.images, payload.image),
       shortDescription: String(payload.shortDescription || '').trim(),
@@ -257,6 +317,14 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       isFeatured: parseBooleanValue(payload.isFeatured) ?? false,
       isActive: parseBooleanValue(payload.isActive) ?? true,
       isBestSeller: parseBooleanValue(payload.isBestSeller) ?? false,
+      approvalStatus: ['Approved', 'Pending', 'Rejected'].includes(payload.approvalStatus)
+        ? payload.approvalStatus
+        : 'Approved',
+      seo: normalizeSeoPayload(payload.seo, {
+        title: name,
+        description: String(payload.shortDescription || payload.description || '').slice(0, 160),
+        ogImage: String(payload.image || '').trim(),
+      }),
     },
   };
 };
@@ -282,7 +350,7 @@ const getProducts = async (req, res) => {
     } = req.query;
 
     const filters = [];
-    const isAdmin = Boolean(req.user?.isAdmin);
+    const isAdmin = hasPermission(req.user, 'catalog:read');
     const trimmedKeyword = String(keyword).trim();
     const normalizedActive = String(active).trim().toLowerCase();
     const normalizedStock = String(stock).trim().toLowerCase();
@@ -436,7 +504,7 @@ const getProductBySlug = async (req, res) => {
 
     const product = await Product.findOne({
       slug,
-      ...(req.user?.isAdmin ? {} : buildActiveProductFilter()),
+      ...(hasPermission(req.user, 'catalog:read') ? {} : buildActiveProductFilter()),
     });
 
     if (!product) {
@@ -459,6 +527,9 @@ const deleteProduct = async (req, res) => {
 
     if (product) {
       await Product.deleteOne({ _id: product._id });
+      await recordAuditLog(req, 'catalog.product.delete', 'Product', product._id, {
+        name: product.name,
+      });
       return res.json({ message: 'Product removed' });
     }
 
@@ -501,6 +572,8 @@ const createProduct = async (req, res) => {
       price: normalized.price,
       compareAtPrice: normalized.compareAtPrice,
       countInStock: normalized.countInStock,
+      lowStockThreshold: normalized.lowStockThreshold,
+      variants: normalized.variants,
       rating: 0,
       numReviews: 0,
       weight: normalized.weight,
@@ -510,9 +583,14 @@ const createProduct = async (req, res) => {
       isFeatured: normalized.isFeatured,
       isActive: normalized.isActive,
       isBestSeller: normalized.isBestSeller,
+      approvalStatus: normalized.approvalStatus,
+      seo: normalized.seo,
     });
 
     const createdProduct = await product.save();
+    await recordAuditLog(req, 'catalog.product.create', 'Product', createdProduct._id, {
+      name: createdProduct.name,
+    });
     res.status(201).json(createdProduct);
   } catch (error) {
     console.error(error);
@@ -551,6 +629,8 @@ const updateProduct = async (req, res) => {
     product.price = normalized.price;
     product.compareAtPrice = normalized.compareAtPrice;
     product.countInStock = normalized.countInStock;
+    product.lowStockThreshold = normalized.lowStockThreshold;
+    product.variants = normalized.variants;
     product.shortDescription =
       normalized.shortDescription || normalized.description.slice(0, 160).trim();
     product.description = normalized.description;
@@ -561,8 +641,13 @@ const updateProduct = async (req, res) => {
     product.isFeatured = normalized.isFeatured;
     product.isActive = normalized.isActive;
     product.isBestSeller = normalized.isBestSeller;
+    product.approvalStatus = normalized.approvalStatus;
+    product.seo = normalized.seo;
 
     const updatedProduct = await product.save();
+    await recordAuditLog(req, 'catalog.product.update', 'Product', updatedProduct._id, {
+      name: updatedProduct.name,
+    });
     res.json(updatedProduct);
   } catch (error) {
     if (error.name === 'CastError') {
@@ -574,4 +659,13 @@ const updateProduct = async (req, res) => {
   }
 };
 
-export { getProducts, getProductById, getProductBySlug, deleteProduct, createProduct, updateProduct };
+export {
+  DEFAULT_PRODUCT_IMAGE,
+  validateProductPayload,
+  getProducts,
+  getProductById,
+  getProductBySlug,
+  deleteProduct,
+  createProduct,
+  updateProduct,
+};

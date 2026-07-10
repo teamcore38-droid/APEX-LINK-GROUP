@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Truck,
   UserRound,
+  RotateCcw,
 } from 'lucide-react';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -20,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 import { formatCurrency } from '../utils/productUi';
 import { normalizeShippingAddress } from '../utils/orderUi';
+import { getMarketingSessionId, trackEvent } from '../utils/analytics';
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
 const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
@@ -102,6 +104,29 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [currency, setCurrency] = useState('LKR');
+  const [shippingRateId, setShippingRateId] = useState('');
+  const [quote, setQuote] = useState(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const guestCheckoutEnabled = true;
+
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      return;
+    }
+
+    trackEvent(
+      'begin_checkout',
+      {
+        value: cartItems.reduce((total, item) => total + Number(item.price || 0) * Number(item.qty || 0), 0),
+        currency,
+        itemCount: cartItems.reduce((total, item) => total + Number(item.qty || 0), 0),
+      },
+      { token: userInfo?.token }
+    );
+  }, [cartItems, currency, userInfo?.token]);
 
   useEffect(() => {
     if (!userInfo?.token) {
@@ -159,6 +184,69 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
   const shippingPrice = itemsPrice > 50 ? 0 : 10;
   const taxPrice = Number((itemsPrice * 0.15).toFixed(2));
   const totalPrice = itemsPrice + shippingPrice + taxPrice;
+  const displayItemsPrice = quote?.itemsPrice ?? itemsPrice;
+  const displayShippingPrice = quote?.shippingPrice ?? shippingPrice;
+  const displayTaxPrice = quote?.taxPrice ?? taxPrice;
+  const displayDiscountPrice = quote?.discountPrice ?? 0;
+  const displayGiftCardAmount = quote?.giftCardAmount ?? 0;
+  const displayTotalPrice = quote?.totalPrice ?? totalPrice;
+  const displayCurrency = quote?.currency || currency;
+
+  const requestQuote = async (nextShippingAddress = form) => {
+    if (cartItems.length === 0) {
+      return null;
+    }
+
+    setQuoteLoading(true);
+    setError('');
+
+    try {
+      const { data } = await axios.post(
+        '/api/orders/quote',
+        {
+          orderItems: cartItems,
+          shippingAddress: {
+            ...nextShippingAddress,
+            address: nextShippingAddress.addressLine1,
+          },
+          couponCode,
+          giftCardCode,
+          shippingRateId,
+          currency,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
+          },
+        }
+      );
+
+      setQuote(data);
+      trackEvent(
+        'checkout_quote',
+        {
+          value: data.totalPrice,
+          currency: data.currency || currency,
+          itemCount: cartItems.reduce((total, item) => total + Number(item.qty || 0), 0),
+        },
+        { token: userInfo?.token }
+      );
+
+      if (!shippingRateId && data.shippingOptions?.[0]?.id) {
+        setShippingRateId(data.shippingOptions[0].id);
+      }
+
+      return data;
+    } catch (quoteError) {
+      console.error(quoteError);
+      setQuote(null);
+      setError(quoteError.response?.data?.message || 'Unable to refresh pricing right now.');
+      return null;
+    } finally {
+      setQuoteLoading(false);
+    }
+  };
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
@@ -198,31 +286,82 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
 
   const createOrder = async (nextShippingAddress) => {
     const { data } = await axios.post(
-      '/api/orders',
+      userInfo?.token ? '/api/orders' : '/api/orders/guest',
       {
         orderItems: cartItems,
         shippingAddress: nextShippingAddress,
-        paymentMethod: stripeEnabled ? 'Card' : 'Development Placeholder',
-        paymentProvider: stripeEnabled ? 'Stripe' : 'Manual',
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice,
+        paymentMethod: userInfo?.token && stripeEnabled ? 'Card' : 'Development Placeholder',
+        paymentProvider: userInfo?.token && stripeEnabled ? 'Stripe' : 'Manual',
+        couponCode,
+        giftCardCode,
+        shippingRateId,
+        currency,
         saveAddress: Boolean(userInfo && saveAddressToBook),
         setDefaultAddress: Boolean(userInfo && saveAddressToBook && setDefaultAddress),
       },
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userInfo.token}`,
+          ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
         },
       }
     );
+
+    if (data.guestAccessToken) {
+      localStorage.setItem(`apexGuestOrder:${data._id}`, data.guestAccessToken);
+    }
+
+    axios
+      .post(
+        '/api/marketing/abandoned-cart',
+        {
+          sessionId: getMarketingSessionId(),
+          email: nextShippingAddress.email,
+          name: nextShippingAddress.fullName,
+          items: cartItems,
+          subtotal: cartItems.reduce((total, item) => total + Number(item.price || 0) * Number(item.qty || 0), 0),
+          currency,
+          checkoutUrl: `${window.location.origin}/checkout`,
+        },
+        {
+          headers: {
+            'x-session-id': getMarketingSessionId(),
+            ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
+          },
+        }
+      )
+      .catch((abandonedCartError) => console.error(abandonedCartError));
 
     return data;
   };
 
   const finalizeSuccess = (order) => {
+    trackEvent(
+      'purchase',
+      {
+        orderId: order._id,
+        value: order.totalPrice,
+        currency: order.currency || currency,
+        itemCount: order.orderItems?.reduce((total, item) => total + Number(item.qty || 0), 0) || 0,
+      },
+      { token: userInfo?.token }
+    );
+    axios
+      .post(
+        '/api/marketing/abandoned-cart/recovered',
+        {
+          sessionId: getMarketingSessionId(),
+          email: order.shippingAddress?.email || form.email,
+          orderId: order._id,
+        },
+        {
+          headers: {
+            'x-session-id': getMarketingSessionId(),
+            ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
+          },
+        }
+      )
+      .catch((recoverError) => console.error(recoverError));
     setSuccess(true);
     setPendingOrderId('');
     clearCart();
@@ -235,11 +374,6 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
   const placeOrderHandler = async (event) => {
     event.preventDefault();
     setError('');
-
-    if (!userInfo?.token) {
-      navigate('/login?redirect=/checkout');
-      return;
-    }
 
     const validationError = validateCheckoutForm(form);
 
@@ -262,6 +396,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
     setLoading(true);
 
     try {
+      await requestQuote(nextShippingAddress);
       let order = null;
 
       if (pendingOrderId) {
@@ -281,7 +416,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
         return;
       }
 
-      if (!stripeEnabled) {
+      if (!stripeEnabled || !userInfo?.token) {
         finalizeSuccess(order);
         return;
       }
@@ -401,7 +536,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
     );
   }
 
-  if (!userInfo) {
+  if (!userInfo && !guestCheckoutEnabled) {
     return (
       <div className="min-h-screen bg-[#f7f9fc] py-16">
         <div className="container mx-auto max-w-4xl px-4">
@@ -466,19 +601,36 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               <div className="mt-6 space-y-3 border-t border-gray-200 pt-4 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Items subtotal</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(itemsPrice)}</span>
+                  <span className="font-semibold text-brand-dark">{formatCurrency(displayItemsPrice, displayCurrency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(shippingPrice)}</span>
+                  <span className="font-semibold text-brand-dark">{formatCurrency(displayShippingPrice, displayCurrency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(taxPrice)}</span>
+                  <span className="font-semibold text-brand-dark">{formatCurrency(displayTaxPrice, displayCurrency)}</span>
                 </div>
+                {displayDiscountPrice > 0 && (
+                  <div className="flex justify-between text-green-700">
+                    <span>Coupon discount</span>
+                    <span className="font-semibold">-{formatCurrency(displayDiscountPrice, displayCurrency)}</span>
+                  </div>
+                )}
+                {displayGiftCardAmount > 0 && (
+                  <div className="flex justify-between text-green-700">
+                    <span>Gift card</span>
+                    <span className="font-semibold">-{formatCurrency(displayGiftCardAmount, displayCurrency)}</span>
+                  </div>
+                )}
+                {quote?.shippingRate?.service && (
+                  <div className="text-xs text-gray-500">
+                    {quote.shippingRate.carrier} - {quote.shippingRate.service}
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-dashed pt-4 font-serif text-xl font-bold text-brand-dark">
                   <span>Total</span>
-                  <span className="text-brand-primary">{formatCurrency(totalPrice)}</span>
+                  <span className="text-brand-primary">{formatCurrency(displayTotalPrice, displayCurrency)}</span>
                 </div>
               </div>
             </aside>
@@ -586,6 +738,88 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                   </div>
                 </div>
               )}
+            </section>
+
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
+                  <RotateCcw size={20} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Pricing Options</p>
+                  <h2 className="font-serif text-2xl font-bold text-brand-dark">Promos, currency, and shipping</h2>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-brand-dark">Currency</label>
+                  <CustomSelect
+                    value={currency}
+                    onChange={(nextValue) => {
+                      setCurrency(nextValue);
+                      setQuote(null);
+                    }}
+                    options={[
+                      { value: 'LKR', label: 'LKR' },
+                      { value: 'USD', label: 'USD' },
+                      { value: 'EUR', label: 'EUR' },
+                      { value: 'GBP', label: 'GBP' },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-brand-dark">Shipping Service</label>
+                  <CustomSelect
+                    value={shippingRateId}
+                    onChange={(nextValue) => {
+                      setShippingRateId(nextValue);
+                      setQuote(null);
+                    }}
+                    options={[
+                      { value: '', label: 'Best available rate' },
+                      ...(quote?.shippingOptions || []).map((option) => ({
+                        value: option.id,
+                        label: `${option.carrier} - ${option.service} (${formatCurrency(option.price, quote.currency)})`,
+                      })),
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-brand-dark">Coupon Code</label>
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(event) => {
+                      setCouponCode(event.target.value.toUpperCase());
+                      setQuote(null);
+                    }}
+                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-brand-dark">Gift Card Code</label>
+                  <input
+                    type="text"
+                    value={giftCardCode}
+                    onChange={(event) => {
+                      setGiftCardCode(event.target.value.toUpperCase());
+                      setQuote(null);
+                    }}
+                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => requestQuote(form)}
+                disabled={quoteLoading}
+                className="mt-5 inline-flex items-center rounded-xl border border-brand-primary/20 px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {quoteLoading && <Loader2 size={16} className="mr-2 animate-spin" />}
+                Refresh Pricing
+              </button>
             </section>
 
             <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
@@ -825,19 +1059,36 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               <div className="mt-6 space-y-3 border-t border-gray-200 pt-4 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>Items subtotal</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(itemsPrice)}</span>
+                  <span className="font-semibold text-brand-dark">{formatCurrency(displayItemsPrice, displayCurrency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(shippingPrice)}</span>
+                  <span className="font-semibold text-brand-dark">{formatCurrency(displayShippingPrice, displayCurrency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tax</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(taxPrice)}</span>
+                  <span className="font-semibold text-brand-dark">{formatCurrency(displayTaxPrice, displayCurrency)}</span>
                 </div>
+                {displayDiscountPrice > 0 && (
+                  <div className="flex justify-between text-green-700">
+                    <span>Coupon discount</span>
+                    <span className="font-semibold">-{formatCurrency(displayDiscountPrice, displayCurrency)}</span>
+                  </div>
+                )}
+                {displayGiftCardAmount > 0 && (
+                  <div className="flex justify-between text-green-700">
+                    <span>Gift card</span>
+                    <span className="font-semibold">-{formatCurrency(displayGiftCardAmount, displayCurrency)}</span>
+                  </div>
+                )}
+                {quote?.shippingRate?.service && (
+                  <div className="text-xs text-gray-500">
+                    {quote.shippingRate.carrier} - {quote.shippingRate.service}
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-dashed pt-4 font-serif text-xl font-bold text-brand-dark">
                   <span>Total</span>
-                  <span className="text-brand-primary">{formatCurrency(totalPrice)}</span>
+                  <span className="text-brand-primary">{formatCurrency(displayTotalPrice, displayCurrency)}</span>
                 </div>
               </div>
 

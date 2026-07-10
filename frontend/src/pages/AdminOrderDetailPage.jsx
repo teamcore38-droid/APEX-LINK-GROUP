@@ -40,6 +40,8 @@ const buildFormState = (order) => ({
   isPaid: Boolean(order?.isPaid),
   isDelivered: Boolean(order?.isDelivered),
   trackingNumber: order?.trackingNumber || '',
+  courierName: order?.courierName || '',
+  trackingUrl: order?.trackingUrl || '',
   deliveryNote: order?.deliveryNote || '',
 });
 
@@ -86,6 +88,7 @@ const AdminOrderDetailPage = () => {
   const [paymentEvents, setPaymentEvents] = useState([]);
   const [paymentEventsLoading, setPaymentEventsLoading] = useState(false);
   const [paymentEventsRefreshToken, setPaymentEventsRefreshToken] = useState(0);
+  const [shipmentForm, setShipmentForm] = useState({ status: 'Shipped', location: '', message: '' });
 
   const customerContact = getCustomerContactDetails(order || {});
   const shippingLines = getShippingAddressLines(order?.shippingAddress, order?.user);
@@ -97,7 +100,7 @@ const AdminOrderDetailPage = () => {
       return;
     }
 
-    if (!userInfo.isAdmin) {
+    if (!userInfo.isAdmin && !userInfo.permissions?.includes('orders:read')) {
       navigate('/profile');
       return;
     }
@@ -127,7 +130,7 @@ const AdminOrderDetailPage = () => {
   }, [id, navigate, userInfo]);
 
   useEffect(() => {
-    if (!userInfo?.token || !userInfo.isAdmin || !order?._id) {
+    if (!userInfo?.token || (!userInfo.isAdmin && !userInfo.permissions?.includes('orders:read')) || !order?._id) {
       return;
     }
 
@@ -207,6 +210,8 @@ const AdminOrderDetailPage = () => {
         isPaid: formData.isPaid,
         isDelivered: formData.isDelivered,
         trackingNumber: formData.trackingNumber,
+        courierName: formData.courierName,
+        trackingUrl: formData.trackingUrl,
         deliveryNote: formData.deliveryNote,
       };
 
@@ -218,6 +223,71 @@ const AdminOrderDetailPage = () => {
       setPaymentEventsRefreshToken((currentToken) => currentToken + 1);
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to update this order.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const publishShipmentUpdate = async () => {
+    if (!userInfo?.token || !order?._id) {
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const { data } = await axios.post(
+        `/api/orders/${order._id}/shipment-updates`,
+        {
+          courier: formData.courierName,
+          trackingNumber: formData.trackingNumber,
+          trackingUrl: formData.trackingUrl,
+          ...shipmentForm,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      setOrder(data);
+      setFormData(buildFormState(data));
+      setSuccessMessage('Shipment update published.');
+    } catch (shipmentError) {
+      setError(shipmentError.response?.data?.message || 'Unable to publish shipment update.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reviewCancellationRequest = async (requestId, status) => {
+    if (!userInfo?.token || !order?._id) {
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const { data } = await axios.put(
+        `/api/orders/${order._id}/cancellation-requests/${requestId}`,
+        { status },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      setOrder(data);
+      setFormData(buildFormState(data));
+      setSuccessMessage(`Cancellation request ${status.toLowerCase()}.`);
+    } catch (cancelError) {
+      setError(cancelError.response?.data?.message || 'Unable to review cancellation request.');
     } finally {
       setSaving(false);
     }
@@ -582,6 +652,68 @@ const AdminOrderDetailPage = () => {
                     />
                   </div>
 
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="courierName" className="mb-2 block text-sm font-semibold text-brand-dark">
+                        Courier
+                      </label>
+                      <input
+                        id="courierName"
+                        name="courierName"
+                        type="text"
+                        value={formData.courierName}
+                        onChange={handleChange}
+                        placeholder="DHL, FedEx, Apex Logistics"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="trackingUrl" className="mb-2 block text-sm font-semibold text-brand-dark">
+                        Tracking URL
+                      </label>
+                      <input
+                        id="trackingUrl"
+                        name="trackingUrl"
+                        type="text"
+                        value={formData.trackingUrl}
+                        onChange={handleChange}
+                        placeholder="https://courier.example/track"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-brand-accent/20 bg-brand-light p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Courier Update</p>
+                    <div className="mt-3 grid gap-3">
+                      <CustomSelect
+                        value={shipmentForm.status}
+                        onChange={(nextValue) => setShipmentForm((form) => ({ ...form, status: nextValue }))}
+                        options={ORDER_STATUS_OPTIONS.map((status) => ({ value: status, label: status }))}
+                      />
+                      <input
+                        value={shipmentForm.location}
+                        onChange={(event) => setShipmentForm((form) => ({ ...form, location: event.target.value }))}
+                        placeholder="Current location"
+                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm"
+                      />
+                      <textarea
+                        value={shipmentForm.message}
+                        onChange={(event) => setShipmentForm((form) => ({ ...form, message: event.target.value }))}
+                        placeholder="Courier update message"
+                        rows={3}
+                        className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={publishShipmentUpdate}
+                        className="self-start rounded-xl border border-brand-primary/20 px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary hover:bg-brand-primary hover:text-white"
+                      >
+                        Publish Shipment Update
+                      </button>
+                    </div>
+                  </div>
+
                   <div>
                     <label htmlFor="deliveryNote" className="mb-2 block text-sm font-semibold text-brand-dark">
                       Delivery / Admin Note
@@ -606,6 +738,43 @@ const AdminOrderDetailPage = () => {
                     {saving ? 'Saving Changes...' : 'Save / Update Order'}
                   </button>
                 </form>
+
+                {order.cancellationRequests?.length > 0 && (
+                  <div className="mt-6 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Cancellation Requests</p>
+                    <div className="mt-3 space-y-3">
+                      {order.cancellationRequests.map((request) => (
+                        <div key={request._id || request.createdAt} className="rounded-xl bg-white p-3 text-sm">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="font-semibold text-brand-dark">{request.status}</p>
+                              <p className="mt-1 text-gray-600">{request.reason}</p>
+                              <p className="mt-1 text-xs text-gray-500">{request.requesterEmail}</p>
+                            </div>
+                            {request.status === 'Pending' && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => reviewCancellationRequest(request._id, 'Approved')}
+                                  className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => reviewCancellationRequest(request._id, 'Rejected')}
+                                  className="rounded-full bg-red-50 px-3 py-1 text-xs font-bold text-red-700"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">

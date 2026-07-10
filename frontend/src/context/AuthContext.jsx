@@ -3,6 +3,7 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
+axios.defaults.withCredentials = true;
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -24,6 +25,20 @@ export const AuthProvider = ({ children }) => {
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
       const { data } = await axios.post('/api/users/login', { email, password }, config);
+      if (data.requiresTwoFactor) {
+        return data;
+      }
+      setUserInfo(data);
+      return data;
+    } catch (error) {
+      throw error.response?.data?.message || error.message;
+    }
+  };
+
+  const verifyTwoFactorLogin = async ({ challengeId, code }) => {
+    try {
+      const config = { headers: { 'Content-Type': 'application/json' } };
+      const { data } = await axios.post('/api/users/login/2fa', { challengeId, code }, config);
       setUserInfo(data);
       return data;
     } catch (error) {
@@ -50,12 +65,38 @@ export const AuthProvider = ({ children }) => {
     setUserInfo(nextUserInfo);
   };
 
-  const logout = () => {
+  const refreshSession = async () => {
+    try {
+      const { data } = await axios.post('/api/users/refresh');
+      setUserInfo(data);
+      return data;
+    } catch (error) {
+      setUserInfo(null);
+      throw error.response?.data?.message || error.message;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      if (userInfo?.token) {
+        await axios.post(
+          '/api/users/logout',
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${userInfo.token}`,
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
     setUserInfo(null);
   };
 
   return (
-    <AuthContext.Provider value={{ userInfo, login, register, syncUserInfo, logout }}>
+    <AuthContext.Provider value={{ userInfo, login, verifyTwoFactorLogin, register, refreshSession, syncUserInfo, logout }}>
       {children}
     </AuthContext.Provider>
   );

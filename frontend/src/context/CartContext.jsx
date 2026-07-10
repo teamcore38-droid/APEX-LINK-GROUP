@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useState, useEffect, useContext } from 'react';
+import axios from 'axios';
+import { getMarketingSessionId, trackEvent } from '../utils/analytics';
 
 const CartContext = createContext();
 
@@ -18,6 +20,30 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
+
+    const timer = window.setTimeout(() => {
+      const subtotal = cartItems.reduce((total, item) => total + Number(item.price || 0) * Number(item.qty || 0), 0);
+
+      axios
+        .post(
+          '/api/marketing/abandoned-cart',
+          {
+            sessionId: getMarketingSessionId(),
+            items: cartItems,
+            subtotal,
+            currency: 'LKR',
+            checkoutUrl: `${window.location.origin}/checkout`,
+          },
+          {
+            headers: { 'x-session-id': getMarketingSessionId() },
+          }
+        )
+        .catch((error) => {
+          if (import.meta.env.DEV) console.error(error);
+        });
+    }, 600);
+
+    return () => window.clearTimeout(timer);
   }, [cartItems]);
 
   useEffect(() => {
@@ -25,20 +51,35 @@ export const CartProvider = ({ children }) => {
   }, [shippingAddress]);
 
   const addToCart = (product, qty) => {
+    trackEvent('add_to_cart', {
+      productId: product._id || product.product,
+      name: product.name,
+      price: product.price,
+      quantity: qty,
+      variantId: product.variantId || '',
+      value: Number(product.price || 0) * Number(qty || 0),
+      currency: 'LKR',
+    });
+
     setCartItems(prev => {
-      const existItem = prev.find(x => x.product === product._id);
+      const productId = product._id || product.product;
+      const variantId = product.variantId || '';
+      const existItem = prev.find(x => x.product === productId && (x.variantId || '') === variantId);
       if (existItem) {
         return prev.map(x => 
-          x.product === existItem.product 
+          x.product === existItem.product && (x.variantId || '') === variantId
             ? { ...x, qty } // Replace old qty with new qty
             : x
         );
       } else {
         return [...prev, {
-          product: product._id,
+          product: productId,
           name: product.name,
           image: product.image,
           price: product.price,
+          variantId,
+          variantLabel: product.variantLabel || '',
+          sku: product.sku || '',
           countInStock: product.countInStock,
           qty
         }];
@@ -47,6 +88,16 @@ export const CartProvider = ({ children }) => {
   };
 
   const removeFromCart = (id) => {
+    const item = cartItems.find((cartItem) => cartItem.product === id);
+    if (item) {
+      trackEvent('remove_from_cart', {
+        productId: item.product,
+        name: item.name,
+        value: Number(item.price || 0) * Number(item.qty || 0),
+        currency: 'LKR',
+      });
+    }
+
     setCartItems(prev => prev.filter(x => x.product !== id));
   };
 

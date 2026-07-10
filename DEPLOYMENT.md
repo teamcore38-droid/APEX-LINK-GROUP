@@ -82,6 +82,12 @@ For production split-domain deployments, set:
   - returns `status`, `uptime`, `environment`, `timestamp`, DB connection state
 - Stripe webhook raw-body route preserved:
   - `POST /api/payments/webhook`
+- Operational endpoints:
+  - `GET /api/ops/health`
+  - `GET /api/ops/readiness`
+  - `GET /api/ops/metrics`
+  - `GET /api/docs/openapi.json`
+- Structured JSON logging, optional Sentry-compatible error delivery via `SENTRY_DSN`, and alert webhook support via `ALERT_WEBHOOK_URL`.
 
 ## 5. Stripe Test-Mode Verification Checklist
 
@@ -224,3 +230,6 @@ Production recommendation:
 4. Confirm DB backups and alerting.
 5. Confirm rate limits and logs are monitored.
 6. Verify payment + webhook + refund flows end-to-end once in production.
+7. Configure uptime checks against `/api/ops/uptime`.
+8. Schedule `npm run backup:create` or provider-native MongoDB Atlas backups.
+9. Run `npm run perf:checkout` against staging before traffic campaigns.

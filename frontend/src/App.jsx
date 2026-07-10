@@ -12,6 +12,7 @@ import RegisterPage from './pages/RegisterPage'
 import AboutPage from './pages/AboutPage'
 import NotFoundPage from './pages/NotFoundPage'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
+import CookieConsentBanner from './components/CookieConsentBanner'
 
 const ProductPage = lazy(() => import('./pages/ProductPage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
@@ -28,6 +29,15 @@ const ShippingPage = lazy(() => import('./pages/ShippingPage'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminCategoriesPage = lazy(() => import('./pages/AdminCategoriesPage'))
 const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage'))
+const AdminCommercePage = lazy(() => import('./pages/AdminCommercePage'))
+const AdminVendorsPage = lazy(() => import('./pages/AdminVendorsPage'))
+const AdminProfessionalPage = lazy(() => import('./pages/AdminProfessionalPage'))
+const AdminMobilePage = lazy(() => import('./pages/AdminMobilePage'))
+const VendorOnboardingPage = lazy(() => import('./pages/VendorOnboardingPage'))
+const VendorDashboardPage = lazy(() => import('./pages/VendorDashboardPage'))
+const RFQPage = lazy(() => import('./pages/RFQPage'))
+const CustomerExperiencePage = lazy(() => import('./pages/CustomerExperiencePage'))
+const PrivacyCenterPage = lazy(() => import('./pages/PrivacyCenterPage'))
 const AddProductPage = lazy(() => import('./pages/AddProductPage'))
 const EditProductPage = lazy(() => import('./pages/EditProductPage'))
 const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'))
@@ -56,16 +66,25 @@ function App() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/account" element={<ProfilePage />} />
             <Route path="/track-order" element={<TrackOrderPage />} />
+            <Route path="/rfq" element={<RFQPage />} />
+            <Route path="/customer-experience" element={<CustomerExperiencePage />} />
+            <Route path="/vendor/onboarding" element={<VendorOnboardingPage />} />
+            <Route path="/vendor/dashboard" element={<VendorDashboardPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/privacy-center" element={<PrivacyCenterPage />} />
             <Route path="/returns" element={<ReturnsPage />} />
             <Route path="/shipping" element={<ShippingPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/categories" element={<AdminCategoriesPage />} />
             <Route path="/admin/messages" element={<AdminMessagesPage />} />
+            <Route path="/admin/commerce" element={<AdminCommercePage />} />
+            <Route path="/admin/vendors" element={<AdminVendorsPage />} />
+            <Route path="/admin/professional" element={<AdminProfessionalPage />} />
+            <Route path="/admin/mobile" element={<AdminMobilePage />} />
             <Route path="/admin/products/new" element={<AddProductPage />} />
             <Route path="/admin/product/:id/edit" element={<EditProductPage />} />
             <Route path="/order/:id/confirm" element={<OrderSuccessPage />} />
@@ -79,6 +98,7 @@ function App() {
         </Suspense>
       </main>
       <Footer />
+      <CookieConsentBanner />
     </div>
   )
 }

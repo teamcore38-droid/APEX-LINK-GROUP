@@ -294,6 +294,47 @@ const TrackOrderPage = () => {
                   </p>
                 </div>
 
+                {(result.courierName || result.trackingUrl || result.shipmentUpdates?.length > 0) && (
+                  <div className="mt-5 rounded-[24px] border border-gray-100 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Courier Updates</p>
+                    {result.courierName && (
+                      <p className="mt-3 text-sm font-semibold text-brand-dark">
+                        {result.courierName}
+                        {result.trackingUrl && (
+                          <a href={result.trackingUrl} target="_blank" rel="noreferrer" className="ml-3 text-brand-primary underline">
+                            Track with courier
+                          </a>
+                        )}
+                      </p>
+                    )}
+                    <div className="mt-4 space-y-3">
+                      {(result.shipmentUpdates || []).slice().reverse().map((update, index) => (
+                        <div key={`${update.occurredAt}-${index}`} className="rounded-2xl bg-brand-light p-4 text-sm">
+                          <p className="font-semibold text-brand-dark">{update.status || 'Shipment update'}</p>
+                          <p className="mt-1 text-gray-600">{update.message || update.location || 'Courier update recorded.'}</p>
+                          <p className="mt-2 text-xs text-gray-500">
+                            {update.courier || result.courierName || 'Courier'} - {new Date(update.occurredAt || update.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {result.cancellationRequests?.length > 0 && (
+                  <div className="mt-5 rounded-[24px] border border-amber-100 bg-amber-50 p-5">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-700">Cancellation Requests</p>
+                    <div className="mt-3 space-y-2">
+                      {result.cancellationRequests.map((request) => (
+                        <div key={request._id || request.createdAt} className="text-sm text-amber-900">
+                          <span className="font-semibold">{request.status}</span> - {request.reason}
+                          {request.adminNote && <span> ({request.adminNote})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-5 grid gap-5 lg:grid-cols-2">
                   <div className="rounded-[24px] border border-gray-100 bg-[#fafbfd] p-5">
                     <div className="flex items-center gap-3">

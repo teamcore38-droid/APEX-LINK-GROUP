@@ -1,5 +1,7 @@
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
+import { hasPermission } from '../utils/permissions.js';
+import { recordAuditLog } from '../utils/auditService.js';
 
 const slugify = (value = '') =>
   value
@@ -21,6 +23,22 @@ const normalizeBoolean = (value, fallbackValue = true) => {
   }
 
   return fallbackValue;
+};
+
+const normalizeSeoPayload = (seo = {}, fallback = {}) => {
+  const keywords = Array.isArray(seo.keywords)
+    ? seo.keywords
+    : typeof seo.keywords === 'string'
+      ? seo.keywords.split(',')
+      : [];
+
+  return {
+    title: String(seo.title || fallback.title || '').trim(),
+    description: String(seo.description || fallback.description || '').trim(),
+    keywords: keywords.map((keyword) => String(keyword || '').trim()).filter(Boolean),
+    canonicalUrl: String(seo.canonicalUrl || '').trim(),
+    ogImage: String(seo.ogImage || fallback.ogImage || '').trim(),
+  };
 };
 
 const findExistingCategoryConflict = async ({ name, slug, categoryId }) => {
@@ -56,7 +74,7 @@ const findExistingCategoryConflict = async ({ name, slug, categoryId }) => {
 const getCategories = async (req, res) => {
   try {
     const includeInactive = req.query.includeInactive === 'true';
-    const isAdminRequest = includeInactive && req.user?.isAdmin;
+    const isAdminRequest = includeInactive && hasPermission(req.user, 'catalog:read');
 
     if (includeInactive && !isAdminRequest) {
       return res.status(401).json({ message: 'Not authorized as an admin' });
@@ -104,6 +122,7 @@ const createCategory = async (req, res) => {
       image = '',
       isActive = true,
       displayOrder = 0,
+      seo = {},
     } = req.body;
 
     const trimmedName = name.trim();
@@ -134,9 +153,17 @@ const createCategory = async (req, res) => {
       image: image.trim(),
       isActive: normalizeBoolean(isActive, true),
       displayOrder: Number(displayOrder) || 0,
+      seo: normalizeSeoPayload(seo, {
+        title: trimmedName,
+        description: description.trim(),
+        ogImage: image.trim(),
+      }),
     });
 
     const createdCategory = await category.save();
+    await recordAuditLog(req, 'catalog.category.create', 'Category', createdCategory._id, {
+      name: createdCategory.name,
+    });
     res.status(201).json(createdCategory);
   } catch (error) {
     console.error(error);
@@ -162,6 +189,7 @@ const updateCategory = async (req, res) => {
       image = category.image,
       isActive = category.isActive,
       displayOrder = category.displayOrder,
+      seo = category.seo || {},
     } = req.body;
 
     const trimmedName = String(name).trim();
@@ -192,8 +220,16 @@ const updateCategory = async (req, res) => {
     category.image = String(image).trim();
     category.isActive = normalizeBoolean(isActive, category.isActive);
     category.displayOrder = Number(displayOrder) || 0;
+    category.seo = normalizeSeoPayload(seo, {
+      title: trimmedName,
+      description: String(description).trim(),
+      ogImage: String(image).trim(),
+    });
 
     const updatedCategory = await category.save();
+    await recordAuditLog(req, 'catalog.category.update', 'Category', updatedCategory._id, {
+      name: updatedCategory.name,
+    });
     res.json(updatedCategory);
   } catch (error) {
     if (error.name === 'CastError') {
@@ -227,6 +263,9 @@ const deleteCategory = async (req, res) => {
     }
 
     await Category.deleteOne({ _id: category._id });
+    await recordAuditLog(req, 'catalog.category.delete', 'Category', category._id, {
+      name: category.name,
+    });
     res.json({ message: 'Category removed' });
   } catch (error) {
     if (error.name === 'CastError') {

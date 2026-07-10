@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
+import { hasPermission } from '../utils/permissions.js';
 
 const getTokenFromRequest = (req) => {
   if (
@@ -61,4 +62,20 @@ const admin = (req, res, next) => {
   }
 };
 
-export { protect, protectOptional, admin };
+const requirePermission = (permission) => (req, res, next) => {
+  if (hasPermission(req.user, permission)) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Not authorized for this admin action' });
+  }
+};
+
+const vendor = (req, res, next) => {
+  if (req.user && (req.user.isVendor || req.user.isAdmin)) {
+    next();
+  } else {
+    res.status(401).json({ message: 'Not authorized as a vendor' });
+  }
+};
+
+export { protect, protectOptional, admin, requirePermission, vendor };

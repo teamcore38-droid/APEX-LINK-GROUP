@@ -82,9 +82,75 @@ const userSchema = mongoose.Schema(
       required: true,
       default: false,
     },
+    isStaff: {
+      type: Boolean,
+      default: false,
+    },
+    role: {
+      type: String,
+      enum: [
+        'customer',
+        'owner',
+        'admin',
+        'catalog_manager',
+        'order_manager',
+        'commerce_manager',
+        'content_manager',
+        'analyst',
+        'vendor_manager',
+        'custom',
+      ],
+      default: 'customer',
+    },
+    staffPermissions: {
+      type: [String],
+      default: [],
+    },
+    staffStatus: {
+      type: String,
+      enum: ['Active', 'Suspended'],
+      default: 'Active',
+    },
+    isVendor: {
+      type: Boolean,
+      default: false,
+    },
+    vendorStatus: {
+      type: String,
+      enum: ['None', 'Draft', 'Submitted', 'Under Review', 'Verified', 'Rejected', 'Suspended'],
+      default: 'None',
+    },
     addresses: {
       type: [addressSchema],
       default: [],
+    },
+    notificationPreferences: {
+      email: {
+        orderUpdates: { type: Boolean, default: true },
+        promotions: { type: Boolean, default: false },
+        support: { type: Boolean, default: true },
+      },
+      sms: {
+        enabled: { type: Boolean, default: false },
+        phone: { type: String, default: '', trim: true },
+        orderUpdates: { type: Boolean, default: false },
+      },
+      whatsapp: {
+        enabled: { type: Boolean, default: false },
+        phone: { type: String, default: '', trim: true },
+        orderUpdates: { type: Boolean, default: false },
+      },
+    },
+    security: {
+      failedLoginAttempts: { type: Number, default: 0 },
+      accountLockedUntil: { type: Date, default: null },
+      lastFailedLoginAt: { type: Date, default: null },
+      lastLoginAt: { type: Date, default: null },
+      lastLoginIp: { type: String, default: '', trim: true },
+      lastLoginUserAgent: { type: String, default: '', trim: true },
+      adminTwoFactorEnabled: { type: Boolean, default: true },
+      privacyDeletionRequestedAt: { type: Date, default: null },
+      anonymizedAt: { type: Date, default: null },
     },
     resetPasswordToken: {
       type: String,

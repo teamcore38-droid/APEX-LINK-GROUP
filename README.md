@@ -7,6 +7,7 @@ Premium multi-industry marketplace (textiles, spices & food, IT solutions, indus
 - `backend/` Express + MongoDB API
 - `frontend/` React + Vite application
 - `DEPLOYMENT.md` staging/production deployment + verification guide
+- `docs/OPERATIONS.md` tests, CI, monitoring, backups, OpenAPI, and load testing
 
 ## Prerequisites
 
@@ -57,12 +58,18 @@ npm run dev
 - `npm run data:import` - destructive full seed import
 - `npm run data:destroy` - destructive wipe
 - `npm run data:seed-categories` - safe category seed (non-destructive for existing slugs)
+- `npm test` - backend automated tests
+- `npm run test:e2e` - checkout E2E smoke test using `E2E_BASE_URL`
+- `npm run openapi:check` - validate OpenAPI documentation
+- `npm run backup:create` / `npm run backup:restore` - MongoDB backup tooling
+- `npm run perf:checkout` - checkout quote load test
 
 ### Frontend
 
 - `npm run dev` - Vite development
 - `npm run lint` - lint checks
 - `npm run build` - production build
+- `npm test` - frontend automated tests
 - `npm run preview` - local production preview
 
 ## Environment Variables

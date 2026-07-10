@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Mail, Menu, ShoppingBag, User, LogOut, Globe, MapPinned } from 'lucide-react';
+import { ChevronDown, Mail, Menu, ShoppingBag, User, LogOut, MapPinned } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,6 +8,8 @@ const PRIMARY_NAV_LINKS = [
   ['HOME', '/'],
   ['SHOP', '/products'],
   ['CATEGORIES', '/categories'],
+  ['RFQ', '/rfq'],
+  ['EXPERIENCE', '/customer-experience'],
   ['TRACK ORDER', '/track-order'],
   ['ABOUT', '/about'],
   ['CONTACT', '/contact'],
@@ -20,6 +22,9 @@ const Header = () => {
   const location = useLocation();
 
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const canAccessAdmin = Boolean(
+    userInfo?.isAdmin || userInfo?.isStaff || userInfo?.permissions?.length
+  );
 
   const handleLogout = () => {
     setAccountMenuOpen(false);
@@ -61,7 +66,7 @@ const Header = () => {
               {label}
             </Link>
           ))}
-          {userInfo?.isAdmin && (
+          {canAccessAdmin && (
             <Link
               to="/admin"
               className={`border-b-2 pb-1 transition-colors ${
@@ -117,12 +122,60 @@ const Header = () => {
                     <ShoppingBag size={16} className="mr-3 text-brand-accent" /> My Orders
                   </Link>
                   <Link
+                    to="/vendor/onboarding"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                  >
+                    <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Vendor Onboarding
+                  </Link>
+                  {(userInfo.isVendor || userInfo.isAdmin) && (
+                    <Link
+                      to="/vendor/dashboard"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Vendor Dashboard
+                    </Link>
+                  )}
+                  <Link
+                    to="/customer-experience"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                  >
+                    <User size={16} className="mr-3 text-brand-accent" /> Customer Experience
+                  </Link>
+                  <Link
+                    to="/privacy-center"
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                  >
+                    <User size={16} className="mr-3 text-brand-accent" /> Privacy Center
+                  </Link>
+                  <Link
                     to="/track-order"
                     onClick={() => setAccountMenuOpen(false)}
                     className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
                   >
                     <MapPinned size={16} className="mr-3 text-brand-accent" /> Track Order
                   </Link>
+                  {canAccessAdmin && (
+                    <Link
+                      to="/admin/professional"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Professional Admin
+                    </Link>
+                  )}
+                  {canAccessAdmin && (
+                    <Link
+                      to="/admin/mobile"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Mobile Admin
+                    </Link>
+                  )}
                   {userInfo.isAdmin && (
                     <Link
                       to="/admin/messages"
@@ -130,6 +183,24 @@ const Header = () => {
                       className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
                     >
                       <Mail size={16} className="mr-3 text-brand-accent" /> Messages
+                    </Link>
+                  )}
+                  {userInfo.isAdmin && (
+                    <Link
+                      to="/admin/vendors"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Marketplace Ops
+                    </Link>
+                  )}
+                  {userInfo.isAdmin && (
+                    <Link
+                      to="/admin/commerce"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Commerce Ops
                     </Link>
                   )}
                   <button
@@ -199,9 +270,38 @@ const Header = () => {
                 <Link to="/track-order" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                   Track Order
                 </Link>
-                {userInfo.isAdmin && (
+                <Link to="/customer-experience" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                  Customer Experience
+                </Link>
+                <Link to="/privacy-center" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                  Privacy Center
+                </Link>
+                <Link to="/vendor/onboarding" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                  Vendor Onboarding
+                </Link>
+                {(userInfo.isVendor || userInfo.isAdmin) && (
+                  <Link to="/vendor/dashboard" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                    Vendor Dashboard
+                  </Link>
+                )}
+                {canAccessAdmin && (
                   <Link to="/admin" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                     Admin
+                  </Link>
+                )}
+                {canAccessAdmin && (
+                  <Link to="/admin/professional" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                    Professional Admin
+                  </Link>
+                )}
+                {canAccessAdmin && (
+                  <Link to="/admin/mobile" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                    Mobile Admin
+                  </Link>
+                )}
+                {userInfo.isAdmin && (
+                  <Link to="/admin/vendors" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                    Marketplace Ops
                   </Link>
                 )}
                 {userInfo.isAdmin && (

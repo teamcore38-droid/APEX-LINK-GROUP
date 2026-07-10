@@ -7,6 +7,13 @@ import {
   applySuccessfulPaymentToOrder,
   calculateRefundableAmount,
 } from '../utils/orderPaymentLifecycle.js';
+import { commitPromotionsForOrder } from '../utils/commerceService.js';
+import {
+  deductReservedInventory,
+  releaseReservedInventory,
+} from '../utils/inventoryService.js';
+import { syncVendorOrdersForOrder } from '../utils/vendorService.js';
+import { awardOrderLoyaltyPoints } from '../utils/loyaltyService.js';
 import {
   buildSafePaymentResult,
   buildSafeRefundRecord,
@@ -17,6 +24,14 @@ import {
   isStripeWebhookConfigured,
   toStripeAmount,
 } from '../utils/paymentService.js';
+import { recordAuditLog } from '../utils/auditService.js';
+import { notifyOrderEvent } from '../utils/pushService.js';
+import { emitWebhookEvent } from '../utils/webhookService.js';
+import {
+  assessOrderFraud,
+  recordFraudSignal,
+  shouldBlockPayment,
+} from '../utils/fraudService.js';
 
 const REFUND_REASON_VALUES = ['duplicate', 'fraudulent', 'requested_by_customer'];
 
@@ -119,6 +134,9 @@ const processPaymentIntentSucceeded = async (paymentIntent) => {
     actor: getSafeWebhookActor(),
     source: 'webhook',
   });
+  await deductReservedInventory({ order, actor: getSafeWebhookActor() });
+  await commitPromotionsForOrder(order);
+  await awardOrderLoyaltyPoints(order, getSafeWebhookActor());
 
   if (!order.paymentResult?.chargeId && paymentIntent.latest_charge) {
     order.paymentResult = {
@@ -131,6 +149,12 @@ const processPaymentIntentSucceeded = async (paymentIntent) => {
   }
 
   await order.save();
+  await syncVendorOrdersForOrder(order);
+  await notifyOrderEvent(order, 'order.paid');
+  await emitWebhookEvent('order.paid', order.toObject(), {
+    resourceType: 'Order',
+    resourceId: order._id.toString(),
+  });
 
   return { order, paymentIntentId: paymentIntent.id };
 };
@@ -156,8 +180,18 @@ const processPaymentIntentFailed = async (paymentIntent) => {
     source: 'webhook',
     note: failureMessage,
   });
+  await releaseReservedInventory({
+    order,
+    actor: getSafeWebhookActor(),
+    note: 'Released reservation after Stripe reported payment failure.',
+  });
 
   await order.save();
+  await syncVendorOrdersForOrder(order);
+  await emitWebhookEvent('payment.failed', order.toObject(), {
+    resourceType: 'Order',
+    resourceId: order._id.toString(),
+  });
 
   return { order, paymentIntentId: paymentIntent.id };
 };
@@ -178,8 +212,18 @@ const processPaymentIntentCanceled = async (paymentIntent) => {
     actor: getSafeWebhookActor(),
     source: 'webhook',
   });
+  await releaseReservedInventory({
+    order,
+    actor: getSafeWebhookActor(),
+    note: 'Released reservation after Stripe payment was cancelled.',
+  });
 
   await order.save();
+  await syncVendorOrdersForOrder(order);
+  await emitWebhookEvent('payment.cancelled', order.toObject(), {
+    resourceType: 'Order',
+    resourceId: order._id.toString(),
+  });
 
   return { order, paymentIntentId: paymentIntent.id };
 };
@@ -212,6 +256,11 @@ const processRefundObject = async (refund, eventType = 'refund.updated') => {
   });
 
   await order.save();
+  await syncVendorOrdersForOrder(order);
+  await emitWebhookEvent('refund.updated', order.toObject(), {
+    resourceType: 'Order',
+    resourceId: order._id.toString(),
+  });
 
   return {
     order,
@@ -270,6 +319,11 @@ const processChargeRefunded = async (charge) => {
   }
 
   await order.save();
+  await syncVendorOrdersForOrder(order);
+  await emitWebhookEvent('refund.updated', order.toObject(), {
+    resourceType: 'Order',
+    resourceId: order._id.toString(),
+  });
 
   return { order, paymentIntentId };
 };
@@ -323,6 +377,26 @@ const createPaymentIntent = async (req, res) => {
       return res.status(400).json({ message: 'This order has already been paid' });
     }
 
+    const fraudRisk = await assessOrderFraud(order, req);
+    order.fraudRisk = {
+      ...order.fraudRisk,
+      ...fraudRisk,
+      paymentBlockedAt: shouldBlockPayment(fraudRisk) ? new Date() : order.fraudRisk?.paymentBlockedAt,
+    };
+
+    if (fraudRisk.level !== 'low') {
+      await recordFraudSignal(req, order, 'payment.fraud.review', fraudRisk);
+    }
+
+    if (shouldBlockPayment(fraudRisk) && !req.user.isAdmin) {
+      await order.save();
+      await recordFraudSignal(req, order, 'payment.fraud.blocked', fraudRisk);
+      return res.status(403).json({
+        message: 'This payment needs manual review before it can be processed.',
+        fraudRisk,
+      });
+    }
+
     const stripe = getStripeClient();
     let paymentIntent = null;
 
@@ -341,7 +415,7 @@ const createPaymentIntent = async (req, res) => {
     if (!paymentIntent) {
       paymentIntent = await stripe.paymentIntents.create({
         amount: toStripeAmount(order.totalPrice),
-        currency: getStripeCurrency(),
+        currency: String(order.currency || getStripeCurrency()).toLowerCase(),
         metadata: {
           orderId: order._id.toString(),
           userId: req.user._id.toString(),
@@ -457,7 +531,16 @@ const createRefund = async (req, res) => {
     });
 
     const updatedOrder = await order.save();
+    await syncVendorOrdersForOrder(updatedOrder);
+    await recordAuditLog(req, 'payments.refund.create', 'Order', updatedOrder._id, {
+      requestedAmount,
+      reason: normalizedReason,
+    });
     const populatedOrder = await Order.findById(updatedOrder._id).populate('user', 'name email phone');
+    await emitWebhookEvent('refund.updated', populatedOrder.toObject(), {
+      resourceType: 'Order',
+      resourceId: populatedOrder._id.toString(),
+    });
 
     res.json(populatedOrder);
   } catch (error) {

@@ -10,6 +10,7 @@ import {
   PRODUCT_PRICE_SORT_OPTIONS,
   normalizeProductPayload,
 } from '../utils/productUi';
+import { applySeo, buildCategoryStructuredData } from '../utils/seo';
 
 const CategoryPage = () => {
   const { slug } = useParams();
@@ -48,6 +49,16 @@ const CategoryPage = () => {
       try {
         const { data } = await axios.get(`/api/categories/${slug}`);
         setCategory(data);
+        const seoResponse = await axios.get(`/api/seo/category/${data.slug}`).catch(() => null);
+        applySeo({
+          title: seoResponse?.data?.title || data.seo?.title || data.name,
+          description: seoResponse?.data?.description || data.seo?.description || data.description,
+          keywords: seoResponse?.data?.keywords || data.seo?.keywords || [data.name, 'Apex Link Group'],
+          canonicalUrl: seoResponse?.data?.canonicalUrl || window.location.href,
+          ogImage: seoResponse?.data?.ogImage || data.seo?.ogImage || data.image,
+          type: 'website',
+          structuredData: seoResponse?.data?.structuredData || buildCategoryStructuredData(data),
+        });
         setSearchInput('');
         setKeyword('');
         setSort('');

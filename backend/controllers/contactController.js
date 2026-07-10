@@ -3,6 +3,7 @@ import {
   sendContactAutoReply,
   sendContactMessageNotification,
 } from '../utils/emailService.js';
+import { recordAuditLog } from '../utils/auditService.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -104,6 +105,10 @@ const updateContactMessageStatus = async (req, res) => {
 
     message.status = status;
     const updatedMessage = await message.save();
+    await recordAuditLog(req, 'contact.status.update', 'ContactMessage', updatedMessage._id, {
+      status,
+      email: updatedMessage.email,
+    });
 
     res.json(updatedMessage);
   } catch (error) {
@@ -128,6 +133,10 @@ const deleteContactMessage = async (req, res) => {
     }
 
     await ContactMessage.deleteOne({ _id: message._id });
+    await recordAuditLog(req, 'contact.delete', 'ContactMessage', message._id, {
+      email: message.email,
+      subject: message.subject,
+    });
     res.json({ message: 'Contact message removed' });
   } catch (error) {
     if (error.name === 'CastError') {

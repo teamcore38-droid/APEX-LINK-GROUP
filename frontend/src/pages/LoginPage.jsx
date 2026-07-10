@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LockKeyhole, Mail } from 'lucide-react';
+import { LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
@@ -8,8 +8,10 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [twoFactorChallenge, setTwoFactorChallenge] = useState(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
 
-  const { login, userInfo } = useAuth();
+  const { login, verifyTwoFactorLogin, userInfo } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -27,7 +29,19 @@ const LoginPage = () => {
     setError('');
 
     try {
-      await login(email, password);
+      if (twoFactorChallenge) {
+        await verifyTwoFactorLogin({
+          challengeId: twoFactorChallenge.challengeId,
+          code: twoFactorCode,
+        });
+      } else {
+        const result = await login(email, password);
+        if (result?.requiresTwoFactor) {
+          setTwoFactorChallenge(result);
+          setLoading(false);
+          return;
+        }
+      }
     } catch (loginError) {
       setError(loginError);
       setLoading(false);
@@ -53,43 +67,68 @@ const LoginPage = () => {
           )}
 
           <form onSubmit={submitHandler} className="mt-8 space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-brand-dark">Email Address</label>
-              <div className="relative">
-                <Mail size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
+            {!twoFactorChallenge ? (
+              <>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-brand-dark">Email Address</label>
+                  <div className="relative">
+                    <Mail size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label className="block text-sm font-semibold text-brand-dark">Password</label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs font-bold uppercase tracking-[0.16em] text-brand-primary transition-colors duration-200 hover:text-brand-dark"
-                >
-                  Forgot password?
-                </Link>
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <label className="block text-sm font-semibold text-brand-dark">Password</label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs font-bold uppercase tracking-[0.16em] text-brand-primary transition-colors duration-200 hover:text-brand-dark"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <div className="relative">
+                    <LockKeyhole size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-brand-dark">Admin Verification Code</label>
+                <div className="relative">
+                  <ShieldCheck size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    required
+                    inputMode="numeric"
+                    value={twoFactorCode}
+                    onChange={(event) => setTwoFactorCode(event.target.value)}
+                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    placeholder="6-digit code"
+                  />
+                </div>
+                {twoFactorChallenge.developmentCode && (
+                  <p className="mt-3 rounded-xl bg-brand-light px-4 py-3 text-xs font-semibold text-brand-dark">
+                    Development code: {twoFactorChallenge.developmentCode}
+                  </p>
+                )}
               </div>
-              <div className="relative">
-                <LockKeyhole size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
-                  placeholder="Enter your password"
-                />
-              </div>
-            </div>
+            )}
 
             <button
               type="submit"
@@ -98,8 +137,20 @@ const LoginPage = () => {
                 loading ? 'cursor-not-allowed opacity-70' : ''
               }`}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Signing In...' : twoFactorChallenge ? 'Verify Admin Sign In' : 'Sign In'}
             </button>
+            {twoFactorChallenge && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTwoFactorChallenge(null);
+                  setTwoFactorCode('');
+                }}
+                className="w-full text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"
+              >
+                Use a different account
+              </button>
+            )}
           </form>
 
           <div className="mt-8 rounded-2xl bg-brand-light px-4 py-3 text-center text-sm text-gray-600">

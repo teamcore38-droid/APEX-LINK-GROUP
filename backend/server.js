@@ -11,6 +11,23 @@ import userRoutes from './routes/userRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import returnRoutes from './routes/returnRoutes.js';
+import commerceAdminRoutes from './routes/commerceAdminRoutes.js';
+import vendorRoutes from './routes/vendorRoutes.js';
+import rfqRoutes from './routes/rfqRoutes.js';
+import proAdminRoutes from './routes/proAdminRoutes.js';
+import cmsRoutes from './routes/cmsRoutes.js';
+import customerExperienceRoutes from './routes/customerExperienceRoutes.js';
+import v1Routes from './routes/v1Routes.js';
+import webhookRoutes from './routes/webhookRoutes.js';
+import privacyRoutes from './routes/privacyRoutes.js';
+import opsRoutes from './routes/opsRoutes.js';
+import marketingRoutes from './routes/marketingRoutes.js';
+import seoRoutes from './routes/seoRoutes.js';
+import { sanitizeRequest } from './middleware/sanitizeMiddleware.js';
+import { requestContext } from './middleware/requestContextMiddleware.js';
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 dotenv.config();
@@ -57,12 +74,25 @@ const corsOptions = {
 };
 
 app.use(morgan(isProduction ? 'combined' : 'dev'));
-app.use(helmet());
+app.use(requestContext);
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    },
+  })
+);
 app.use(cors(corsOptions));
 // Stripe webhook signature verification needs raw body on this path.
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(sanitizeRequest);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
@@ -87,12 +117,32 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/sitemap.xml', (req, res, next) => seoRoutes(req, res, next));
+app.get('/robots.txt', (req, res, next) => seoRoutes(req, res, next));
+
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/admin/commerce', commerceAdminRoutes);
+app.use('/api/vendors', vendorRoutes);
+app.use('/api/rfqs', rfqRoutes);
+app.use('/api/admin/pro', proAdminRoutes);
+app.use('/api/admin/webhooks', webhookRoutes);
+app.use('/api/cms', cmsRoutes);
+app.use('/api/customer', customerExperienceRoutes);
+app.use('/api/privacy', privacyRoutes);
+app.use('/api/marketing', marketingRoutes);
+app.use('/api/analytics', marketingRoutes);
+app.use('/api/seo', seoRoutes);
+app.use('/api/ops', opsRoutes);
+app.use('/api/docs', opsRoutes);
+app.use('/api/v1', v1Routes);
 app.use(notFound);
 app.use(errorHandler);
 

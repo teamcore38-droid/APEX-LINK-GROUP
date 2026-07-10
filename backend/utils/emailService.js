@@ -241,6 +241,59 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
   });
 };
 
+const sendAdminTwoFactorCodeEmail = async (user, code, expiresInMinutes = 10) =>
+  sendMailSafe({
+    label: 'admin-2fa-code',
+    to: user?.email || '',
+    subject: 'Your Apex Link Group admin verification code',
+    html: wrapTemplate({
+      title: 'Admin verification code',
+      preheader: 'Use this code to complete your secure admin sign-in.',
+      body: `
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
+          Use the verification code below to complete your Apex Link Group admin sign-in. It expires in ${expiresInMinutes} minutes.
+        </p>
+        <div style="display:inline-block;margin:12px 0;padding:18px 24px;border-radius:16px;background:#f5f8fc;border:1px solid #dce4ef;font-size:28px;font-weight:800;letter-spacing:0.3em;color:#0b1f3a;">
+          ${code}
+        </div>
+        <p style="margin:20px 0 0;font-size:13px;line-height:1.8;color:#6b7a92;">
+          If you were not trying to sign in, change your password and contact the site owner.
+        </p>
+      `,
+    }),
+    developmentPayload: {
+      code,
+      userId: user?._id?.toString?.() || '',
+    },
+  });
+
+const sendSecurityAlertEmail = async (user, { title = 'Security alert', message = '', ipAddress = '' } = {}) =>
+  sendMailSafe({
+    label: 'security-alert',
+    to: user?.email || '',
+    subject: `Apex Link Group Security Alert - ${title}`,
+    html: wrapTemplate({
+      title,
+      preheader: 'A security-sensitive event occurred on your Apex Link Group account.',
+      body: `
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">${message}</p>
+        <table style="width:100%;border-collapse:collapse;margin:24px 0;">
+          ${summaryRow('Account', user?.email || '')}
+          ${summaryRow('IP Address', ipAddress || 'Unknown')}
+          ${summaryRow('Time', new Date().toISOString())}
+        </table>
+        <p style="margin:20px 0 0;font-size:13px;line-height:1.8;color:#6b7a92;">
+          If this was not you, reset your password immediately.
+        </p>
+      `,
+    }),
+    developmentPayload: {
+      userId: user?._id?.toString?.() || '',
+      ipAddress,
+      message,
+    },
+  });
+
 const sendContactMessageNotification = async (message) =>
   sendMailSafe({
     label: 'contact-notification',
@@ -346,6 +399,64 @@ const sendRefundConfirmationEmail = async (order, refund = {}) =>
     },
   });
 
+const sendNewsletterWelcomeEmail = async (subscriber) =>
+  sendMailSafe({
+    label: 'newsletter-welcome',
+    to: subscriber?.email || '',
+    subject: 'Welcome to Apex Link Group updates',
+    html: wrapTemplate({
+      title: 'You are subscribed',
+      preheader: 'You will receive marketplace launches, sourcing updates, and offers from Apex Link Group.',
+      body: `
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
+          Thank you for subscribing to Apex Link Group. We will send curated product drops, marketplace news, and sourcing updates.
+        </p>
+        <a href="${getFrontendUrl()}/products" style="display:inline-block;margin-top:10px;padding:14px 22px;border-radius:12px;background:#16365f;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;">Explore Products</a>
+      `,
+    }),
+    developmentPayload: {
+      email: subscriber?.email || '',
+      source: subscriber?.source || '',
+    },
+  });
+
+const sendAbandonedCartEmail = async (cart) => {
+  const rows = (cart.items || [])
+    .slice(0, 6)
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:10px 0;color:#3a4a63;">${item.name || 'Product'} x ${item.qty || 1}</td>
+          <td style="padding:10px 0;text-align:right;font-weight:700;color:#0b1f3a;">${cart.currency || 'LKR'} ${Number((item.price || 0) * (item.qty || 1)).toFixed(2)}</td>
+        </tr>
+      `
+    )
+    .join('');
+
+  return sendMailSafe({
+    label: 'abandoned-cart',
+    to: cart?.email || '',
+    subject: 'Your Apex Link Group cart is waiting',
+    html: wrapTemplate({
+      title: 'Still thinking it over?',
+      preheader: 'Your selected products are still waiting in your Apex Link Group cart.',
+      body: `
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
+          You left a few products in your cart. Return to checkout whenever you are ready.
+        </p>
+        <table style="width:100%;border-collapse:collapse;margin:20px 0;">${rows}</table>
+        ${summaryRow('Cart subtotal', `${cart.currency || 'LKR'} ${Number(cart.subtotal || 0).toFixed(2)}`)}
+        <a href="${cart.checkoutUrl || `${getFrontendUrl()}/checkout`}" style="display:inline-block;margin-top:18px;padding:14px 22px;border-radius:12px;background:#16365f;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;">Return to Cart</a>
+      `,
+    }),
+    developmentPayload: {
+      cartId: cart?._id?.toString?.() || '',
+      email: cart?.email || '',
+      subtotal: cart?.subtotal || 0,
+    },
+  });
+};
+
 export {
   isEmailConfigured,
   sendOrderConfirmationEmail,
@@ -353,6 +464,10 @@ export {
   sendInvoiceEmail,
   sendRefundConfirmationEmail,
   sendPasswordResetEmail,
+  sendAdminTwoFactorCodeEmail,
+  sendSecurityAlertEmail,
   sendContactMessageNotification,
   sendContactAutoReply,
+  sendNewsletterWelcomeEmail,
+  sendAbandonedCartEmail,
 };

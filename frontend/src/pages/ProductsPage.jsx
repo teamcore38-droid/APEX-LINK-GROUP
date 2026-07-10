@@ -10,6 +10,7 @@ import {
   SHOP_STOCK_FILTER_OPTIONS,
   normalizeProductPayload,
 } from '../utils/productUi';
+import { applySeo } from '../utils/seo';
 
 const INITIAL_FILTERS = {
   keyword: '',
@@ -17,6 +18,9 @@ const INITIAL_FILTERS = {
   minPrice: '',
   maxPrice: '',
   stock: '',
+  brand: '',
+  origin: '',
+  rating: '',
   sort: '',
 };
 
@@ -36,6 +40,7 @@ const ProductsPage = () => {
     hasNextPage: false,
     hasPrevPage: false,
   });
+  const [facets, setFacets] = useState({ categories: [], brands: [], origins: [], availability: [], priceRange: {} });
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -56,6 +61,14 @@ const ProductsPage = () => {
   }, [searchInput]);
 
   useEffect(() => {
+    applySeo({
+      title: 'Shop Premium Products',
+      description: 'Browse Apex Link Group products across textiles, food, technology, industrial equipment, and more.',
+      keywords: ['global marketplace', 'premium products', 'Apex Link Group'],
+      canonicalUrl: `${window.location.origin}/products`,
+      type: 'website',
+    });
+
     const fetchCategories = async () => {
       try {
         const { data } = await axios.get('/api/categories');
@@ -76,7 +89,7 @@ const ProductsPage = () => {
       setError('');
 
       try {
-        const { data } = await axios.get('/api/products', {
+        const { data } = await axios.get('/api/customer/search', {
           params: {
             ...filters,
             page,
@@ -86,6 +99,7 @@ const ProductsPage = () => {
 
         const payload = normalizeProductPayload(data);
         setProducts(payload.products);
+        setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
         setMeta({
           currentPage: payload.currentPage,
           totalPages: payload.totalPages,
@@ -126,12 +140,31 @@ const ProductsPage = () => {
 
   const categoryOptions = [
     { value: '', label: 'All Categories' },
-    ...(!categoriesLoading
-      ? categories.map((category) => ({
-          value: category.slug,
-          label: category.name,
+    ...(facets.categories?.length
+      ? facets.categories.filter((facet) => facet._id).map((facet) => ({
+          value: facet._id,
+          label: `${facet._id} (${facet.count})`,
         }))
-      : []),
+      : !categoriesLoading
+        ? categories.map((category) => ({
+            value: category.name,
+            label: category.name,
+          }))
+        : []),
+  ];
+  const brandOptions = [
+    { value: '', label: 'All Brands' },
+    ...(facets.brands || []).filter((facet) => facet._id).map((facet) => ({
+      value: facet._id,
+      label: `${facet._id} (${facet.count})`,
+    })),
+  ];
+  const originOptions = [
+    { value: '', label: 'All Origins' },
+    ...(facets.origins || []).filter((facet) => facet._id).map((facet) => ({
+      value: facet._id,
+      label: `${facet._id} (${facet.count})`,
+    })),
   ];
 
   return (
@@ -216,12 +249,49 @@ const ProductsPage = () => {
 
             <label className="block">
               <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+                Brand
+              </span>
+              <CustomSelect
+                value={filters.brand}
+                onChange={(nextValue) => updateFilter('brand', nextValue)}
+                options={brandOptions}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+                Origin
+              </span>
+              <CustomSelect
+                value={filters.origin}
+                onChange={(nextValue) => updateFilter('origin', nextValue)}
+                options={originOptions}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                 Availability
               </span>
               <CustomSelect
                 value={filters.stock}
                 onChange={(nextValue) => updateFilter('stock', nextValue)}
                 options={SHOP_STOCK_FILTER_OPTIONS}
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+                Minimum Rating
+              </span>
+              <CustomSelect
+                value={filters.rating}
+                onChange={(nextValue) => updateFilter('rating', nextValue)}
+                options={[
+                  { value: '', label: 'Any Rating' },
+                  { value: '4', label: '4+ Stars' },
+                  { value: '3', label: '3+ Stars' },
+                ]}
               />
             </label>
 

@@ -31,8 +31,18 @@ const orderSchema = mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
       ref: 'User',
+      default: null,
+    },
+    guestCheckout: {
+      type: Boolean,
+      default: false,
+    },
+    guestCustomer: {
+      name: { type: String, default: '', trim: true },
+      email: { type: String, default: '', trim: true, lowercase: true },
+      phone: { type: String, default: '', trim: true },
+      accessToken: { type: String, default: '', select: false },
     },
     orderItems: [
       {
@@ -45,6 +55,21 @@ const orderSchema = mongoose.Schema(
           required: true,
           ref: 'Product',
         },
+        vendor: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Vendor',
+          default: null,
+        },
+        vendorName: { type: String, default: '' },
+        variantId: {
+          type: mongoose.Schema.Types.ObjectId,
+          default: null,
+        },
+        variantLabel: { type: String, default: '' },
+        sku: { type: String, default: '' },
+        commissionRate: { type: Number, default: 0 },
+        commissionAmount: { type: Number, default: 0 },
+        vendorNetAmount: { type: Number, default: 0 },
       },
     ],
     shippingAddress: {
@@ -63,6 +88,29 @@ const orderSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    currency: {
+      type: String,
+      default: 'LKR',
+      uppercase: true,
+      trim: true,
+    },
+    exchangeRate: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
+    couponCode: {
+      type: String,
+      default: '',
+      uppercase: true,
+      trim: true,
+    },
+    giftCardCode: {
+      type: String,
+      default: '',
+      uppercase: true,
+      trim: true,
+    },
     paymentProvider: {
       type: String,
       default: 'Manual',
@@ -75,6 +123,24 @@ const orderSchema = mongoose.Schema(
       type: String,
       enum: PAYMENT_STATUS_VALUES,
       default: 'Payment Pending',
+    },
+    checkoutIntegrity: {
+      clientReportedTotal: { type: Number, default: null },
+      serverCalculatedTotal: { type: Number, default: 0 },
+      tamperDetected: { type: Boolean, default: false },
+      tamperReasons: { type: [String], default: [] },
+      checkedAt: { type: Date },
+    },
+    fraudRisk: {
+      score: { type: Number, default: 0 },
+      level: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'low',
+      },
+      reasons: { type: [String], default: [] },
+      checkedAt: { type: Date },
+      paymentBlockedAt: { type: Date },
     },
     paymentResult: {
       id: { type: String, default: '' },
@@ -127,10 +193,46 @@ const orderSchema = mongoose.Schema(
       required: true,
       default: 0.0,
     },
+    discountPrice: {
+      type: Number,
+      required: true,
+      default: 0.0,
+    },
+    giftCardAmount: {
+      type: Number,
+      required: true,
+      default: 0.0,
+    },
+    promotionsCommittedAt: {
+      type: Date,
+    },
     totalPrice: {
       type: Number,
       required: true,
       default: 0.0,
+    },
+    taxBreakdown: [
+      {
+        label: { type: String, default: 'Sales Tax' },
+        rate: { type: Number, default: 0 },
+        amount: { type: Number, default: 0 },
+      },
+    ],
+    shippingRate: {
+      carrier: { type: String, default: '' },
+      service: { type: String, default: '' },
+      estimatedDaysMin: { type: Number, default: 0 },
+      estimatedDaysMax: { type: Number, default: 0 },
+    },
+    inventoryStatus: {
+      type: String,
+      enum: ['Not Reserved', 'Reserved', 'Deducted', 'Released'],
+      default: 'Not Reserved',
+    },
+    inventoryEventsAppliedAt: {
+      reservedAt: { type: Date },
+      deductedAt: { type: Date },
+      releasedAt: { type: Date },
     },
     isPaid: {
       type: Boolean,
@@ -158,9 +260,57 @@ const orderSchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    courierName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    trackingUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     deliveryNote: {
       type: String,
       default: '',
+    },
+    shipmentUpdates: [
+      {
+        courier: { type: String, default: '', trim: true },
+        trackingNumber: { type: String, default: '', trim: true },
+        status: { type: String, default: '', trim: true },
+        location: { type: String, default: '', trim: true },
+        message: { type: String, default: '', trim: true },
+        trackingUrl: { type: String, default: '', trim: true },
+        occurredAt: { type: Date, default: Date.now },
+        createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        createdByName: { type: String, default: '', trim: true },
+      },
+    ],
+    cancellationRequests: [
+      {
+        requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        requesterName: { type: String, default: '', trim: true },
+        requesterEmail: { type: String, default: '', trim: true, lowercase: true },
+        reason: { type: String, required: true, trim: true },
+        status: {
+          type: String,
+          enum: ['Pending', 'Approved', 'Rejected', 'Cancelled'],
+          default: 'Pending',
+        },
+        adminNote: { type: String, default: '', trim: true },
+        reviewedAt: { type: Date },
+        reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+        reviewedByName: { type: String, default: '', trim: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    loyaltyPointsAwarded: {
+      type: Number,
+      default: 0,
+    },
+    loyaltyPointsAwardedAt: {
+      type: Date,
     },
     statusHistory: [
       {

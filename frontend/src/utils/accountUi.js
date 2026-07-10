@@ -3,6 +3,8 @@ export const ACCOUNT_TABS = [
   { id: 'profile', label: 'Profile Details' },
   { id: 'addresses', label: 'Addresses' },
   { id: 'orders', label: 'My Orders' },
+  { id: 'wishlist', label: 'Wishlist' },
+  { id: 'returns', label: 'Returns' },
   { id: 'password', label: 'Change Password' },
 ];
 

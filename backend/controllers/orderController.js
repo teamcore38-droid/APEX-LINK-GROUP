@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
 import { normalizeAddressPayload, saveAddressToUser } from '../utils/addressBook.js';
@@ -15,6 +16,27 @@ import {
   createStatusEmailKey,
   maybeSendStatusEmail,
 } from '../utils/orderPaymentLifecycle.js';
+import {
+  calculateOrderPricing,
+  commitPromotionsForOrder,
+  getShippingOptions,
+} from '../utils/commerceService.js';
+import {
+  applyReservation,
+  deductReservedInventory,
+  releaseReservedInventory,
+} from '../utils/inventoryService.js';
+import { syncVendorOrdersForOrder } from '../utils/vendorService.js';
+import { hasPermission } from '../utils/permissions.js';
+import { recordAuditLog } from '../utils/auditService.js';
+import { awardOrderLoyaltyPoints } from '../utils/loyaltyService.js';
+import { notifyOrderEvent } from '../utils/pushService.js';
+import { emitWebhookEvent } from '../utils/webhookService.js';
+import {
+  assessOrderFraud,
+  buildCheckoutIntegrity,
+  recordFraudSignal,
+} from '../utils/fraudService.js';
 
 const VALID_ORDER_STATUSES = [
   'Processing',
@@ -83,6 +105,13 @@ const buildNormalizedShippingAddress = (payload = {}, fallbackUser = null) => {
     country: normalized.country,
   };
 };
+
+const buildGuestCustomer = (shippingAddress = {}) => ({
+  name: shippingAddress.fullName || '',
+  email: String(shippingAddress.email || '').trim().toLowerCase(),
+  phone: shippingAddress.phone || '',
+  accessToken: crypto.randomBytes(24).toString('hex'),
+});
 
 const validateShippingAddress = (address) => {
   if (!address.fullName) {
@@ -201,8 +230,17 @@ const buildInvoicePayload = (order) => ({
     subtotal: Number(order.itemsPrice || 0),
     shipping: Number(order.shippingPrice || 0),
     tax: Number(order.taxPrice || 0),
+    discount: Number(order.discountPrice || 0),
+    giftCard: Number(order.giftCardAmount || 0),
     total: Number(order.totalPrice || 0),
+    currency: order.currency || 'LKR',
+    taxBreakdown: order.taxBreakdown || [],
   },
+  promotions: {
+    couponCode: order.couponCode || '',
+    giftCardCode: order.giftCardCode || '',
+  },
+  shippingRate: order.shippingRate || {},
   payment: {
     method: order.paymentMethod || '',
     provider: order.paymentProvider || 'Manual',
@@ -229,7 +267,24 @@ const buildInvoicePayload = (order) => ({
 const getOrderRecipient = (order) => order?.shippingAddress?.email || order?.user?.email || '';
 
 const isOrderOwnerOrAdmin = (order, user) =>
-  Boolean(user?.isAdmin || order.user?.toString?.() === user?._id?.toString?.());
+  Boolean(
+    user?.isAdmin ||
+      hasPermission(user, 'orders:read') ||
+      order.user?.toString?.() === user?._id?.toString?.()
+  );
+
+const isGuestOrderAccessor = (order, payload = {}) => {
+  const email = String(payload.email || payload.guestEmail || '').trim().toLowerCase();
+  const accessToken = String(payload.accessToken || payload.guestAccessToken || '').trim();
+  const orderEmail = String(order?.guestCustomer?.email || order?.shippingAddress?.email || '').toLowerCase();
+
+  return Boolean(
+    order?.guestCheckout &&
+      email &&
+      email === orderEmail &&
+      (!order.guestCustomer?.accessToken || accessToken === order.guestCustomer.accessToken)
+  );
+};
 
 const buildOrderNotificationChanges = (previousOrder, nextOrder) => {
   const changes = [];
@@ -274,10 +329,10 @@ const addOrderItems = async (req, res) => {
     shippingAddress,
     paymentMethod,
     paymentProvider,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    totalPrice,
+    couponCode = '',
+    giftCardCode = '',
+    shippingRateId = '',
+    currency = '',
     saveAddress = false,
     setDefaultAddress = false,
   } = req.body;
@@ -304,18 +359,36 @@ const addOrderItems = async (req, res) => {
     ).trim();
     const initialPaymentStatus =
       normalizedPaymentProvider === 'Stripe' ? 'Payment Pending' : 'Payment Pending';
+    const pricing = await calculateOrderPricing({
+      cartItems: orderItems,
+      shippingAddress: normalizedShippingAddress,
+      couponCode,
+      giftCardCode,
+      shippingRateId,
+      currency,
+    });
+    const checkoutIntegrity = buildCheckoutIntegrity(pricing, req.body);
 
     const order = new Order({
-      orderItems,
+      orderItems: pricing.orderItems,
       user: req.user._id,
       shippingAddress: normalizedShippingAddress,
       paymentMethod: normalizedPaymentMethod,
       paymentProvider: normalizedPaymentProvider,
       paymentStatus: initialPaymentStatus,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      totalPrice,
+      currency: pricing.currency,
+      exchangeRate: pricing.exchangeRate,
+      couponCode: pricing.couponCode,
+      giftCardCode: pricing.giftCardCode,
+      itemsPrice: pricing.itemsPrice,
+      taxPrice: pricing.taxPrice,
+      shippingPrice: pricing.shippingPrice,
+      discountPrice: pricing.discountPrice,
+      giftCardAmount: pricing.giftCardAmount,
+      totalPrice: pricing.totalPrice,
+      taxBreakdown: pricing.taxBreakdown,
+      shippingRate: pricing.shippingRate,
+      checkoutIntegrity,
       statusHistory: [
         createHistoryEntry({
           order: { orderStatus: 'Processing' },
@@ -328,8 +401,14 @@ const addOrderItems = async (req, res) => {
         }),
       ],
     });
+    order.fraudRisk = await assessOrderFraud(order, req);
 
+    await applyReservation({ order, actor: req.user });
     const createdOrder = await order.save();
+    if (checkoutIntegrity.tamperDetected) {
+      await recordFraudSignal(req, createdOrder, 'checkout.tamper.detected', order.fraudRisk);
+    }
+    await syncVendorOrdersForOrder(createdOrder);
     const populatedOrder = await Order.findById(createdOrder._id).populate(
       'user',
       'name email phone'
@@ -356,10 +435,112 @@ const addOrderItems = async (req, res) => {
       await sendOrderConfirmationEmail(populatedOrder);
     }
 
+    await notifyOrderEvent(populatedOrder, 'order.created');
+    await emitWebhookEvent('order.created', populatedOrder.toObject(), {
+      resourceType: 'Order',
+      resourceId: populatedOrder._id.toString(),
+    });
+
     res.status(201).json(populatedOrder);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(400).json({ message: error.message || 'Unable to create order' });
+  }
+};
+
+// @desc    Create new guest order
+// @route   POST /api/orders/guest
+// @access  Public
+const addGuestOrderItems = async (req, res) => {
+  const {
+    orderItems,
+    shippingAddress,
+    paymentMethod = 'Development Placeholder',
+    couponCode = '',
+    giftCardCode = '',
+    shippingRateId = '',
+    currency = '',
+  } = req.body;
+
+  if (!orderItems || orderItems.length === 0) {
+    return res.status(400).json({ message: 'No order items' });
+  }
+
+  try {
+    const normalizedShippingAddress = buildNormalizedShippingAddress(shippingAddress, null);
+    const shippingValidationError = validateShippingAddress(normalizedShippingAddress);
+
+    if (shippingValidationError) {
+      return res.status(400).json({ message: shippingValidationError });
+    }
+
+    const guestCustomer = buildGuestCustomer(normalizedShippingAddress);
+    const pricing = await calculateOrderPricing({
+      cartItems: orderItems,
+      shippingAddress: normalizedShippingAddress,
+      couponCode,
+      giftCardCode,
+      shippingRateId,
+      currency,
+    });
+    const checkoutIntegrity = buildCheckoutIntegrity(pricing, req.body);
+
+    const order = new Order({
+      orderItems: pricing.orderItems,
+      user: null,
+      guestCheckout: true,
+      guestCustomer,
+      shippingAddress: normalizedShippingAddress,
+      paymentMethod,
+      paymentProvider: 'Manual',
+      paymentStatus: 'Payment Pending',
+      currency: pricing.currency,
+      exchangeRate: pricing.exchangeRate,
+      couponCode: pricing.couponCode,
+      giftCardCode: pricing.giftCardCode,
+      itemsPrice: pricing.itemsPrice,
+      taxPrice: pricing.taxPrice,
+      shippingPrice: pricing.shippingPrice,
+      discountPrice: pricing.discountPrice,
+      giftCardAmount: pricing.giftCardAmount,
+      totalPrice: pricing.totalPrice,
+      taxBreakdown: pricing.taxBreakdown,
+      shippingRate: pricing.shippingRate,
+      checkoutIntegrity,
+      statusHistory: [
+        createHistoryEntry({
+          order: { orderStatus: 'Processing' },
+          status: 'Processing',
+          note: 'Guest order created and awaiting payment confirmation.',
+          user: { name: guestCustomer.name, email: guestCustomer.email },
+        }),
+      ],
+    });
+    order.fraudRisk = await assessOrderFraud(order, req);
+
+    await applyReservation({
+      order,
+      actor: { name: guestCustomer.name, email: guestCustomer.email },
+    });
+    const createdOrder = await order.save();
+    if (checkoutIntegrity.tamperDetected) {
+      await recordFraudSignal(req, createdOrder, 'checkout.tamper.detected', order.fraudRisk);
+    }
+    await syncVendorOrdersForOrder(createdOrder);
+    await sendOrderConfirmationEmail(createdOrder);
+    await notifyOrderEvent(createdOrder, 'order.created');
+    await emitWebhookEvent('order.created', createdOrder.toObject(), {
+      resourceType: 'Order',
+      resourceId: createdOrder._id.toString(),
+    });
+
+    res.status(201).json({
+      ...createdOrder.toObject(),
+      guestAccessToken: guestCustomer.accessToken,
+    });
+  } catch (error) {
+    console.error('[orderController:addGuestOrderItems]', error);
+    res.status(400).json({ message: error.message || 'Unable to create guest order' });
   }
 };
 
@@ -539,7 +720,7 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (!req.user.isAdmin && order.user._id.toString() !== req.user._id.toString()) {
+    if (!isOrderOwnerOrAdmin(order, req.user)) {
       return res.status(401).json({ message: 'Not authorized to view this order' });
     }
 
@@ -629,12 +810,21 @@ const markOrderAsPaid = async (req, res) => {
     };
     order.paymentProvider = 'Stripe';
     order.paymentIntentId = paymentIntent.id;
+    await deductReservedInventory({ order, actor: req.user });
+    await commitPromotionsForOrder(order);
+    await awardOrderLoyaltyPoints(order, req.user);
 
     const updatedOrder = await order.save();
+    await syncVendorOrdersForOrder(updatedOrder);
     const populatedOrder = await Order.findById(updatedOrder._id).populate(
       'user',
       'name email phone'
     );
+    await notifyOrderEvent(populatedOrder, 'order.paid');
+    await emitWebhookEvent('order.paid', populatedOrder.toObject(), {
+      resourceType: 'Order',
+      resourceId: populatedOrder._id.toString(),
+    });
 
     res.json(populatedOrder);
   } catch (error) {
@@ -672,6 +862,8 @@ const updateOrderStatus = async (req, res) => {
       isDelivered,
       deliveredAt,
       trackingNumber,
+      courierName,
+      trackingUrl,
       deliveryNote,
       paymentStatus,
     } = req.body;
@@ -682,10 +874,26 @@ const updateOrderStatus = async (req, res) => {
       }
 
       order.orderStatus = orderStatus;
+
+      if (orderStatus === 'Cancelled') {
+        await releaseReservedInventory({
+          order,
+          actor: req.user,
+          note: `Released reservation after order was cancelled by ${req.user.name || req.user.email}.`,
+        });
+      }
     }
 
     if (trackingNumber !== undefined) {
       order.trackingNumber = String(trackingNumber).trim();
+    }
+
+    if (courierName !== undefined) {
+      order.courierName = String(courierName).trim();
+    }
+
+    if (trackingUrl !== undefined) {
+      order.trackingUrl = String(trackingUrl).trim();
     }
 
     if (deliveryNote !== undefined) {
@@ -714,6 +922,11 @@ const updateOrderStatus = async (req, res) => {
 
         order.paidAt = paidAt ? new Date(paidAt) : order.paidAt || new Date();
         order.paymentStatus = 'Paid';
+        if (!previousState.isPaid) {
+          await deductReservedInventory({ order, actor: req.user });
+          await commitPromotionsForOrder(order);
+          await awardOrderLoyaltyPoints(order, req.user);
+        }
       } else {
         order.paidAt = undefined;
         order.paymentStatus =
@@ -774,6 +987,14 @@ const updateOrderStatus = async (req, res) => {
     }
 
     const updatedOrder = await order.save();
+    await syncVendorOrdersForOrder(updatedOrder);
+    await recordAuditLog(req, 'orders.status.update', 'Order', updatedOrder._id, {
+      previousState,
+      orderStatus: updatedOrder.orderStatus,
+      paymentStatus: updatedOrder.paymentStatus,
+      isDelivered: updatedOrder.isDelivered,
+      isPaid: updatedOrder.isPaid,
+    });
     const populatedOrder = await Order.findById(updatedOrder._id).populate('user', 'name email phone');
 
     if (
@@ -784,6 +1005,11 @@ const updateOrderStatus = async (req, res) => {
     ) {
       await maybeSendStatusEmail(populatedOrder, createStatusEmailKey(populatedOrder));
     }
+    await notifyOrderEvent(populatedOrder, 'order.status.updated');
+    await emitWebhookEvent('order.status.updated', populatedOrder.toObject(), {
+      resourceType: 'Order',
+      resourceId: populatedOrder._id.toString(),
+    });
 
     res.json(populatedOrder);
   } catch (error) {
@@ -833,6 +1059,7 @@ const trackOrder = async (req, res) => {
     const matchesPhone = normalizedPhone && normalizedPhone === ownerPhone;
     const isAuthorizedUser =
       req.user?.isAdmin ||
+      hasPermission(req.user, 'orders:read') ||
       req.user?._id?.toString?.() === order.user?._id?.toString?.() ||
       matchesEmail ||
       matchesPhone;
@@ -854,6 +1081,8 @@ const trackOrder = async (req, res) => {
       isPaid: order.isPaid,
       isDelivered: order.isDelivered,
       trackingNumber: order.trackingNumber || '',
+      courierName: order.courierName || '',
+      trackingUrl: order.trackingUrl || '',
       deliveryNote: order.deliveryNote || '',
       shippingAddress: {
         fullName: order.shippingAddress?.fullName || order.user?.name || '',
@@ -869,11 +1098,17 @@ const trackOrder = async (req, res) => {
       },
       estimatedDelivery,
       createdAt: order.createdAt,
+      currency: order.currency || 'LKR',
       totalPrice: order.totalPrice,
       itemsPrice: order.itemsPrice,
       shippingPrice: order.shippingPrice,
       taxPrice: order.taxPrice,
+      discountPrice: order.discountPrice || 0,
+      giftCardAmount: order.giftCardAmount || 0,
+      shippingRate: order.shippingRate || {},
       statusHistory: mapStatusHistory(order.statusHistory || []),
+      shipmentUpdates: order.shipmentUpdates || [],
+      cancellationRequests: order.cancellationRequests || [],
       items: order.orderItems.map((item) => ({
         name: item.name,
         qty: item.qty,
@@ -882,7 +1117,9 @@ const trackOrder = async (req, res) => {
       })),
       canViewFullDetails:
         Boolean(req.user) &&
-        (req.user.isAdmin || req.user._id.toString() === order.user?._id?.toString?.()),
+        (req.user.isAdmin ||
+          hasPermission(req.user, 'orders:read') ||
+          req.user._id.toString() === order.user?._id?.toString?.()),
     });
   } catch (error) {
     if (error.name === 'CastError') {
@@ -905,7 +1142,7 @@ const getOrderInvoice = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (!req.user.isAdmin && order.user._id.toString() !== req.user._id.toString()) {
+    if (!isOrderOwnerOrAdmin(order, req.user)) {
       return res.status(401).json({ message: 'Not authorized to access this invoice' });
     }
 
@@ -960,8 +1197,230 @@ const getOrderPackingSlip = async (req, res) => {
   }
 };
 
+// @desc    Quote server-side totals before creating an order
+// @route   POST /api/orders/quote
+// @access  Private
+const quoteOrder = async (req, res) => {
+  const {
+    orderItems = [],
+    shippingAddress = {},
+    couponCode = '',
+    giftCardCode = '',
+    shippingRateId = '',
+    currency = '',
+  } = req.body;
+
+  try {
+    const normalizedShippingAddress = buildNormalizedShippingAddress(shippingAddress, req.user);
+    const shippingValidationError = validateShippingAddress(normalizedShippingAddress);
+
+    if (shippingValidationError) {
+      return res.status(400).json({ message: shippingValidationError });
+    }
+
+    const quote = await calculateOrderPricing({
+      cartItems: orderItems,
+      shippingAddress: normalizedShippingAddress,
+      couponCode,
+      giftCardCode,
+      shippingRateId,
+      currency,
+    });
+
+    res.json(quote);
+  } catch (error) {
+    console.error('[orderController:quoteOrder]', error);
+    res.status(400).json({ message: error.message || 'Unable to quote order right now' });
+  }
+};
+
+// @desc    Get real-time configured shipping rates for a cart/address
+// @route   POST /api/orders/shipping-rates
+// @access  Private
+const getOrderShippingRates = async (req, res) => {
+  const { orderItems = [], shippingAddress = {}, currency = '' } = req.body;
+
+  try {
+    const normalizedShippingAddress = buildNormalizedShippingAddress(shippingAddress, req.user);
+    const quote = await calculateOrderPricing({
+      cartItems: orderItems,
+      shippingAddress: normalizedShippingAddress,
+      currency,
+    });
+    const rates = await getShippingOptions({
+      shippingAddress: normalizedShippingAddress,
+      subtotal: quote.itemsPrice / (quote.exchangeRate || 1),
+      currency: quote.currency,
+    });
+
+    res.json(rates);
+  } catch (error) {
+    console.error('[orderController:getOrderShippingRates]', error);
+    res.status(400).json({ message: error.message || 'Unable to load shipping rates right now' });
+  }
+};
+
+// @desc    Request order cancellation
+// @route   POST /api/orders/:id/cancellation-requests
+// @access  Private or guest token/email
+const createCancellationRequest = async (req, res) => {
+  const reason = String(req.body.reason || '').trim();
+
+  if (!reason) {
+    return res.status(400).json({ message: 'Cancellation reason is required' });
+  }
+
+  try {
+    const order = await Order.findById(req.params.id).select('+guestCustomer.accessToken');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const authorized =
+      isOrderOwnerOrAdmin(order, req.user) ||
+      isGuestOrderAccessor(order, {
+        email: req.body.email,
+        guestAccessToken: req.body.guestAccessToken,
+      });
+
+    if (!authorized) {
+      return res.status(401).json({ message: 'Not authorized to request cancellation for this order' });
+    }
+
+    if (['Delivered', 'Cancelled'].includes(order.orderStatus)) {
+      return res.status(400).json({ message: 'This order cannot be cancelled from its current status' });
+    }
+
+    order.cancellationRequests.push({
+      requestedBy: req.user?._id || null,
+      requesterName: req.user?.name || order.guestCustomer?.name || order.shippingAddress?.fullName || '',
+      requesterEmail: req.user?.email || order.guestCustomer?.email || order.shippingAddress?.email || '',
+      reason,
+      status: 'Pending',
+    });
+    const savedOrder = await order.save();
+
+    res.status(201).json(savedOrder.cancellationRequests[savedOrder.cancellationRequests.length - 1]);
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    console.error('[orderController:createCancellationRequest]', error);
+    res.status(500).json({ message: 'Unable to create cancellation request' });
+  }
+};
+
+// @desc    Review cancellation request
+// @route   PUT /api/orders/:id/cancellation-requests/:requestId
+// @access  Private/Admin staff
+const reviewCancellationRequest = async (req, res) => {
+  const { status = '', adminNote = '' } = req.body;
+
+  if (!['Approved', 'Rejected', 'Cancelled'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid cancellation review status' });
+  }
+
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return res.status(404).json({ message: 'Order not found' });
+  }
+
+  const cancellationRequest = order.cancellationRequests.id(req.params.requestId);
+
+  if (!cancellationRequest) {
+    return res.status(404).json({ message: 'Cancellation request not found' });
+  }
+
+  cancellationRequest.status = status;
+  cancellationRequest.adminNote = String(adminNote || '').trim();
+  cancellationRequest.reviewedAt = new Date();
+  cancellationRequest.reviewedBy = req.user._id;
+  cancellationRequest.reviewedByName = req.user.name || req.user.email || 'Admin';
+
+  if (status === 'Approved') {
+    order.orderStatus = 'Cancelled';
+    order.paymentStatus = order.isPaid ? order.paymentStatus : 'Cancelled';
+    await releaseReservedInventory({
+      order,
+      actor: req.user,
+      note: `Released reservation after cancellation request was approved by ${req.user.name || req.user.email}.`,
+    });
+  }
+
+  const savedOrder = await order.save();
+  await syncVendorOrdersForOrder(savedOrder);
+  await recordAuditLog(req, 'orders.cancellation.review', 'Order', savedOrder._id, {
+    cancellationRequestId: req.params.requestId,
+    status,
+  });
+  await notifyOrderEvent(savedOrder, 'order.cancellation.reviewed', {
+    message: `Your cancellation request was ${status.toLowerCase()}.`,
+  });
+  await emitWebhookEvent('order.cancellation.reviewed', savedOrder.toObject(), {
+    resourceType: 'Order',
+    resourceId: savedOrder._id.toString(),
+  });
+
+  res.json(savedOrder);
+};
+
+// @desc    Add courier shipment update
+// @route   POST /api/orders/:id/shipment-updates
+// @access  Private/Admin staff
+const addShipmentUpdate = async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (!order) {
+    return res.status(404).json({ message: 'Order not found' });
+  }
+
+  const update = {
+    courier: String(req.body.courier || req.body.courierName || order.courierName || '').trim(),
+    trackingNumber: String(req.body.trackingNumber || order.trackingNumber || '').trim(),
+    status: String(req.body.status || order.orderStatus || '').trim(),
+    location: String(req.body.location || '').trim(),
+    message: String(req.body.message || '').trim(),
+    trackingUrl: String(req.body.trackingUrl || order.trackingUrl || '').trim(),
+    occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt) : new Date(),
+    createdBy: req.user._id,
+    createdByName: req.user.name || req.user.email || 'Admin',
+  };
+
+  order.courierName = update.courier || order.courierName;
+  order.trackingNumber = update.trackingNumber || order.trackingNumber;
+  order.trackingUrl = update.trackingUrl || order.trackingUrl;
+  order.shipmentUpdates.push(update);
+
+  if (update.status && VALID_ORDER_STATUSES.includes(update.status)) {
+    order.orderStatus = update.status;
+  }
+
+  const savedOrder = await order.save();
+  await syncVendorOrdersForOrder(savedOrder);
+  await recordAuditLog(req, 'orders.shipment.update', 'Order', savedOrder._id, update);
+  await notifyOrderEvent(savedOrder, 'order.shipment.updated', {
+    message: update.message || `Shipment status updated to ${update.status || savedOrder.orderStatus}.`,
+  });
+  await emitWebhookEvent(
+    'order.shipment.updated',
+    { order: savedOrder.toObject(), shipmentUpdate: update },
+    {
+      resourceType: 'Order',
+      resourceId: savedOrder._id.toString(),
+    }
+  );
+
+  res.status(201).json(savedOrder);
+};
+
 export {
   addOrderItems,
+  addGuestOrderItems,
+  addShipmentUpdate,
+  createCancellationRequest,
   getOrders,
   getOrderById,
   getMyOrders,
@@ -970,4 +1429,7 @@ export {
   trackOrder,
   getOrderInvoice,
   getOrderPackingSlip,
+  quoteOrder,
+  reviewCancellationRequest,
+  getOrderShippingRates,
 };

@@ -1,0 +1,256 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Apex Link Group API",
+    "version": "1.0.0",
+    "description": "Public, customer, checkout, payment, privacy, mobile, and operations API documentation."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "requestId": { "type": "string" }
+        }
+      },
+      "ShippingAddress": {
+        "type": "object",
+        "required": ["fullName", "phone", "email", "addressLine1", "city", "state", "postalCode", "country"],
+        "properties": {
+          "fullName": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string" },
+          "addressLine1": { "type": "string" },
+          "addressLine2": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "postalCode": { "type": "string" },
+          "country": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Basic API health",
+        "responses": {
+          "200": { "description": "API is healthy" }
+        }
+      }
+    },
+    "/api/ops/health": {
+      "get": {
+        "summary": "Operational health with DB state",
+        "responses": {
+          "200": { "description": "Operational health response" }
+        }
+      }
+    },
+    "/api/ops/readiness": {
+      "get": {
+        "summary": "Readiness probe",
+        "responses": {
+          "200": { "description": "Ready" },
+          "503": { "description": "Not ready" }
+        }
+      }
+    },
+    "/api/ops/metrics": {
+      "get": {
+        "summary": "Prometheus-style metrics",
+        "responses": {
+          "200": { "description": "Metrics text" }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "summary": "List products",
+        "responses": {
+          "200": { "description": "Product list" }
+        }
+      }
+    },
+    "/api/products/{id}": {
+      "get": {
+        "summary": "Get product by ID",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Product" },
+          "404": { "description": "Product not found" }
+        }
+      }
+    },
+    "/api/orders/quote": {
+      "post": {
+        "summary": "Server-side checkout quote",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderItems": { "type": "array" },
+                  "shippingAddress": { "$ref": "#/components/schemas/ShippingAddress" },
+                  "couponCode": { "type": "string" },
+                  "giftCardCode": { "type": "string" },
+                  "currency": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Server-calculated totals" },
+          "400": { "description": "Invalid quote request" }
+        }
+      }
+    },
+    "/api/orders/guest": {
+      "post": {
+        "summary": "Create guest order",
+        "responses": {
+          "201": { "description": "Guest order created" },
+          "400": { "description": "Invalid order" }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "summary": "Create authenticated order",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Order created" },
+          "401": { "description": "Authentication required" }
+        }
+      }
+    },
+    "/api/payments/create-payment-intent": {
+      "post": {
+        "summary": "Create Stripe payment intent with fraud screening",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Payment intent client secret" },
+          "403": { "description": "Payment blocked for manual review" }
+        }
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "summary": "Login; may require admin 2FA",
+        "responses": {
+          "200": { "description": "User session or 2FA challenge" },
+          "423": { "description": "Account locked" }
+        }
+      }
+    },
+    "/api/users/login/2fa": {
+      "post": {
+        "summary": "Verify admin 2FA challenge",
+        "responses": {
+          "200": { "description": "User session" },
+          "400": { "description": "Invalid challenge" }
+        }
+      }
+    },
+    "/api/privacy/consent": {
+      "get": {
+        "summary": "Get consent record",
+        "responses": {
+          "200": { "description": "Consent record" }
+        }
+      },
+      "post": {
+        "summary": "Save consent preferences",
+        "responses": {
+          "201": { "description": "Consent saved" }
+        }
+      }
+    },
+    "/api/privacy/export": {
+      "get": {
+        "summary": "Export authenticated user data",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Data export" }
+        }
+      }
+    },
+    "/api/privacy/delete-account": {
+      "post": {
+        "summary": "Confirm privacy deletion/anonymization",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Data anonymized" }
+        }
+      }
+    },
+    "/api/v1/mobile/config": {
+      "get": {
+        "summary": "Mobile app config",
+        "responses": {
+          "200": { "description": "Mobile config" }
+        }
+      }
+    },
+    "/api/marketing/newsletter": {
+      "post": {
+        "summary": "Subscribe an email address to newsletter updates",
+        "responses": {
+          "201": { "description": "Subscriber saved" },
+          "400": { "description": "Invalid email" }
+        }
+      }
+    },
+    "/api/marketing/abandoned-cart": {
+      "post": {
+        "summary": "Record or update an abandoned cart snapshot",
+        "responses": {
+          "201": { "description": "Cart snapshot saved" }
+        }
+      }
+    },
+    "/api/analytics/events": {
+      "post": {
+        "summary": "Record analytics events",
+        "responses": {
+          "202": { "description": "Event accepted" }
+        }
+      }
+    },
+    "/api/seo/product/{id}": {
+      "get": {
+        "summary": "Get product SEO metadata and JSON-LD",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "SEO metadata" },
+          "404": { "description": "Product not found" }
+        }
+      }
+    },
+    "/sitemap.xml": {
+      "get": {
+        "summary": "Dynamic XML sitemap",
+        "responses": {
+          "200": { "description": "XML sitemap" }
+        }
+      }
+    }
+  }
+}

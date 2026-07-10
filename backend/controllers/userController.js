@@ -1,6 +1,8 @@
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
+import { getPermissionsForUser } from '../utils/permissions.js';
+import RefreshToken from '../models/refreshTokenModel.js';
+import SecurityEvent from '../models/securityEventModel.js';
 import {
   normalizeAddressPayload,
   validateAddressPayload,
@@ -9,14 +11,24 @@ import {
   saveAddressToUser,
 } from '../utils/addressBook.js';
 import { sendPasswordResetEmail } from '../utils/emailService.js';
+import {
+  adminRequiresTwoFactor,
+  clearRefreshCookie,
+  createTwoFactorChallenge,
+  generateAccessToken,
+  getRefreshTokenFromRequest,
+  hashValue,
+  isAccountLocked,
+  issueRefreshToken,
+  recordSecurityEvent,
+  registerFailedLogin,
+  registerSuccessfulLogin,
+  setRefreshCookie,
+  verifyTwoFactorChallenge,
+} from '../utils/securityService.js';
 
 const MIN_PASSWORD_LENGTH = 6;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const generateToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
-  });
 
 const sanitizePhone = (value = '') => value.toString().trim();
 
@@ -26,13 +38,31 @@ const serializeUser = (user) => ({
   email: user.email,
   phone: user.phone || '',
   isAdmin: user.isAdmin,
+  isStaff: Boolean(user.isStaff),
+  role: user.role || (user.isAdmin ? 'admin' : 'customer'),
+  staffStatus: user.staffStatus || 'Active',
+  permissions: getPermissionsForUser(user),
+  isVendor: Boolean(user.isVendor),
+  vendorStatus: user.vendorStatus || 'None',
+  security: {
+    adminTwoFactorEnabled: user.security?.adminTwoFactorEnabled !== false,
+    lastLoginAt: user.security?.lastLoginAt || null,
+    accountLockedUntil: user.security?.accountLockedUntil || null,
+  },
   createdAt: user.createdAt,
   addresses: user.addresses || [],
-  token: generateToken(user._id),
+  token: generateAccessToken(user._id),
 });
 
 const findUserByEmail = async (email) =>
   User.findOne({ email: String(email || '').trim().toLowerCase() });
+
+const issueLoginResponse = async (req, res, user, statusCode = 200) => {
+  await registerSuccessfulLogin(req, user);
+  const refreshToken = await issueRefreshToken(user, req);
+  setRefreshCookie(res, refreshToken.token);
+  return res.status(statusCode).json(serializeUser(user));
+};
 
 // @desc    Register a new user
 // @route   POST /api/users
@@ -81,7 +111,8 @@ const registerUser = async (req, res) => {
       password,
     });
 
-    res.status(201).json(serializeUser(user));
+    await recordSecurityEvent(req, 'account.registered', user);
+    await issueLoginResponse(req, res, user, 201);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -98,11 +129,148 @@ const authUser = async (req, res) => {
     const normalizedEmail = String(email).trim().toLowerCase();
     const user = await User.findOne({ email: normalizedEmail });
 
-    if (user && (await user.matchPassword(password))) {
-      return res.json(serializeUser(user));
+    if (user && isAccountLocked(user)) {
+      await recordSecurityEvent(req, 'login.blocked.locked', user, {}, 'critical');
+      return res.status(423).json({
+        message: 'Account is temporarily locked after repeated failed login attempts.',
+        accountLockedUntil: user.security.accountLockedUntil,
+      });
     }
 
-    res.status(401).json({ message: 'Invalid email or password' });
+    if (!user || !(await user.matchPassword(password))) {
+      await registerFailedLogin(req, user, normalizedEmail);
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (adminRequiresTwoFactor(user) && user.security?.adminTwoFactorEnabled !== false) {
+      const challenge = await createTwoFactorChallenge(req, user, 'admin-login');
+      return res.json({
+        requiresTwoFactor: true,
+        challengeId: challenge.challengeId,
+        expiresAt: challenge.expiresAt,
+        developmentCode: challenge.developmentCode,
+        message: 'Admin verification code required',
+      });
+    }
+
+    return issueLoginResponse(req, res, user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const verifyAdminTwoFactorLogin = async (req, res) => {
+  const { challengeId = '', code = '' } = req.body;
+
+  try {
+    const result = await verifyTwoFactorChallenge(req, {
+      challengeId,
+      code,
+      purpose: 'admin-login',
+    });
+
+    if (!result.ok) {
+      return res.status(400).json({ message: result.message });
+    }
+
+    return issueLoginResponse(req, res, result.user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const refreshAccessToken = async (req, res) => {
+  try {
+    const refreshToken = getRefreshTokenFromRequest(req);
+
+    if (!refreshToken) {
+      clearRefreshCookie(res);
+      return res.status(401).json({ message: 'Refresh token is required' });
+    }
+
+    const tokenHash = hashValue(refreshToken);
+    const tokenRecord = await RefreshToken.findOne({
+      tokenHash,
+      revokedAt: null,
+      expiresAt: { $gt: new Date() },
+    }).populate('user');
+
+    if (!tokenRecord?.user) {
+      clearRefreshCookie(res);
+      await recordSecurityEvent(req, 'session.refresh.invalid', null, {}, 'warning');
+      return res.status(401).json({ message: 'Session expired. Please sign in again.' });
+    }
+
+    const nextRefresh = await issueRefreshToken(tokenRecord.user, req, tokenRecord.family);
+    tokenRecord.revokedAt = new Date();
+    tokenRecord.replacedByTokenHash = nextRefresh.tokenHash;
+    await tokenRecord.save();
+    setRefreshCookie(res, nextRefresh.token);
+    await recordSecurityEvent(req, 'session.refresh', tokenRecord.user);
+    res.json(serializeUser(tokenRecord.user));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const logoutUser = async (req, res) => {
+  try {
+    const refreshToken = getRefreshTokenFromRequest(req);
+
+    if (refreshToken) {
+      await RefreshToken.findOneAndUpdate(
+        { tokenHash: hashValue(refreshToken), revokedAt: null },
+        { revokedAt: new Date() }
+      );
+    }
+
+    clearRefreshCookie(res);
+    await recordSecurityEvent(req, 'session.logout', req.user || null);
+    res.json({ message: 'Signed out successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const getSecurityEvents = async (req, res) => {
+  try {
+    const events = await SecurityEvent.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json(events);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const updateAdminTwoFactor = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!adminRequiresTwoFactor(user)) {
+      return res.status(400).json({ message: 'Two-factor controls apply to admin and staff accounts only' });
+    }
+
+    user.security = {
+      ...user.security,
+      adminTwoFactorEnabled: req.body.enabled !== false,
+    };
+    await user.save({ validateBeforeSave: false });
+    await recordSecurityEvent(req, user.security.adminTwoFactorEnabled ? '2fa.enabled' : '2fa.disabled', user, {}, 'warning');
+
+    res.json({
+      adminTwoFactorEnabled: user.security.adminTwoFactorEnabled,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -120,7 +288,10 @@ const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    res.json({
+      ...user.toObject(),
+      permissions: getPermissionsForUser(user),
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
@@ -451,8 +622,13 @@ const resetPassword = async (req, res) => {
 
 export {
   authUser,
+  verifyAdminTwoFactorLogin,
+  refreshAccessToken,
+  logoutUser,
   registerUser,
   getUserProfile,
+  getSecurityEvents,
+  updateAdminTwoFactor,
   updateUserProfile,
   getUserAddresses,
   createUserAddress,
