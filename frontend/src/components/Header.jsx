@@ -36,11 +36,11 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#2a140e] py-3 text-[#fff7ee] shadow-md lg:py-4">
       <div className="container mx-auto flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
-        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2.5">
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-1.5">
           <img
             src="/logo.webp"
             alt="Apex Fashion logo"
-            className="h-10 w-auto shrink-0 object-contain sm:h-12 xl:h-14"
+            className="h-12 w-auto shrink-0 object-contain sm:h-14 xl:h-16"
           />
           <span className="flex min-w-0 flex-col">
             <span className="whitespace-nowrap font-serif text-lg font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] xl:text-2xl xl:tracking-widest">
