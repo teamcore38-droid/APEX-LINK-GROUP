@@ -619,7 +619,7 @@ const ProductPage = () => {
               </Link>
             </div>
 
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="product-grid">
               {relatedProducts.map((relatedProduct) => (
                 <Product key={relatedProduct._id} product={relatedProduct} />
               ))}
@@ -633,7 +633,7 @@ const ProductPage = () => {
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">For You</p>
               <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Personalized recommendations</h2>
             </div>
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="product-grid">
               {recommendedProducts.map((recommendedProduct) => (
                 <Product key={recommendedProduct._id} product={recommendedProduct} />
               ))}

@@ -172,7 +172,7 @@ const ProductsPage = () => {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#ead6c6] to-transparent opacity-70" />
       <div className="pointer-events-none absolute left-0 top-0 h-64 w-64 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-multiply" />
 
-      <div className="relative z-10 container mx-auto max-w-7xl px-4">
+      <div className="relative z-10 container mx-auto max-w-7xl px-3 sm:px-4">
         <div className="rounded-[36px] bg-[#3a1b12] px-6 py-14 text-center text-white shadow-[0_24px_60px_rgba(53, 26, 17,0.25)] sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">The Global Product Library</p>
           <h1 className="mt-4 font-serif text-4xl font-bold text-[#fbf3ea] [text-shadow:0_4px_24px_rgba(0,0,0,0.35)] sm:text-6xl">
@@ -183,7 +183,7 @@ const ProductsPage = () => {
           </p>
         </div>
 
-        <div className="mt-10 rounded-[30px] bg-white p-6 shadow-[0_20px_60px_rgba(53, 26, 17,0.08)]">
+        <div className="mt-10 rounded-[30px] bg-white p-3 shadow-[0_20px_60px_rgba(53, 26, 17,0.08)] sm:p-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="relative w-full lg:max-w-md">
               <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -321,9 +321,9 @@ const ProductsPage = () => {
               {error}
             </div>
           ) : loading ? (
-            <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="product-grid mt-10">
               {[...Array(PRODUCT_PAGE_SIZE)].map((_, index) => (
-                <div key={index} className="h-[470px] animate-pulse rounded-[28px] bg-[#f8efe6]" />
+                <div key={index} className="min-h-[330px] animate-pulse rounded-2xl bg-[#f8efe6] sm:min-h-[430px]" />
               ))}
             </div>
           ) : products.length === 0 ? (
@@ -350,7 +350,7 @@ const ProductsPage = () => {
             </div>
           ) : (
             <>
-              <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="product-grid mt-10">
                 {products.map((product) => (
                   <Product key={product._id} product={product} />
                 ))}

@@ -364,7 +364,7 @@ const CustomerExperiencePage = () => {
             <h2 className="mb-5 flex items-center font-serif text-2xl font-bold text-brand-dark">
               <Sparkles className="mr-2 text-brand-accent" /> Recently Viewed
             </h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="product-grid">
               {recentlyViewed.slice(0, 4).map((product) => <Product key={product._id} product={product} />)}
             </div>
           </section>
@@ -373,7 +373,7 @@ const CustomerExperiencePage = () => {
         {recommendations.length > 0 && (
           <section className="mt-10">
             <h2 className="mb-5 font-serif text-2xl font-bold text-brand-dark">Recommended For You</h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="product-grid">
               {recommendations.slice(0, 4).map((product) => <Product key={product._id} product={product} />)}
             </div>
           </section>

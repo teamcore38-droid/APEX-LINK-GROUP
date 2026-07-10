@@ -24,9 +24,9 @@ const Product = ({ product }) => {
   };
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#ead6c6] bg-white shadow-[0_20px_50px_rgba(53, 26, 17,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(53, 26, 17,0.14)]">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#ead6c6] bg-white shadow-[0_12px_30px_rgba(53,26,17,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(53,26,17,0.14)]">
       <Link to={`/product/${product._id}`} className="relative block">
-        <div className="relative h-72 overflow-hidden bg-[#f4e7db]">
+        <div className="relative aspect-square overflow-hidden bg-[#f4e7db] sm:aspect-[4/3]">
           <img
             src={product.image}
             alt={product.name}
@@ -34,80 +34,82 @@ const Product = ({ product }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
 
-          {statusBadge && (
-            <span
-              className={`absolute left-4 top-4 inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] shadow-lg ${statusBadge.className}`}
-            >
-              {statusBadge.label}
-            </span>
-          )}
+          <div className="absolute inset-x-2 top-2 flex flex-col items-start gap-1 sm:inset-x-3 sm:top-3 lg:flex-row lg:items-center lg:justify-between">
+            {statusBadge && (
+              <span
+                className={`inline-flex max-w-full rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] shadow-lg sm:px-3 sm:text-[10px] sm:tracking-[0.12em] ${statusBadge.className}`}
+              >
+                {statusBadge.label}
+              </span>
+            )}
 
-          {showStockBadge && (
-            <span
-              className={`absolute right-4 top-4 inline-flex rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] ${stockBadge.className}`}
-            >
-              {stockBadge.label}
-            </span>
-          )}
+            {showStockBadge && (
+              <span
+                className={`inline-flex max-w-full rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] sm:px-3 sm:text-[10px] sm:tracking-[0.12em] ${stockBadge.className}`}
+              >
+                {stockBadge.label}
+              </span>
+            )}
+          </div>
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#c9822b]">
+      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4 xl:p-5">
+        <div className="mb-2 flex min-w-0 items-center justify-between gap-2 sm:mb-3">
+          <span className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-[#c9822b] sm:text-[10px] sm:tracking-[0.2em]">
             {product.category}
           </span>
           {product.weight && (
-            <span className="rounded-full bg-[#f5e9dd] px-3 py-1 text-[11px] font-semibold text-[#744126]">
+            <span className="hidden shrink-0 rounded-full bg-[#f5e9dd] px-2 py-1 text-[10px] font-semibold text-[#744126] sm:inline-flex">
               {product.weight}
             </span>
           )}
         </div>
 
         <Link to={`/product/${product._id}`} className="block">
-          <h3 className="font-serif text-2xl font-bold text-[#2a140e] transition-colors duration-200 group-hover:text-[#c9822b]">
+          <h3 className="line-clamp-2 min-h-10 break-words font-serif text-base font-bold leading-5 text-[#2a140e] transition-colors duration-200 group-hover:text-[#c9822b] sm:min-h-12 sm:text-lg sm:leading-6 xl:text-xl">
             {product.name}
           </h3>
         </Link>
 
-        <p className="mt-3 line-clamp-2 text-sm leading-7 text-gray-600">
+        <p className="mt-2 hidden text-sm leading-6 text-gray-600 sm:line-clamp-2">
           {product.shortDescription || product.description}
         </p>
 
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center text-[#d99a32]">
+        <div className="mt-3 flex items-center justify-between sm:mt-4">
+          <div className="flex min-w-0 flex-wrap items-center text-[#d99a32]">
             {[...Array(5)].map((_, index) => (
               <Star
                 key={index}
-                size={14}
+                size={12}
                 fill={index < Math.floor(product.rating || 0) ? 'currentColor' : 'none'}
                 className={
                   index < Math.floor(product.rating || 0) ? 'text-[#d99a32]' : 'text-[#ead6c6]'
                 }
               />
             ))}
-            <span className="ml-2 text-xs font-semibold text-gray-500">
+            <span className="ml-2 hidden text-xs font-semibold text-gray-500 sm:inline">
               {product.numReviews || 0} reviews
             </span>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-4 border-t border-[#efdfd2] pt-5">
+        <div className="mt-auto flex flex-col gap-3 border-t border-[#efdfd2] pt-3 sm:mt-5 sm:gap-4 sm:pt-4">
           <div>
             {product.compareAtPrice > product.price && (
-              <p className="text-sm text-gray-400 line-through">
+              <p className="text-xs text-gray-400 line-through sm:text-sm">
                 {formatCurrency(product.compareAtPrice)}
               </p>
             )}
-            <p className="font-serif text-3xl font-bold text-[#2a140e]">
+            <p className="break-words font-serif text-sm font-bold leading-tight text-[#2a140e] sm:text-xl xl:text-2xl">
               {formatCurrency(product.price)}
             </p>
           </div>
 
-          <div className="flex w-full items-center gap-2">
+          <div className="flex w-full flex-col items-stretch gap-2 xl:flex-row xl:items-center">
             <Link
               to={`/product/${product._id}`}
-              className="inline-flex flex-1 items-center justify-center rounded-full border border-[#e0c3ae] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#744126] transition-colors duration-200 hover:border-[#744126] hover:bg-[#f5e9dd]"
+              className="inline-flex min-h-9 flex-1 items-center justify-center rounded-full border border-[#e0c3ae] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[#744126] transition-colors duration-200 hover:border-[#744126] hover:bg-[#f5e9dd] sm:text-xs sm:tracking-[0.12em]"
             >
               View <ArrowRight size={13} className="ml-2" />
             </Link>
@@ -116,7 +118,7 @@ const Product = ({ product }) => {
               <button
                 type="button"
                 disabled
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-gray-200 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-gray-500"
+                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-full bg-gray-200 px-2 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-gray-500 sm:text-xs sm:tracking-[0.12em]"
               >
                 <Lock size={13} className="mr-2" /> Sold Out
               </button>
@@ -124,7 +126,7 @@ const Product = ({ product }) => {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-[#9b432a] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-[#2a140e]"
+                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-full bg-[#9b432a] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-white transition-colors duration-200 hover:bg-[#2a140e] sm:text-xs sm:tracking-[0.12em]"
               >
                 <ShoppingCart size={13} className="mr-2" /> Add
               </button>

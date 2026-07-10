@@ -225,7 +225,7 @@ const CategoryPage = () => {
             )}
 
             {loadingProducts ? (
-              <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="product-grid">
                 {[...Array(4)].map((_, index) => (
                   <div key={index} className="h-[420px] animate-pulse rounded-[28px] bg-[#f8efe6]" />
                 ))}
@@ -258,7 +258,7 @@ const CategoryPage = () => {
               </div>
             ) : (
               <>
-                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="product-grid">
                   {products.map((product) => (
                     <Product key={product._id} product={product} />
                   ))}
