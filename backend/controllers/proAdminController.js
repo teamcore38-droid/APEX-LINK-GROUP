@@ -7,7 +7,7 @@ import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import { Banner, FAQItem, HomepageSection, PolicyPage } from '../models/cmsModel.js';
 import { slugify } from './categoryController.js';
-import { DEFAULT_PRODUCT_IMAGE, validateProductPayload } from './productController.js';
+import { DEFAULT_PRODUCT_IMAGE, buildProductImagesForSave, validateProductPayload } from './productController.js';
 import { syncVendorOrdersForOrder } from '../utils/vendorService.js';
 import {
   ALL_PERMISSIONS,
@@ -264,12 +264,19 @@ const importProducts = async (req, res) => {
         : null;
       const target = product || new Product({ user: req.user._id, rating: 0, numReviews: 0 });
 
+      const imagePayload = buildProductImagesForSave(
+        normalized,
+        target.image || DEFAULT_PRODUCT_IMAGE,
+        target.imagePublicId || ''
+      );
+
       Object.assign(target, {
         user: target.user || req.user._id,
         name: normalized.name,
         slug: normalized.slug,
-        image: normalized.image || target.image || DEFAULT_PRODUCT_IMAGE,
-        images: normalized.images.length > 0 ? normalized.images : [normalized.image || DEFAULT_PRODUCT_IMAGE],
+        image: imagePayload.image,
+        imagePublicId: imagePayload.imagePublicId,
+        images: imagePayload.images,
         description: normalized.description,
         shortDescription: normalized.shortDescription || normalized.description.slice(0, 160).trim(),
         brand: normalized.brand,

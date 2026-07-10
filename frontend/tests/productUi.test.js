@@ -32,7 +32,9 @@ test('product gallery helpers preserve primary image ordering', () => {
       countInStock: '5',
       lowStockThreshold: '2',
       image: '',
+      imagePublicId: '',
       imageList: '',
+      imageAssets: [],
       variantsJson: '[]',
       shortDescription: '',
       description: '',
@@ -44,12 +46,25 @@ test('product gallery helpers preserve primary image ordering', () => {
       isActive: true,
       isBestSeller: false,
     },
-    ['primary.jpg', 'detail.jpg', 'packaging.jpg']
+    [
+      { url: 'primary.jpg', publicId: 'products/primary' },
+      { url: 'detail.jpg', publicId: 'products/detail' },
+      { url: 'packaging.jpg', publicId: 'products/packaging' },
+    ]
   );
 
-  assert.deepEqual(getProductFormGalleryImages(form), ['primary.jpg', 'detail.jpg', 'packaging.jpg']);
+  assert.deepEqual(getProductFormGalleryImages(form), [
+    { url: 'primary.jpg', publicId: 'products/primary' },
+    { url: 'detail.jpg', publicId: 'products/detail' },
+    { url: 'packaging.jpg', publicId: 'products/packaging' },
+  ]);
 
   const payload = buildProductPayloadFromForm(form);
   assert.equal(payload.image, 'primary.jpg');
-  assert.deepEqual(payload.images, ['primary.jpg', 'detail.jpg', 'packaging.jpg']);
+  assert.equal(payload.imagePublicId, 'products/primary');
+  assert.deepEqual(payload.images, [
+    { url: 'primary.jpg', publicId: 'products/primary' },
+    { url: 'detail.jpg', publicId: 'products/detail' },
+    { url: 'packaging.jpg', publicId: 'products/packaging' },
+  ]);
 });

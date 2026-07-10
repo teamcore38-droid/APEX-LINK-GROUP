@@ -7,6 +7,7 @@ import VendorPayout from '../models/vendorPayoutModel.js';
 import VendorProductSubmission from '../models/vendorProductSubmissionModel.js';
 import RFQ from '../models/rfqModel.js';
 import {
+  buildProductImagesForSave,
   DEFAULT_PRODUCT_IMAGE,
   validateProductPayload,
 } from './productController.js';
@@ -279,11 +280,14 @@ const approveProductSubmission = async (submission, actor, reviewNote = '') => {
   product.vendor = vendor._id;
   product.name = normalized.name;
   product.slug = normalized.slug;
-  product.image = normalized.image || product.image || DEFAULT_PRODUCT_IMAGE;
-  product.images =
-    normalized.images.length > 0
-      ? normalized.images
-      : [normalized.image || product.image || DEFAULT_PRODUCT_IMAGE];
+  const imagePayload = buildProductImagesForSave(
+    normalized,
+    product.image || DEFAULT_PRODUCT_IMAGE,
+    product.imagePublicId || ''
+  );
+  product.image = imagePayload.image;
+  product.imagePublicId = imagePayload.imagePublicId;
+  product.images = imagePayload.images;
   product.brand = normalized.brand;
   product.category = normalized.category;
   product.price = normalized.price;

@@ -12,6 +12,14 @@ const escapeXml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
+const getImageUrl = (image = '') =>
+  typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '').trim();
+
+const getProductImageUrls = (product = {}) =>
+  [product.image, ...(product.images || [])]
+    .map((image) => getImageUrl(image))
+    .filter(Boolean);
+
 const buildProductSeo = (product) => {
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/product/${product._id}`;
@@ -32,7 +40,7 @@ const buildProductSeo = (product) => {
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: product.name,
-      image: [product.image, ...(product.images || [])].filter(Boolean),
+      image: getProductImageUrls(product),
       description: product.description || product.shortDescription || '',
       sku: product.sku || product._id.toString(),
       brand: {

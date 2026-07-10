@@ -141,6 +141,7 @@ const buildProductUpdatePayload = (product, overrides = {}) => ({
   lowStockThreshold: product.lowStockThreshold ?? 10,
   variants: Array.isArray(product.variants) ? product.variants : [],
   image: product.image || '',
+  imagePublicId: product.imagePublicId || '',
   images: Array.isArray(product.images) ? product.images : [],
   shortDescription: product.shortDescription || '',
   description: product.description || '',

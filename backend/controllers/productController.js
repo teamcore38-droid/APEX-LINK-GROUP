@@ -4,6 +4,13 @@ import Product from '../models/productModel.js';
 import { slugify } from './categoryController.js';
 import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
+import {
+  destroyProductImage,
+  destroyProductImages,
+  isCloudinaryConfigured,
+  uploadProductImageBuffer,
+  uploadProductImageUrl,
+} from '../utils/cloudinaryService.js';
 
 const PRODUCT_SORT_OPTIONS = {
   newest: { createdAt: -1 },
@@ -92,7 +99,23 @@ const parseNumericValue = (value) => {
   return parsedValue;
 };
 
-const normalizeImageList = (images = [], image = '') => {
+const normalizeImageAsset = (entry = {}) => {
+  if (typeof entry === 'string') {
+    const url = entry.trim();
+    return url ? { url, publicId: '' } : null;
+  }
+
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const url = String(entry.url || entry.secureUrl || entry.secure_url || '').trim();
+  const publicId = String(entry.publicId || entry.public_id || '').trim();
+
+  return url ? { url, publicId } : null;
+};
+
+const normalizeImageList = (images = [], image = '', imagePublicId = '') => {
   const incomingImages = Array.isArray(images)
     ? images
     : typeof images === 'string'
@@ -102,15 +125,61 @@ const normalizeImageList = (images = [], image = '') => {
           .map((entry) => entry.trim())
       : [];
 
-  const uniqueImages = new Set();
+  const uniqueImages = new Map();
+  const primaryAsset = normalizeImageAsset({
+    url: image,
+    publicId: imagePublicId,
+  });
 
-  [image, ...incomingImages].forEach((entry) => {
-    if (typeof entry === 'string' && entry.trim()) {
-      uniqueImages.add(entry.trim());
+  [primaryAsset, ...incomingImages.map((entry) => normalizeImageAsset(entry))].forEach((asset) => {
+    if (asset?.url) {
+      uniqueImages.set(asset.publicId || asset.url, asset);
     }
   });
 
-  return [...uniqueImages].slice(0, MAX_PRODUCT_IMAGES);
+  return [...uniqueImages.values()].slice(0, MAX_PRODUCT_IMAGES);
+};
+
+const getProductImageAssets = (product = {}) => {
+  const primaryAsset = normalizeImageAsset({
+    url: product.image,
+    publicId: product.imagePublicId,
+  });
+  return normalizeImageList(product.images || [], primaryAsset?.url || '', primaryAsset?.publicId || '');
+};
+
+const getProductImagePublicIds = (product = {}) =>
+  getProductImageAssets(product)
+    .map((asset) => asset.publicId)
+    .filter(Boolean);
+
+const getRemovedProductImagePublicIds = (beforeProduct = {}, nextImages = []) => {
+  const nextPublicIds = new Set(
+    nextImages
+      .map((asset) => normalizeImageAsset(asset)?.publicId)
+      .filter(Boolean)
+  );
+
+  return getProductImagePublicIds(beforeProduct).filter((publicId) => !nextPublicIds.has(publicId));
+};
+
+const buildProductImagesForSave = (normalized, fallbackImage = DEFAULT_PRODUCT_IMAGE, fallbackPublicId = '') => {
+  const images =
+    normalized.images.length > 0
+      ? normalized.images
+      : [
+          {
+            url: normalized.image || fallbackImage,
+            publicId: normalized.imagePublicId || fallbackPublicId,
+          },
+        ];
+  const primaryImage = images[0] || { url: fallbackImage, publicId: '' };
+
+  return {
+    image: primaryImage.url || fallbackImage,
+    imagePublicId: primaryImage.publicId || '',
+    images,
+  };
 };
 
 const normalizeVariants = (variants = []) => {
@@ -307,7 +376,8 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       lowStockThreshold: Number.isNaN(lowStockThreshold) ? 10 : lowStockThreshold,
       variants,
       image: String(payload.image || '').trim(),
-      images: normalizeImageList(payload.images, payload.image),
+      imagePublicId: String(payload.imagePublicId || '').trim(),
+      images: normalizeImageList(payload.images, payload.image, payload.imagePublicId),
       shortDescription: String(payload.shortDescription || '').trim(),
       description: String(payload.description || '').trim(),
       brand: String(payload.brand || 'Apex Link Group').trim() || 'Apex Link Group',
@@ -519,6 +589,70 @@ const getProductBySlug = async (req, res) => {
   }
 };
 
+// @desc    Upload product images to Cloudinary
+// @route   POST /api/products/images
+// @access  Private/Admin
+const uploadProductImages = async (req, res) => {
+  try {
+    if (!isCloudinaryConfigured()) {
+      return res.status(503).json({
+        message: 'Cloudinary is not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.',
+      });
+    }
+
+    const files = Array.isArray(req.files) ? req.files : [];
+    const sourceUrl = String(req.body?.sourceUrl || '').trim();
+
+    if (files.length === 0 && !sourceUrl) {
+      return res.status(400).json({ message: 'Choose an image file or provide an image URL to import' });
+    }
+
+    const uploadedImages = [];
+
+    for (const file of files.slice(0, MAX_PRODUCT_IMAGES)) {
+      uploadedImages.push(
+        await uploadProductImageBuffer(file.buffer, {
+          originalName: file.originalname || '',
+        })
+      );
+    }
+
+    if (sourceUrl) {
+      uploadedImages.push(await uploadProductImageUrl(sourceUrl));
+    }
+
+    await recordAuditLog(req, 'catalog.product.image.upload', 'Product', '', {
+      total: uploadedImages.length,
+      publicIds: uploadedImages.map((image) => image.publicId),
+    });
+
+    res.status(201).json({ images: uploadedImages });
+  } catch (error) {
+    console.error('[productController:uploadProductImages]', error);
+    res.status(500).json({ message: error.message || 'Unable to upload product images' });
+  }
+};
+
+// @desc    Delete a Cloudinary product image
+// @route   DELETE /api/products/images
+// @access  Private/Admin
+const deleteProductImage = async (req, res) => {
+  try {
+    const publicId = String(req.body?.publicId || '').trim();
+
+    if (!publicId) {
+      return res.status(400).json({ message: 'Cloudinary public ID is required' });
+    }
+
+    await destroyProductImage(publicId);
+    await recordAuditLog(req, 'catalog.product.image.delete', 'Product', '', { publicId });
+    res.json({ message: 'Image deleted', publicId });
+  } catch (error) {
+    console.error('[productController:deleteProductImage]', error);
+    res.status(500).json({ message: error.message || 'Unable to delete product image' });
+  }
+};
+
 // @desc    Delete a product
 // @route   DELETE /api/products/:id
 // @access  Private/Admin
@@ -527,9 +661,12 @@ const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
+      const publicIdsToDelete = getProductImagePublicIds(product);
       await Product.deleteOne({ _id: product._id });
+      await destroyProductImages(publicIdsToDelete);
       await recordAuditLog(req, 'catalog.product.delete', 'Product', product._id, {
         name: product.name,
+        deletedImagePublicIds: publicIdsToDelete,
       });
       return res.json({ message: 'Product removed' });
     }
@@ -556,15 +693,14 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: errors[0] });
     }
 
+    const imagePayload = buildProductImagesForSave(normalized);
     const product = new Product({
       user: req.user._id,
       name: normalized.name,
       slug: normalized.slug,
-      image: normalized.image || DEFAULT_PRODUCT_IMAGE,
-      images:
-        normalized.images.length > 0
-          ? normalized.images
-          : [normalized.image || DEFAULT_PRODUCT_IMAGE],
+      image: imagePayload.image,
+      imagePublicId: imagePayload.imagePublicId,
+      images: imagePayload.images,
       description: normalized.description,
       shortDescription:
         normalized.shortDescription || normalized.description.slice(0, 160).trim(),
@@ -618,13 +754,19 @@ const updateProduct = async (req, res) => {
       return res.status(400).json({ message: errors[0] });
     }
 
+    const previousProduct = product.toObject();
+    const imagePayload = buildProductImagesForSave(
+      normalized,
+      product.image || DEFAULT_PRODUCT_IMAGE,
+      product.imagePublicId || ''
+    );
+    const removedImagePublicIds = getRemovedProductImagePublicIds(previousProduct, imagePayload.images);
+
     product.name = normalized.name;
     product.slug = normalized.slug;
-    product.image = normalized.image || product.image || DEFAULT_PRODUCT_IMAGE;
-    product.images =
-      normalized.images.length > 0
-        ? normalized.images
-        : [normalized.image || product.image || DEFAULT_PRODUCT_IMAGE];
+    product.image = imagePayload.image;
+    product.imagePublicId = imagePayload.imagePublicId;
+    product.images = imagePayload.images;
     product.brand = normalized.brand;
     product.category = normalized.category;
     product.price = normalized.price;
@@ -646,8 +788,10 @@ const updateProduct = async (req, res) => {
     product.seo = normalized.seo;
 
     const updatedProduct = await product.save();
+    await destroyProductImages(removedImagePublicIds);
     await recordAuditLog(req, 'catalog.product.update', 'Product', updatedProduct._id, {
       name: updatedProduct.name,
+      deletedImagePublicIds: removedImagePublicIds,
     });
     res.json(updatedProduct);
   } catch (error) {
@@ -662,10 +806,13 @@ const updateProduct = async (req, res) => {
 
 export {
   DEFAULT_PRODUCT_IMAGE,
+  buildProductImagesForSave,
   validateProductPayload,
   getProducts,
   getProductById,
   getProductBySlug,
+  uploadProductImages,
+  deleteProductImage,
   deleteProduct,
   createProduct,
   updateProduct,

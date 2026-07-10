@@ -44,6 +44,14 @@ const setStructuredData = (id, data) => {
   element.textContent = JSON.stringify(data);
 };
 
+const getImageUrl = (image = '') =>
+  typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '').trim();
+
+const getProductImageUrls = (product = {}) =>
+  [product.image, ...(product.images || [])]
+    .map((image) => getImageUrl(image))
+    .filter(Boolean);
+
 const applySeo = ({
   title = SITE_NAME,
   description = DEFAULT_DESCRIPTION,
@@ -80,7 +88,7 @@ const buildProductStructuredData = (product, url = window.location.href) => ({
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: product.name,
-  image: [product.image, ...(product.images || [])].filter(Boolean),
+  image: getProductImageUrls(product),
   description: product.description || product.shortDescription || '',
   sku: product.sku || product._id,
   brand: {

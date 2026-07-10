@@ -46,7 +46,9 @@ export const createInitialProductForm = () => ({
   countInStock: '0',
   lowStockThreshold: '10',
   image: '',
+  imagePublicId: '',
   imageList: '',
+  imageAssets: [],
   variantsJson: '[]',
   shortDescription: '',
   description: '',
@@ -64,6 +66,25 @@ const parseImageList = (value = '') =>
     .split(/\r?\n/)
     .map((image) => image.trim())
     .filter(Boolean);
+
+export const normalizeProductImageAsset = (entry = {}) => {
+  if (typeof entry === 'string') {
+    const url = entry.trim();
+    return url ? { url, publicId: '' } : null;
+  }
+
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const url = String(entry.url || entry.secureUrl || entry.secure_url || '').trim();
+  const publicId = String(entry.publicId || entry.public_id || '').trim();
+
+  return url ? { url, publicId } : null;
+};
+
+export const getProductImageUrl = (entry = '') =>
+  typeof entry === 'string' ? entry : String(entry?.url || entry?.secureUrl || '').trim();
 
 export const normalizeProductPayload = (data) => {
   if (Array.isArray(data)) {
@@ -108,25 +129,53 @@ export const slugifyProductName = (value = '') =>
     .replace(/^-+|-+$/g, '');
 
 export const getProductImages = (product = {}) => {
+  return getProductImageAssets(product).map((asset) => asset.url);
+};
+
+export const getProductImageAssets = (product = {}) => {
   const images = Array.isArray(product.images) ? product.images : [];
-  const gallery = [product.image, ...images].filter(Boolean);
-  return [...new Set(gallery)];
+  const primaryAsset = normalizeProductImageAsset({
+    url: product.image,
+    publicId: product.imagePublicId,
+  });
+  const assets = [primaryAsset, ...images.map((image) => normalizeProductImageAsset(image))].filter(Boolean);
+  const uniqueAssets = new Map();
+
+  assets.forEach((asset) => {
+    uniqueAssets.set(asset.publicId || asset.url, asset);
+  });
+
+  return [...uniqueAssets.values()];
 };
 
 export const getProductFormGalleryImages = (form = {}) =>
-  getProductImages({
-    image: form.image,
-    images: parseImageList(form.imageList),
-  });
+  Array.isArray(form.imageAssets) && form.imageAssets.length > 0
+    ? getProductImageAssets({ images: form.imageAssets })
+    : getProductImageAssets({
+        image: form.image,
+        imagePublicId: form.imagePublicId,
+        images: parseImageList(form.imageList),
+      });
 
 export const setProductFormGalleryImages = (form = {}, images = []) => {
-  const gallery = [...new Set(images.map((image) => String(image || '').trim()).filter(Boolean))];
-  const [primaryImage = '', ...additionalImages] = gallery;
+  const uniqueAssets = new Map();
+
+  images
+    .map((image) => normalizeProductImageAsset(image))
+    .filter(Boolean)
+    .forEach((asset) => {
+      uniqueAssets.set(asset.publicId || asset.url, asset);
+    });
+
+  const gallery = [...uniqueAssets.values()];
+  const [primaryImage = { url: '', publicId: '' }, ...additionalImages] = gallery;
 
   return {
     ...form,
-    image: primaryImage,
-    imageList: additionalImages.join('\n'),
+    image: primaryImage.url,
+    imagePublicId: primaryImage.publicId,
+    imageList: additionalImages.map((image) => image.url).join('\n'),
+    imageAssets: gallery,
   };
 };
 
@@ -177,8 +226,8 @@ export const getProductStatusBadge = (product = {}) => {
 };
 
 export const buildProductFormFromProduct = (product = {}) => {
-  const gallery = getProductImages(product);
-  const [primaryImage = product.image || '', ...additionalImages] = gallery;
+  const gallery = getProductImageAssets(product);
+  const [primaryImage = { url: product.image || '', publicId: product.imagePublicId || '' }, ...additionalImages] = gallery;
 
   return {
     name: product.name || '',
@@ -189,8 +238,10 @@ export const buildProductFormFromProduct = (product = {}) => {
     weight: product.weight || '',
     countInStock: product.countInStock ?? 0,
     lowStockThreshold: product.lowStockThreshold ?? 10,
-    image: primaryImage,
-    imageList: additionalImages.join('\n'),
+    image: primaryImage.url,
+    imagePublicId: primaryImage.publicId,
+    imageList: additionalImages.map((image) => image.url).join('\n'),
+    imageAssets: gallery,
     variantsJson: JSON.stringify(product.variants || [], null, 2),
     shortDescription: product.shortDescription || '',
     description: product.description || '',
@@ -206,6 +257,7 @@ export const buildProductFormFromProduct = (product = {}) => {
 
 export const buildProductPayloadFromForm = (form) => {
   const gallery = getProductFormGalleryImages(form);
+  const primaryImage = gallery[0] || { url: '', publicId: '' };
 
   return {
     name: form.name.trim(),
@@ -216,7 +268,8 @@ export const buildProductPayloadFromForm = (form) => {
     weight: form.weight.trim(),
     countInStock: Number(form.countInStock),
     lowStockThreshold: Number(form.lowStockThreshold ?? 10),
-    image: gallery[0] || '',
+    image: primaryImage.url,
+    imagePublicId: primaryImage.publicId,
     images: gallery,
     variants: JSON.parse(form.variantsJson || '[]'),
     shortDescription: form.shortDescription.trim(),

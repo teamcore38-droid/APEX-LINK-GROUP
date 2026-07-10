@@ -93,8 +93,13 @@ const productSchema = mongoose.Schema(
       default: '',
       trim: true,
     },
+    imagePublicId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     images: {
-      type: [String],
+      type: [mongoose.Schema.Types.Mixed],
       default: [],
     },
     description: {

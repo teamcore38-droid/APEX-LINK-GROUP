@@ -22,6 +22,7 @@ import {
   createInitialProductForm,
   formatCurrency,
   getProductFormGalleryImages,
+  getProductImageUrl,
   getProductImages,
   setProductFormGalleryImages,
   slugifyProductName,
@@ -29,81 +30,9 @@ import {
 
 const MAX_GALLERY_IMAGES = 12;
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
-const TARGET_UPLOAD_BYTES = 420 * 1024;
-const MAX_UPLOAD_DIMENSION = 1400;
-
-const readFileAsDataUrl = (file) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Unable to read image file.'));
-    reader.readAsDataURL(file);
-  });
-
-const canvasToBlob = (canvas, quality) =>
-  new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
-  });
-
-const blobToDataUrl = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Unable to process optimized image.'));
-    reader.readAsDataURL(blob);
-  });
-
-const optimizeImageFile = async (file) => {
-  if (!file.type.startsWith('image/')) {
-    throw new Error(`${file.name} is not an image file.`);
-  }
-
-  if (file.size > MAX_UPLOAD_BYTES) {
-    throw new Error(`${file.name} is larger than 8MB.`);
-  }
-
-  if (file.type === 'image/svg+xml') {
-    return readFileAsDataUrl(file);
-  }
-
-  const objectUrl = URL.createObjectURL(file);
-
-  try {
-    const image = new Image();
-    image.decoding = 'async';
-
-    await new Promise((resolve, reject) => {
-      image.onload = resolve;
-      image.onerror = () => reject(new Error(`Unable to load ${file.name}.`));
-      image.src = objectUrl;
-    });
-
-    const ratio = Math.min(1, MAX_UPLOAD_DIMENSION / Math.max(image.width, image.height));
-    const width = Math.max(1, Math.round(image.width * ratio));
-    const height = Math.max(1, Math.round(image.height * ratio));
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext('2d');
-    context.drawImage(image, 0, 0, width, height);
-
-    let quality = 0.82;
-    let blob = await canvasToBlob(canvas, quality);
-
-    while (blob && blob.size > TARGET_UPLOAD_BYTES && quality > 0.58) {
-      quality -= 0.08;
-      blob = await canvasToBlob(canvas, quality);
-    }
-
-    if (!blob) {
-      throw new Error(`Unable to optimize ${file.name}.`);
-    }
-
-    return blobToDataUrl(blob);
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-};
+const getAssetKey = (asset = {}) => asset.publicId || asset.url || getProductImageUrl(asset);
+const getPublicIds = (assets = []) =>
+  assets.map((asset) => asset.publicId).filter(Boolean);
 
 const validateForm = (form) => {
   if (!form.name.trim()) {
@@ -155,6 +84,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const [slugTouched, setSlugTouched] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [uploadStatus, setUploadStatus] = useState('');
+  const [persistedImagePublicIds, setPersistedImagePublicIds] = useState(new Set());
 
   useEffect(() => {
     if (!userInfo?.token) {
@@ -198,13 +128,16 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
             }),
           ]);
 
+          const nextForm = buildProductFormFromProduct(productResponse.data);
           setCategories(categoryResponse.data);
-          setForm(buildProductFormFromProduct(productResponse.data));
+          setForm(nextForm);
+          setPersistedImagePublicIds(new Set(getPublicIds(nextForm.imageAssets)));
           setSlugTouched(Boolean(productResponse.data.slug));
         } else {
           const { data } = await categoryPromise;
           setCategories(data);
           setForm(createInitialProductForm());
+          setPersistedImagePublicIds(new Set());
           setSlugTouched(false);
         }
       } catch (loadError) {
@@ -292,24 +225,40 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
     setError('');
     setSuccess('');
-    setUploadStatus(`Optimizing ${Math.min(files.length, availableSlots)} image${Math.min(files.length, availableSlots) === 1 ? '' : 's'}...`);
+    const selectedFiles = files.slice(0, availableSlots);
+    const invalidFile = selectedFiles.find((file) => !file.type.startsWith('image/') || file.size > MAX_UPLOAD_BYTES);
+
+    if (invalidFile) {
+      setError(
+        !invalidFile.type.startsWith('image/')
+          ? `${invalidFile.name} is not an image file.`
+          : `${invalidFile.name} is larger than 8MB.`
+      );
+      return;
+    }
+
+    setUploadStatus(`Uploading ${selectedFiles.length} image${selectedFiles.length === 1 ? '' : 's'} to Cloudinary...`);
 
     try {
-      const optimizedImages = [];
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append('images', file));
+      const { data } = await axios.post('/api/products/images', formData, {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const uploadedImages = data.images || [];
 
-      for (const file of files.slice(0, availableSlots)) {
-        optimizedImages.push(await optimizeImageFile(file));
-      }
-
-      updateGalleryImages([...galleryImages, ...optimizedImages]);
-      setUploadStatus(`Added ${optimizedImages.length} optimized image${optimizedImages.length === 1 ? '' : 's'} to the gallery.`);
+      updateGalleryImages([...galleryImages, ...uploadedImages]);
+      setUploadStatus(`Added ${uploadedImages.length} Cloudinary image${uploadedImages.length === 1 ? '' : 's'} to the gallery.`);
     } catch (uploadError) {
-      setError(uploadError.message || 'Unable to upload product images.');
+      setError(uploadError.response?.data?.message || uploadError.message || 'Unable to upload product images.');
       setUploadStatus('');
     }
   };
 
-  const addGalleryUrl = () => {
+  const addGalleryUrl = async () => {
     const nextUrl = imageUrlInput.trim();
 
     if (!nextUrl) {
@@ -321,18 +270,59 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
       return;
     }
 
-    updateGalleryImages([...galleryImages, nextUrl]);
-    setImageUrlInput('');
-    setUploadStatus('Image URL added to the gallery.');
+    setError('');
+    setSuccess('');
+    setUploadStatus('Importing image URL into Cloudinary...');
+
+    try {
+      const { data } = await axios.post(
+        '/api/products/images',
+        { sourceUrl: nextUrl },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const [uploadedImage] = data.images || [];
+
+      if (uploadedImage) {
+        updateGalleryImages([...galleryImages, uploadedImage]);
+        setImageUrlInput('');
+        setUploadStatus('Image URL imported to Cloudinary and added to the gallery.');
+      }
+    } catch (uploadError) {
+      setError(uploadError.response?.data?.message || uploadError.message || 'Unable to import that image URL.');
+      setUploadStatus('');
+    }
   };
 
-  const removeGalleryImage = (image) => {
-    updateGalleryImages(galleryImages.filter((galleryImage) => galleryImage !== image));
-    setUploadStatus('Image removed from the gallery.');
+  const removeGalleryImage = async (image) => {
+    const publicId = image.publicId || '';
+    updateGalleryImages(galleryImages.filter((galleryImage) => getAssetKey(galleryImage) !== getAssetKey(image)));
+
+    if (publicId && !persistedImagePublicIds.has(publicId)) {
+      try {
+        await axios.delete('/api/products/images', {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+          },
+          data: { publicId },
+        });
+        setUploadStatus('Unsaved Cloudinary image removed.');
+      } catch (deleteError) {
+        setUploadStatus('');
+        setError(deleteError.response?.data?.message || 'Image removed from the form, but Cloudinary cleanup failed.');
+      }
+      return;
+    }
+
+    setUploadStatus(publicId ? 'Image will be deleted from Cloudinary when you save.' : 'Image removed from the gallery.');
   };
 
   const moveGalleryImage = (image, direction) => {
-    const currentIndex = galleryImages.indexOf(image);
+    const currentIndex = galleryImages.findIndex((galleryImage) => getAssetKey(galleryImage) === getAssetKey(image));
     const nextIndex = currentIndex + direction;
 
     if (currentIndex < 0 || nextIndex < 0 || nextIndex >= galleryImages.length) {
@@ -345,7 +335,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   };
 
   const setPrimaryGalleryImage = (image) => {
-    updateGalleryImages([image, ...galleryImages.filter((galleryImage) => galleryImage !== image)]);
+    updateGalleryImages([image, ...galleryImages.filter((galleryImage) => getAssetKey(galleryImage) !== getAssetKey(image))]);
     setUploadStatus('Primary product image updated.');
   };
 
@@ -374,7 +364,10 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
       const payload = buildProductPayloadFromForm(form);
 
       if (isEditMode) {
-        await axios.put(`/api/products/${id}`, payload, config);
+        const { data } = await axios.put(`/api/products/${id}`, payload, config);
+        const nextForm = buildProductFormFromProduct(data);
+        setForm(nextForm);
+        setPersistedImagePublicIds(new Set(getPublicIds(nextForm.imageAssets)));
         setSuccess('Product updated successfully.');
       } else {
         const { data } = await axios.post('/api/products', payload, config);
@@ -676,7 +669,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
                         event.preventDefault();
-                        addGalleryUrl();
+                        void addGalleryUrl();
                       }
                     }}
                     placeholder="Paste an image URL and add it to the gallery"
@@ -684,7 +677,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   />
                   <button
                     type="button"
-                    onClick={addGalleryUrl}
+                    onClick={() => void addGalleryUrl()}
                     className="inline-flex items-center justify-center rounded-xl border border-brand-primary/20 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
                   >
                     <ImagePlus size={16} className="mr-2" />
@@ -701,14 +694,18 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                 <div className="mt-5">
                   {galleryImages.length > 0 ? (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {galleryImages.map((image, index) => (
+                      {galleryImages.map((image, index) => {
+                        const imageUrl = getProductImageUrl(image);
+                        const imageKey = getAssetKey(image);
+
+                        return (
                         <article
-                          key={image}
+                          key={imageKey}
                           className="overflow-hidden rounded-[20px] border border-[#ead6c6] bg-white shadow-sm"
                         >
                           <div className="relative aspect-[4/3] bg-[#f4e7db]">
                             <img
-                              src={image}
+                              src={imageUrl}
                               alt={`${form.name || 'Product'} gallery image ${index + 1}`}
                               loading="lazy"
                               className="h-full w-full object-cover"
@@ -750,7 +747,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                               <ArrowDown size={15} />
                             </button>
                             <a
-                              href={image}
+                              href={imageUrl}
                               target="_blank"
                               rel="noreferrer"
                               title="Open image"
@@ -760,7 +757,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                             </a>
                             <button
                               type="button"
-                              onClick={() => removeGalleryImage(image)}
+                              onClick={() => void removeGalleryImage(image)}
                               title="Remove image"
                               className="inline-flex h-10 items-center justify-center rounded-lg border border-red-100 text-red-600 transition-colors hover:bg-red-50"
                             >
@@ -768,7 +765,8 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                             </button>
                           </div>
                         </article>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="rounded-[20px] border border-dashed border-brand-accent/30 bg-white px-4 py-10 text-center text-sm text-gray-500">
