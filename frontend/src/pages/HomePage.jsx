@@ -252,7 +252,12 @@ const HomePage = () => {
           <h1 className="mb-4 font-serif text-4xl font-bold leading-tight text-brand-light drop-shadow-lg sm:text-5xl md:mb-6 md:text-7xl">
             The Premium Global <br /> Marketplace
           </h1>
-          <p className="mx-auto mb-7 max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:text-xl">
+          <img
+            src="/logo.webp"
+            alt="Apex Fashion logo"
+            className="mx-auto mb-7 h-20 w-auto object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.32)] md:hidden"
+          />
+          <p className="mx-auto mb-7 hidden max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:block md:text-xl">
             Apex Link Group connects you with verified manufacturers and premium products across textiles, food, technology, industrial equipment, and beyond — with enterprise-grade quality assurance on every order.
           </p>
           <div className="mx-auto flex w-full max-w-md flex-col justify-center gap-3 sm:max-w-none sm:flex-row sm:gap-4">
