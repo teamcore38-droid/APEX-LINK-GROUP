@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useRef } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -12,6 +12,11 @@ export const AuthProvider = ({ children }) => {
     const localData = localStorage.getItem('userInfo');
     return localData ? JSON.parse(localData) : null;
   });
+  const userInfoRef = useRef(userInfo);
+
+  useEffect(() => {
+    userInfoRef.current = userInfo;
+  }, [userInfo]);
 
   useEffect(() => {
     if (userInfo) {
@@ -20,6 +25,63 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('userInfo');
     }
   }, [userInfo]);
+
+  useEffect(() => {
+    const requestInterceptor = axios.interceptors.request.use((config) => {
+      const token = userInfoRef.current?.token;
+
+      if (token && !config.headers?.Authorization) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+
+      return config;
+    });
+
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        const requestUrl = String(originalRequest?.url || '');
+        const canTryRefresh =
+          error.response?.status === 401 &&
+          originalRequest &&
+          !originalRequest._retry &&
+          userInfoRef.current?.token &&
+          !requestUrl.includes('/api/users/login') &&
+          !requestUrl.includes('/api/users/login/2fa') &&
+          !requestUrl.includes('/api/users/refresh');
+
+        if (!canTryRefresh) {
+          return Promise.reject(error);
+        }
+
+        originalRequest._retry = true;
+
+        try {
+          const { data } = await axios.post('/api/users/refresh');
+          setUserInfo(data);
+          userInfoRef.current = data;
+          originalRequest.headers = {
+            ...originalRequest.headers,
+            Authorization: `Bearer ${data.token}`,
+          };
+          return axios(originalRequest);
+        } catch (refreshError) {
+          setUserInfo(null);
+          userInfoRef.current = null;
+          return Promise.reject(refreshError);
+        }
+      }
+    );
+
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
 
   const login = async (email, password) => {
     try {
