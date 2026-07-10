@@ -32,10 +32,11 @@ import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 dotenv.config();
 
-connectDB();
-
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
+const warmDatabaseConnection = connectDB({ strict: isProduction }).catch((error) => {
+  console.error(`Initial MongoDB connection failed: ${error.message}`);
+});
 
 if (isProduction) {
   app.set('trust proxy', 1);
@@ -117,9 +118,24 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.get('/sitemap.xml', (req, res, next) => seoRoutes(req, res, next));
-app.get('/robots.txt', (req, res, next) => seoRoutes(req, res, next));
+const ensureDatabaseConnected = async (req, res, next) => {
+  try {
+    await warmDatabaseConnection;
+    await connectDB({ strict: isProduction });
+    next();
+  } catch (error) {
+    console.error(`Database unavailable for ${req.method} ${req.originalUrl}: ${error.message}`);
+    res.status(503).json({
+      message: 'Database unavailable. Check MONGO_URI and database network access.',
+      requestId: req.requestId,
+    });
+  }
+};
 
+app.get('/sitemap.xml', ensureDatabaseConnected, (req, res, next) => seoRoutes(req, res, next));
+app.get('/robots.txt', ensureDatabaseConnected, (req, res, next) => seoRoutes(req, res, next));
+
+app.use('/api', ensureDatabaseConnected);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);

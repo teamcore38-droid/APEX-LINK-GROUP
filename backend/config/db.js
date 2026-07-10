@@ -8,9 +8,19 @@ const stateMap = {
   3: 'disconnecting',
 };
 
+let connectionPromise = null;
+
 const connectDB = async (options = {}) => {
   if (mongoose.connection.readyState === 1) {
     return true;
+  }
+
+  if (mongoose.connection.readyState === 2 && connectionPromise) {
+    return connectionPromise;
+  }
+
+  if (connectionPromise) {
+    return connectionPromise;
   }
 
   const primaryUri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -28,40 +38,50 @@ const connectDB = async (options = {}) => {
     return true;
   };
 
-  try {
-    if (primaryUri) {
-      return await tryConnect(primaryUri, 'primary');
+  connectionPromise = (async () => {
+    try {
+      if (primaryUri) {
+        return await tryConnect(primaryUri, 'primary');
+      }
+    } catch (error) {
+      console.warn(`MongoDB primary connection failed: ${error.message}`);
+      if (options.strict || process.env.NODE_ENV === 'production') {
+        throw error;
+      }
     }
-  } catch (error) {
-    console.warn(`MongoDB primary connection failed: ${error.message}`);
-    if (options.strict || process.env.NODE_ENV === 'production') {
-      throw error;
+
+    try {
+      return await tryConnect(localUri, 'local');
+    } catch (error) {
+      console.warn(`MongoDB local connection failed: ${error.message}`);
+      if (options.strict) {
+        throw error;
+      }
     }
-  }
+
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('MongoDB connection failed and no fallback database is available.');
+    }
+
+    try {
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
+      const memoryServer = await MongoMemoryServer.create();
+      const memoryUri = memoryServer.getUri();
+      await tryConnect(memoryUri, 'memory');
+      console.log(`MongoDB Memory Server started at ${memoryUri}`);
+      return true;
+    } catch (error) {
+      console.error(`MongoDB connection failed: ${error.message}`);
+      return false;
+    }
+  })();
 
   try {
-    return await tryConnect(localUri, 'local');
-  } catch (error) {
-    console.warn(`MongoDB local connection failed: ${error.message}`);
-    if (options.strict) {
-      throw error;
+    return await connectionPromise;
+  } finally {
+    if (mongoose.connection.readyState !== 1) {
+      connectionPromise = null;
     }
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('MongoDB connection failed and no fallback database is available.');
-  }
-
-  try {
-    const { MongoMemoryServer } = await import('mongodb-memory-server');
-    const memoryServer = await MongoMemoryServer.create();
-    const memoryUri = memoryServer.getUri();
-    await tryConnect(memoryUri, 'memory');
-    console.log(`MongoDB Memory Server started at ${memoryUri}`);
-    return true;
-  } catch (error) {
-    console.error(`MongoDB connection failed: ${error.message}`);
-    return false;
   }
 };
 

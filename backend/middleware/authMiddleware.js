@@ -47,10 +47,11 @@ const protectOptional = async (req, res, next) => {
 
   try {
     req.user = await attachUserFromToken(token);
-    next();
+    return next();
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: 'Not authorized, token failed' });
+    console.warn(`Ignoring invalid optional auth token: ${error.message}`);
+    req.user = null;
+    return next();
   }
 };
 
