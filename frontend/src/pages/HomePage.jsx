@@ -206,7 +206,7 @@ const HomePage = () => {
           }}
         ></div>
         <div
-          className="absolute inset-0 transition-opacity duration-1000 md:hidden"
+          className="hero-bg-pan absolute inset-y-0 -left-[12%] -right-[12%] transition-opacity duration-1000 md:hidden"
           style={{
             backgroundImage: `url(${mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]})`,
             backgroundSize: 'cover',
@@ -215,12 +215,11 @@ const HomePage = () => {
           }}
         ></div>
         <div
-          className="absolute inset-0 hidden transition-opacity duration-1000 md:block"
+          className="hero-bg-pan absolute inset-y-0 -left-[10%] -right-[10%] hidden transition-opacity duration-1000 md:block"
           style={{
             backgroundImage: `url(${heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundAttachment: 'fixed',
             opacity: 0.4,
           }}
         ></div>

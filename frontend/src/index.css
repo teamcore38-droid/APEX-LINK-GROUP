@@ -102,6 +102,20 @@
     }
   }
 
+  @keyframes hero-bg-pan {
+    from {
+      transform: translateX(-4%);
+    }
+    to {
+      transform: translateX(4%);
+    }
+  }
+
+  .hero-bg-pan {
+    animation: hero-bg-pan 24s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
   .mobile-product-sheet {
     animation: mobile-sheet-enter 280ms cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -162,7 +176,8 @@
   @media (prefers-reduced-motion: reduce) {
     .mobile-product-sheet,
     .mobile-sheet-backdrop,
-    .product-lightbox {
+    .product-lightbox,
+    .hero-bg-pan {
       animation: none;
     }
   }
