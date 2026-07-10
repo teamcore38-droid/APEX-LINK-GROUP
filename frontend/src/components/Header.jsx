@@ -36,8 +36,8 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#2a140e] py-3 text-[#fff7ee] shadow-md lg:py-4">
       <div className="container mx-auto flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
-        <Link to="/" className="flex flex-col items-center">
-          <div className="flex items-center gap-2 text-lg font-serif font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] lg:text-2xl lg:tracking-widest">
+        <Link to="/" className="flex min-w-0 shrink-0 flex-col items-center">
+          <div className="flex items-center gap-2 text-lg font-serif font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] xl:text-2xl xl:tracking-widest">
             <img
               src="/Apex Logo.jpg"
               alt="Apex Link Group logo"
@@ -50,7 +50,7 @@ const Header = () => {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-4 text-xs font-semibold uppercase tracking-[0.15em] lg:flex xl:gap-7 xl:text-sm xl:tracking-[0.2em]">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-4 text-xs font-semibold uppercase tracking-[0.15em] xl:flex 2xl:gap-7 2xl:text-sm 2xl:tracking-[0.2em]">
           {PRIMARY_NAV_LINKS.map(([label, path]) => (
             <Link
               key={path}
@@ -92,7 +92,7 @@ const Header = () => {
           </Link>
 
           {userInfo ? (
-            <div className="relative hidden lg:block">
+            <div className="relative hidden xl:block">
               <button
                 type="button"
                 onClick={() => setAccountMenuOpen((open) => !open)}
@@ -230,7 +230,7 @@ const Header = () => {
               )}
             </div>
           ) : (
-            <div className="hidden items-center gap-3 lg:flex">
+            <div className="hidden items-center gap-3 xl:flex">
               <Link
                 to="/login"
                 className="text-sm font-semibold uppercase tracking-[0.16em] transition-colors duration-200 hover:text-brand-accent"
@@ -247,7 +247,7 @@ const Header = () => {
           )}
 
           <button
-            className="rounded-md p-1.5 transition-colors hover:bg-white/10 lg:hidden"
+            className="rounded-md p-1.5 transition-colors hover:bg-white/10 xl:hidden"
             type="button"
             onClick={() => setAccountMenuOpen((open) => !open)}
             aria-label="Toggle navigation menu"
@@ -258,7 +258,7 @@ const Header = () => {
       </div>
 
       {accountMenuOpen && (
-        <div className="border-t border-white/10 bg-[#1f0f0a] px-4 py-4 lg:hidden">
+        <div className="border-t border-white/10 bg-[#1f0f0a] px-4 py-4 xl:hidden">
           <div className="container mx-auto space-y-3">
             <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
               {PRIMARY_NAV_LINKS.map(([label, path]) => (
