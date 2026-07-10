@@ -14,36 +14,57 @@ import NotFoundPage from './pages/NotFoundPage'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
 import CookieConsentBanner from './components/CookieConsentBanner'
 
-const ProductPage = lazy(() => import('./pages/ProductPage'))
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
-const ProfilePage = lazy(() => import('./pages/ProfilePage'))
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
-const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'))
-const ContactPage = lazy(() => import('./pages/ContactPage'))
-const FAQPage = lazy(() => import('./pages/FAQPage'))
-const TermsPage = lazy(() => import('./pages/TermsPage'))
-const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
-const ReturnsPage = lazy(() => import('./pages/ReturnsPage'))
-const ShippingPage = lazy(() => import('./pages/ShippingPage'))
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
-const AdminCategoriesPage = lazy(() => import('./pages/AdminCategoriesPage'))
-const AdminMessagesPage = lazy(() => import('./pages/AdminMessagesPage'))
-const AdminCommercePage = lazy(() => import('./pages/AdminCommercePage'))
-const AdminVendorsPage = lazy(() => import('./pages/AdminVendorsPage'))
-const AdminProfessionalPage = lazy(() => import('./pages/AdminProfessionalPage'))
-const AdminMobilePage = lazy(() => import('./pages/AdminMobilePage'))
-const VendorOnboardingPage = lazy(() => import('./pages/VendorOnboardingPage'))
-const VendorDashboardPage = lazy(() => import('./pages/VendorDashboardPage'))
-const RFQPage = lazy(() => import('./pages/RFQPage'))
-const CustomerExperiencePage = lazy(() => import('./pages/CustomerExperiencePage'))
-const PrivacyCenterPage = lazy(() => import('./pages/PrivacyCenterPage'))
-const AddProductPage = lazy(() => import('./pages/AddProductPage'))
-const EditProductPage = lazy(() => import('./pages/EditProductPage'))
-const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'))
-const OrderInvoicePage = lazy(() => import('./pages/OrderInvoicePage'))
-const AdminOrderDetailPage = lazy(() => import('./pages/AdminOrderDetailPage'))
-const AdminPackingSlipPage = lazy(() => import('./pages/AdminPackingSlipPage'))
+const CHUNK_RELOAD_KEY = 'apex-link-chunk-reload'
+
+const lazyWithReload = (loader) =>
+  lazy(() =>
+    loader()
+      .then((module) => {
+        window.sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+        return module
+      })
+      .catch((error) => {
+        if (!window.sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+          window.sessionStorage.setItem(CHUNK_RELOAD_KEY, '1')
+          window.location.reload()
+          return new Promise(() => {})
+        }
+
+        window.sessionStorage.removeItem(CHUNK_RELOAD_KEY)
+        throw error
+      })
+  )
+
+const ProductPage = lazyWithReload(() => import('./pages/ProductPage'))
+const CheckoutPage = lazyWithReload(() => import('./pages/CheckoutPage'))
+const ProfilePage = lazyWithReload(() => import('./pages/ProfilePage'))
+const ForgotPasswordPage = lazyWithReload(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazyWithReload(() => import('./pages/ResetPasswordPage'))
+const TrackOrderPage = lazyWithReload(() => import('./pages/TrackOrderPage'))
+const ContactPage = lazyWithReload(() => import('./pages/ContactPage'))
+const FAQPage = lazyWithReload(() => import('./pages/FAQPage'))
+const TermsPage = lazyWithReload(() => import('./pages/TermsPage'))
+const PrivacyPage = lazyWithReload(() => import('./pages/PrivacyPage'))
+const ReturnsPage = lazyWithReload(() => import('./pages/ReturnsPage'))
+const ShippingPage = lazyWithReload(() => import('./pages/ShippingPage'))
+const AdminDashboard = lazyWithReload(() => import('./pages/AdminDashboard'))
+const AdminCategoriesPage = lazyWithReload(() => import('./pages/AdminCategoriesPage'))
+const AdminMessagesPage = lazyWithReload(() => import('./pages/AdminMessagesPage'))
+const AdminCommercePage = lazyWithReload(() => import('./pages/AdminCommercePage'))
+const AdminVendorsPage = lazyWithReload(() => import('./pages/AdminVendorsPage'))
+const AdminProfessionalPage = lazyWithReload(() => import('./pages/AdminProfessionalPage'))
+const AdminMobilePage = lazyWithReload(() => import('./pages/AdminMobilePage'))
+const VendorOnboardingPage = lazyWithReload(() => import('./pages/VendorOnboardingPage'))
+const VendorDashboardPage = lazyWithReload(() => import('./pages/VendorDashboardPage'))
+const RFQPage = lazyWithReload(() => import('./pages/RFQPage'))
+const CustomerExperiencePage = lazyWithReload(() => import('./pages/CustomerExperiencePage'))
+const PrivacyCenterPage = lazyWithReload(() => import('./pages/PrivacyCenterPage'))
+const AddProductPage = lazyWithReload(() => import('./pages/AddProductPage'))
+const EditProductPage = lazyWithReload(() => import('./pages/EditProductPage'))
+const OrderSuccessPage = lazyWithReload(() => import('./pages/OrderSuccessPage'))
+const OrderInvoicePage = lazyWithReload(() => import('./pages/OrderInvoicePage'))
+const AdminOrderDetailPage = lazyWithReload(() => import('./pages/AdminOrderDetailPage'))
+const AdminPackingSlipPage = lazyWithReload(() => import('./pages/AdminPackingSlipPage'))
 
 function App() {
   return (
