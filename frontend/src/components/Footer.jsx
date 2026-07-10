@@ -88,6 +88,11 @@ const Footer = () => {
               </Link>
             </li>
             <li>
+              <Link to="/rfq" className="transition-colors hover:text-brand-accent">
+                Request a Quote
+              </Link>
+            </li>
+            <li>
               <Link to="/category/textiles-apparel" className="transition-colors hover:text-brand-accent">
                 Textiles &amp; Apparel
               </Link>
@@ -125,7 +130,7 @@ const Footer = () => {
             </li>
             <li>
               <Link to="/about" className="transition-colors hover:text-brand-accent">
-                Our Story
+                About
               </Link>
             </li>
           </ul>

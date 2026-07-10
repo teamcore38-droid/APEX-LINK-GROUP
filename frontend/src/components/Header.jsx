@@ -8,10 +8,8 @@ const PRIMARY_NAV_LINKS = [
   ['HOME', '/'],
   ['SHOP', '/products'],
   ['CATEGORIES', '/categories'],
-  ['RFQ', '/rfq'],
   ['EXPERIENCE', '/customer-experience'],
   ['TRACK ORDER', '/track-order'],
-  ['ABOUT', '/about'],
   ['CONTACT', '/contact'],
 ];
 
