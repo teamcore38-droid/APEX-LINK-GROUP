@@ -203,7 +203,7 @@ const CustomSelect = ({
             {leftIcon}
           </span>
         ) : null}
-        <span className={`${!selectedOption ? 'text-gray-400' : ''}`}>{selectedLabel}</span>
+        <span className={`block truncate ${!selectedOption ? 'text-gray-400' : ''}`}>{selectedLabel}</span>
         <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#d99a32]">
           <ChevronDown
             size={18}
@@ -218,7 +218,7 @@ const CustomSelect = ({
           id={listboxId}
           aria-labelledby={selectId}
           tabIndex={-1}
-          className={`absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-[#e8cfbb] bg-[#fffaf4] py-1.5 shadow-[0_22px_40px_rgba(53, 26, 17,0.16)] ${listClassName}`}
+          className={`absolute z-50 mt-2 max-h-64 min-w-full w-max max-w-[min(22rem,calc(100vw-2rem))] overflow-auto rounded-xl border border-[#e8cfbb] bg-[#fffaf4] py-1.5 shadow-[0_22px_40px_rgba(53, 26, 17,0.16)] ${listClassName}`}
           onKeyDown={onListboxKeyDown}
         >
           {options.map((option, index) => {
@@ -234,7 +234,7 @@ const CustomSelect = ({
                 }}
                 role="option"
                 aria-selected={isSelected}
-                className={`mx-1 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${
+                className={`mx-1 flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                   option.disabled
                     ? 'cursor-not-allowed text-gray-300'
                     : isActive
@@ -251,7 +251,7 @@ const CustomSelect = ({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => selectByIndex(index)}
               >
-                <span>{option.label}</span>
+                <span className="whitespace-nowrap">{option.label}</span>
                 {isSelected ? <Check size={15} className="text-brand-accent" /> : null}
               </li>
             );

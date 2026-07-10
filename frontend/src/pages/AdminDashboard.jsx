@@ -631,7 +631,7 @@ const AdminDashboard = () => {
                   {showProductSkeleton ? (
                     <ProductFiltersSkeleton />
                   ) : (
-                    <div className="grid gap-4 lg:grid-cols-[1.6fr_repeat(4,minmax(0,1fr))]">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.3fr)_repeat(3,minmax(150px,1fr))] 2xl:grid-cols-[minmax(260px,1.6fr)_repeat(4,minmax(160px,1fr))]">
                       <label className="relative block">
                         <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                           Search Products
@@ -683,7 +683,7 @@ const AdminDashboard = () => {
                         />
                       </label>
 
-                      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <div className="grid gap-4 md:col-span-2 sm:grid-cols-[minmax(180px,1fr)_auto] xl:col-span-4 xl:max-w-xl 2xl:col-span-1 2xl:max-w-none">
                         <label className="block">
                           <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                             Sort
@@ -861,7 +861,7 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="hidden overflow-x-auto xl:block">
-                      <table className="w-full border-collapse text-left">
+                      <table className="min-w-[1120px] w-full border-collapse text-left">
                         <thead>
                           <tr className="border-b-2 border-gray-200 bg-gray-50/60 text-xs font-bold uppercase tracking-wider text-gray-500">
                             <th className="px-4 py-4">Product</th>
