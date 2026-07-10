@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Mail, Menu, ShoppingBag, User, LogOut, MapPinned } from 'lucide-react';
+import { ChevronDown, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -158,6 +158,24 @@ const Header = () => {
                   </Link>
                   {canAccessAdmin && (
                     <Link
+                      to="/admin"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Products
+                    </Link>
+                  )}
+                  {canAccessAdmin && (
+                    <Link
+                      to="/admin/products/new"
+                      onClick={() => setAccountMenuOpen(false)}
+                      className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
+                    >
+                      <PackagePlus size={16} className="mr-3 text-brand-accent" /> Add Product
+                    </Link>
+                  )}
+                  {canAccessAdmin && (
+                    <Link
                       to="/admin/professional"
                       onClick={() => setAccountMenuOpen(false)}
                       className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
@@ -284,7 +302,12 @@ const Header = () => {
                 )}
                 {canAccessAdmin && (
                   <Link to="/admin" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
-                    Admin
+                    Products
+                  </Link>
+                )}
+                {canAccessAdmin && (
+                  <Link to="/admin/products/new" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
+                    Add Product
                   </Link>
                 )}
                 {canAccessAdmin && (
