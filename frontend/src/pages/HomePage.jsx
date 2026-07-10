@@ -255,7 +255,7 @@ const HomePage = () => {
           <img
             src="/logo.webp"
             alt="Apex Fashion logo"
-            className="mx-auto mb-8 mt-3 h-28 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
+            className="mx-auto mb-8 mt-3 h-36 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
           />
           <p className="mx-auto mb-7 hidden max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:block md:text-xl">
             Apex Link Group connects you with verified manufacturers and premium products across textiles, food, technology, industrial equipment, and beyond — with enterprise-grade quality assurance on every order.
