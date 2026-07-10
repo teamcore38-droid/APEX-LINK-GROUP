@@ -100,6 +100,13 @@ const HomePage = () => {
     return () => window.clearInterval(heroTimer);
   }, []);
 
+  useEffect(() => {
+    [...heroBackgroundImages, ...mobileHeroBackgroundImages].forEach((imageUrl) => {
+      const image = new Image();
+      image.src = imageUrl;
+    });
+  }, []);
+
   const getCategoryCardKey = (category) =>
     category?._id || category?.slug || String(category?.name || '');
 
@@ -205,24 +212,30 @@ const HomePage = () => {
               'radial-gradient(ellipse at 20% 20%, rgba(217, 154, 50,0.14), transparent 52%), radial-gradient(ellipse at 80% 75%, rgba(140, 59, 42,0.85), transparent 62%), linear-gradient(155deg, #2a140e 0%, #351a11 45%, #4a2317 100%)',
           }}
         ></div>
-        <div
-          className="hero-bg-pan absolute inset-y-0 -left-[12%] -right-[12%] transition-opacity duration-1000 md:hidden"
-          style={{
-            backgroundImage: `url(${mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.42,
-          }}
-        ></div>
-        <div
-          className="hero-bg-pan absolute inset-y-0 -left-[10%] -right-[10%] hidden transition-opacity duration-1000 md:block"
-          style={{
-            backgroundImage: `url(${heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.4,
-          }}
-        ></div>
+        {mobileHeroBackgroundImages.map((imageUrl, index) => (
+          <div
+            key={`mobile-hero-bg-${imageUrl}`}
+            className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[12%] -right-[12%] md:hidden"
+            style={{
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: index === activeHeroImage % mobileHeroBackgroundImages.length ? 0.42 : 0,
+            }}
+          ></div>
+        ))}
+        {heroBackgroundImages.map((imageUrl, index) => (
+          <div
+            key={`desktop-hero-bg-${imageUrl}`}
+            className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[10%] -right-[10%] hidden md:block"
+            style={{
+              backgroundImage: `url(${imageUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: index === activeHeroImage % heroBackgroundImages.length ? 0.4 : 0,
+            }}
+          ></div>
+        ))}
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
