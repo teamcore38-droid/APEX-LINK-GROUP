@@ -28,7 +28,9 @@ const FeaturedProductCarousel = ({ products = [] }) => {
   const [itemsPerView, setItemsPerView] = useState(() => getItemsPerView(window.innerWidth));
   const [activePage, setActivePage] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const carouselRef = useRef(null);
+  const touchStartRef = useRef(null);
 
   const curatedProducts = useMemo(() => products.slice(0, 8), [products]);
   const pages = useMemo(
@@ -76,6 +78,66 @@ const FeaturedProductCarousel = ({ products = [] }) => {
     setIsPaused(false);
   };
 
+  const onTouchStart = (event) => {
+    if (pages.length <= 1 || event.touches.length !== 1) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      width: carouselRef.current?.offsetWidth || window.innerWidth,
+    };
+    setIsPaused(true);
+    setDragOffset(0);
+  };
+
+  const onTouchMove = (event) => {
+    if (!touchStartRef.current || pages.length <= 1 || event.touches.length !== 1) {
+      return;
+    }
+
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) + 8;
+
+    if (!isHorizontalSwipe) {
+      return;
+    }
+
+    const maxOffset = touchStartRef.current.width * 0.22;
+    const nextOffset = Math.max(-maxOffset, Math.min(maxOffset, deltaX));
+    setDragOffset(nextOffset);
+  };
+
+  const finishTouchGesture = (event) => {
+    if (!touchStartRef.current || pages.length <= 1) {
+      touchStartRef.current = null;
+      setDragOffset(0);
+      setIsPaused(false);
+      return;
+    }
+
+    const touch = event.changedTouches?.[0];
+    const deltaX = touch ? touch.clientX - touchStartRef.current.x : dragOffset;
+    const deltaY = touch ? touch.clientY - touchStartRef.current.y : 0;
+    const threshold = Math.max(48, touchStartRef.current.width * 0.16);
+
+    if (Math.abs(deltaX) >= threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX < 0) {
+        goToNext();
+      } else {
+        goToPrev();
+      }
+    }
+
+    touchStartRef.current = null;
+    setDragOffset(0);
+    setIsPaused(false);
+  };
+
   if (pages.length === 0) {
     return null;
   }
@@ -91,12 +153,16 @@ const FeaturedProductCarousel = ({ products = [] }) => {
       onMouseLeave={() => setIsPaused(false)}
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={onBlurCapture}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={finishTouchGesture}
+      onTouchCancel={finishTouchGesture}
     >
-      <div className="overflow-hidden rounded-[28px]">
+      <div className="overflow-hidden rounded-[28px] touch-pan-y">
         <div
-          className="flex transition-transform duration-700 ease-out"
+          className={`flex ${dragOffset ? 'transition-none' : 'transition-transform duration-700 ease-out'}`}
           style={{
-            transform: `translateX(-${safeActivePage * 100}%)`,
+            transform: `translateX(calc(-${safeActivePage * 100}% + ${dragOffset}px))`,
           }}
         >
           {pages.map((pageProducts, pageIndex) => (
