@@ -34,7 +34,7 @@ const fallbackCategories = [
   },
 ];
 
-const heroBackgroundImages = Array.from({ length: 8 }, (_, index) => `/hero/hero-bg-${index + 1}.jpg`);
+const heroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-bg-${index + 1}.webp`);
 
 const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
