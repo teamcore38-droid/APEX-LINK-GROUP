@@ -146,7 +146,7 @@ export const getProductStatusBadge = (product = {}) => {
   if (product.isFeatured) {
     return {
       label: 'Featured',
-      className: 'bg-[#c9a227] text-white',
+      className: 'bg-[#d99a32] text-white',
     };
   }
 

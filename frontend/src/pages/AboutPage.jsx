@@ -26,7 +26,7 @@ const AboutPage = () => {
           </div>
         </div>
 
-        <div className="bg-[#edf1f7] -mx-4 px-4 py-16 mb-20">
+        <div className="bg-[#f6eadf] -mx-4 px-4 py-16 mb-20">
           <div className="container mx-auto">
             <h2 className="text-3xl font-serif font-bold mb-12 text-center">Our Quality Promise</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">

@@ -268,7 +268,7 @@ const AdminCategoriesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-12">
+    <div className="min-h-screen bg-[#fff7ee] py-12">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <Link
@@ -295,7 +295,7 @@ const AdminCategoriesPage = () => {
         </div>
 
         <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">
-          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">
@@ -329,7 +329,7 @@ const AdminCategoriesPage = () => {
                   value={form.name}
                   onChange={handleChange}
                   required
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -344,7 +344,7 @@ const AdminCategoriesPage = () => {
                   value={form.slug}
                   onChange={handleChange}
                   placeholder="Leave blank to auto-generate from name"
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
                 />
                 <p className="mt-2 text-xs text-gray-500">
                   Preview: <span className="font-semibold text-brand-primary">/{slugPreview || 'category-slug'}</span>
@@ -362,7 +362,7 @@ const AdminCategoriesPage = () => {
                   value={form.image}
                   onChange={handleChange}
                   placeholder="https://..."
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
                 />
               </div>
 
@@ -376,7 +376,7 @@ const AdminCategoriesPage = () => {
                   rows="4"
                   value={form.description}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -391,11 +391,11 @@ const AdminCategoriesPage = () => {
                     type="number"
                     value={form.displayOrder}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
-                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold text-brand-dark">
+                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm font-semibold text-brand-dark">
                   <input
                     name="isActive"
                     type="checkbox"
@@ -435,7 +435,7 @@ const AdminCategoriesPage = () => {
             </form>
           </section>
 
-          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Category List</p>

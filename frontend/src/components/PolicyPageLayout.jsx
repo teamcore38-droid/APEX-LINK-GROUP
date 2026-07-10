@@ -11,7 +11,7 @@ const PolicyPageLayout = ({
   cta,
 }) => {
   return (
-    <div className="bg-[#f7f9fc] py-16">
+    <div className="bg-[#fff7ee] py-16">
       <div className="container mx-auto max-w-6xl px-4">
         <section className="overflow-hidden rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">{eyebrow}</p>
@@ -38,7 +38,7 @@ const PolicyPageLayout = ({
             {highlights.map(({ icon: Icon, title: cardTitle, body }) => (
               <article
                 key={cardTitle}
-                className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]"
+                className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <Icon size={20} />
@@ -51,7 +51,7 @@ const PolicyPageLayout = ({
         )}
 
         <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
-          <div className="rounded-[32px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+          <div className="rounded-[32px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
             <div className="space-y-8">
               {sections.map((section) => (
                 <article
@@ -70,7 +70,7 @@ const PolicyPageLayout = ({
                       {section.points.map((point) => (
                         <div
                           key={point}
-                          className="rounded-2xl border border-gray-100 bg-[#fafbfd] px-4 py-3 text-sm leading-7 text-gray-600"
+                          className="rounded-2xl border border-gray-100 bg-[#fffaf4] px-4 py-3 text-sm leading-7 text-gray-600"
                         >
                           {point}
                         </div>
@@ -83,7 +83,7 @@ const PolicyPageLayout = ({
           </div>
 
           <aside className="space-y-6">
-            <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-accent">Need more help?</p>
               <h2 className="mt-3 font-serif text-2xl font-bold text-brand-dark">Speak with the Apex Link Group team</h2>
               <p className="mt-3 text-sm leading-7 text-gray-600">
@@ -106,7 +106,7 @@ const PolicyPageLayout = ({
             </div>
 
             {cta && (
-              <div className="rounded-[28px] border border-brand-accent/20 bg-[#f5f8fc] p-6 shadow-sm">
+              <div className="rounded-[28px] border border-brand-accent/20 bg-[#fbf3ea] p-6 shadow-sm">
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-accent">{cta.eyebrow}</p>
                 <h2 className="mt-3 font-serif text-2xl font-bold text-brand-dark">{cta.title}</h2>
                 <p className="mt-3 text-sm leading-7 text-gray-600">{cta.body}</p>

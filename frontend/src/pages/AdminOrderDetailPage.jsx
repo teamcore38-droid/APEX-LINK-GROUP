@@ -405,7 +405,7 @@ const AdminOrderDetailPage = () => {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[28px] border border-brand-accent/15 bg-white shadow-[0_20px_60px_rgba(11,31,58,0.08)]">
+        <div className="overflow-hidden rounded-[28px] border border-brand-accent/15 bg-white shadow-[0_20px_60px_rgba(53, 26, 17,0.08)]">
           <div className="border-b border-brand-accent/10 bg-gradient-to-r from-brand-dark via-brand-primary to-brand-accent px-6 py-8 text-white sm:px-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
               <div>

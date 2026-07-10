@@ -128,7 +128,7 @@ const FeaturedProductCarousel = ({ products = [] }) => {
               type="button"
               onClick={goToPrev}
               aria-label="Previous featured products"
-              className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#ccd8e8] bg-white/90 text-[#24406b] shadow-lg transition hover:border-[#8a6d1a] hover:text-[#8a6d1a]"
+              className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e0c3ae] bg-white/90 text-[#6b321f] shadow-lg transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
               <ChevronLeft size={22} />
             </button>
@@ -136,7 +136,7 @@ const FeaturedProductCarousel = ({ products = [] }) => {
               type="button"
               onClick={goToNext}
               aria-label="Next featured products"
-              className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#ccd8e8] bg-white/90 text-[#24406b] shadow-lg transition hover:border-[#8a6d1a] hover:text-[#8a6d1a]"
+              className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e0c3ae] bg-white/90 text-[#6b321f] shadow-lg transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
               <ChevronRight size={22} />
             </button>
@@ -154,8 +154,8 @@ const FeaturedProductCarousel = ({ products = [] }) => {
                   aria-current={isCurrent ? 'true' : 'false'}
                   className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
                     isCurrent
-                      ? 'border-[#8a6d1a] bg-[#8a6d1a] text-white'
-                      : 'border-[#ccd8e8] bg-white text-[#46648c] hover:border-[#8a6d1a] hover:text-[#8a6d1a]'
+                      ? 'border-[#b36a2e] bg-[#b36a2e] text-white'
+                      : 'border-[#e0c3ae] bg-white text-[#8f5a34] hover:border-[#b36a2e] hover:text-[#b36a2e]'
                   }`}
                 >
                   {index + 1}
@@ -169,7 +169,7 @@ const FeaturedProductCarousel = ({ products = [] }) => {
               type="button"
               onClick={goToPrev}
               aria-label="Previous featured products"
-              className="inline-flex items-center rounded-full border border-[#ccd8e8] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#24406b] transition hover:border-[#8a6d1a] hover:text-[#8a6d1a]"
+              className="inline-flex items-center rounded-full border border-[#e0c3ae] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#6b321f] transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
               <ChevronLeft size={16} className="mr-2" /> Prev
             </button>
@@ -177,7 +177,7 @@ const FeaturedProductCarousel = ({ products = [] }) => {
               type="button"
               onClick={goToNext}
               aria-label="Next featured products"
-              className="inline-flex items-center rounded-full border border-[#ccd8e8] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#24406b] transition hover:border-[#8a6d1a] hover:text-[#8a6d1a]"
+              className="inline-flex items-center rounded-full border border-[#e0c3ae] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#6b321f] transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
               Next <ChevronRight size={16} className="ml-2" />
             </button>

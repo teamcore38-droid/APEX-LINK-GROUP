@@ -15,7 +15,7 @@ const MESSAGE_STATUS_OPTIONS = [
 
 const STATUS_BADGES = {
   New: 'border-amber-200 bg-amber-50 text-amber-800',
-  Read: 'border-blue-200 bg-blue-50 text-blue-800',
+  Read: 'border-amber-200 bg-amber-50 text-amber-800',
   Replied: 'border-green-200 bg-green-50 text-green-800',
   Archived: 'border-gray-200 bg-gray-100 text-gray-700',
 };
@@ -141,7 +141,7 @@ const AdminMessagesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-10">
+    <div className="min-h-screen bg-[#fff7ee] py-10">
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <Link
@@ -152,7 +152,7 @@ const AdminMessagesPage = () => {
           </Link>
         </div>
 
-        <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_20px_60px_rgba(11,31,58,0.08)]">
+        <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_20px_60px_rgba(53, 26, 17,0.08)]">
           <section className="bg-gradient-to-r from-brand-dark via-brand-primary to-brand-accent px-6 py-10 text-white sm:px-10">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-white/80">Admin Inbox</p>
             <h1 className="mt-4 font-serif text-4xl font-bold">Customer Contact Messages</h1>

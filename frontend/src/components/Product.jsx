@@ -24,15 +24,15 @@ const Product = ({ product }) => {
   };
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#dce4ef] bg-white shadow-[0_20px_50px_rgba(11,31,58,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(11,31,58,0.14)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-[#ead6c6] bg-white shadow-[0_20px_50px_rgba(53, 26, 17,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(53, 26, 17,0.14)]">
       <Link to={`/product/${product._id}`} className="relative block">
-        <div className="relative h-72 overflow-hidden bg-[#ecf0f7]">
+        <div className="relative h-72 overflow-hidden bg-[#f4e7db]">
           <img
             src={product.image}
             alt={product.name}
             className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#071427]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
 
           {statusBadge && (
             <span
@@ -54,18 +54,18 @@ const Product = ({ product }) => {
 
       <div className="flex flex-1 flex-col p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#a07c16]">
+          <span className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#c9822b]">
             {product.category}
           </span>
           {product.weight && (
-            <span className="rounded-full bg-[#eef2f8] px-3 py-1 text-[11px] font-semibold text-[#2c4a73]">
+            <span className="rounded-full bg-[#f5e9dd] px-3 py-1 text-[11px] font-semibold text-[#744126]">
               {product.weight}
             </span>
           )}
         </div>
 
         <Link to={`/product/${product._id}`} className="block">
-          <h3 className="font-serif text-2xl font-bold text-[#081729] transition-colors duration-200 group-hover:text-[#a07c16]">
+          <h3 className="font-serif text-2xl font-bold text-[#2a140e] transition-colors duration-200 group-hover:text-[#c9822b]">
             {product.name}
           </h3>
         </Link>
@@ -75,14 +75,14 @@ const Product = ({ product }) => {
         </p>
 
         <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center text-[#c9a227]">
+          <div className="flex items-center text-[#d99a32]">
             {[...Array(5)].map((_, index) => (
               <Star
                 key={index}
                 size={14}
                 fill={index < Math.floor(product.rating || 0) ? 'currentColor' : 'none'}
                 className={
-                  index < Math.floor(product.rating || 0) ? 'text-[#c9a227]' : 'text-[#dce4ef]'
+                  index < Math.floor(product.rating || 0) ? 'text-[#d99a32]' : 'text-[#ead6c6]'
                 }
               />
             ))}
@@ -92,14 +92,14 @@ const Product = ({ product }) => {
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-4 border-t border-[#e6ebf4] pt-5">
+        <div className="mt-6 flex flex-col gap-4 border-t border-[#efdfd2] pt-5">
           <div>
             {product.compareAtPrice > product.price && (
               <p className="text-sm text-gray-400 line-through">
                 {formatCurrency(product.compareAtPrice)}
               </p>
             )}
-            <p className="font-serif text-3xl font-bold text-[#081729]">
+            <p className="font-serif text-3xl font-bold text-[#2a140e]">
               {formatCurrency(product.price)}
             </p>
           </div>
@@ -107,7 +107,7 @@ const Product = ({ product }) => {
           <div className="flex w-full items-center gap-2">
             <Link
               to={`/product/${product._id}`}
-              className="inline-flex flex-1 items-center justify-center rounded-full border border-[#ccd8e8] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#2c4a73] transition-colors duration-200 hover:border-[#2c4a73] hover:bg-[#eef2f8]"
+              className="inline-flex flex-1 items-center justify-center rounded-full border border-[#e0c3ae] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#744126] transition-colors duration-200 hover:border-[#744126] hover:bg-[#f5e9dd]"
             >
               View <ArrowRight size={13} className="ml-2" />
             </Link>
@@ -124,7 +124,7 @@ const Product = ({ product }) => {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-[#22406b] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-[#081729]"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-[#9b432a] px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-[#2a140e]"
               >
                 <ShoppingCart size={13} className="mr-2" /> Add
               </button>

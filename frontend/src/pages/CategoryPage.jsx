@@ -112,7 +112,7 @@ const CategoryPage = () => {
 
   if (loadingCategory) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#f4f7fb]">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#f8efe6]">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent"></div>
         <p className="mt-4 font-serif text-lg text-brand-dark">Loading category details...</p>
       </div>
@@ -145,7 +145,7 @@ const CategoryPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f7fb] pb-16">
+    <div className="min-h-screen bg-[#f8efe6] pb-16">
       <div className="relative h-[420px] overflow-hidden">
         <img src={getCategoryImage(category)} alt={category?.name} className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/85 via-brand-dark/45 to-brand-dark/25" />
@@ -163,7 +163,7 @@ const CategoryPage = () => {
       </div>
 
       <div className="container mx-auto max-w-7xl px-4 pt-10">
-        <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.06)]">
+        <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.06)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Category Collection</p>
@@ -181,7 +181,7 @@ const CategoryPage = () => {
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder={`Search ${category?.name?.toLowerCase() || 'products'}...`}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-11 pr-4 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-11 pr-4 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
                 />
               </label>
 
@@ -227,11 +227,11 @@ const CategoryPage = () => {
             {loadingProducts ? (
               <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[...Array(4)].map((_, index) => (
-                  <div key={index} className="h-[420px] animate-pulse rounded-[28px] bg-[#f4f7fb]" />
+                  <div key={index} className="h-[420px] animate-pulse rounded-[28px] bg-[#f8efe6]" />
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-brand-accent/30 bg-[#f4f7fb] px-6 py-14 text-center">
+              <div className="rounded-3xl border border-dashed border-brand-accent/30 bg-[#f8efe6] px-6 py-14 text-center">
                 <p className="font-serif text-2xl font-bold text-brand-dark">No products found in this category</p>
                 <p className="mt-2 text-sm text-gray-500">
                   Try adjusting your search or continue browsing the full marketplace.
@@ -264,7 +264,7 @@ const CategoryPage = () => {
                   ))}
                 </div>
 
-                <div className="mt-8 flex flex-col gap-4 border-t border-[#e1e8f2] pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-8 flex flex-col gap-4 border-t border-[#ecd9ca] pt-6 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-gray-500">
                     Page <span className="font-semibold text-brand-dark">{meta.currentPage}</span> of{' '}
                     <span className="font-semibold text-brand-dark">{meta.totalPages}</span>

@@ -41,9 +41,9 @@ const ResetPasswordPage = () => {
   };
 
   return (
-    <div className="bg-[#f7f9fc] py-20">
+    <div className="bg-[#fff7ee] py-20">
       <div className="container mx-auto flex justify-center px-4">
-        <div className="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(11,31,58,0.08)] border border-gray-100">
+        <div className="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] border border-gray-100">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Set a New Password</p>
             <h1 className="mt-4 font-serif text-4xl font-bold text-brand-dark">Reset your account password</h1>
@@ -74,7 +74,7 @@ const ResetPasswordPage = () => {
                   required
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                   placeholder="At least 6 characters"
                 />
               </div>
@@ -89,7 +89,7 @@ const ResetPasswordPage = () => {
                   required
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                   placeholder="Repeat your new password"
                 />
               </div>

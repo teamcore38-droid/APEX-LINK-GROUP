@@ -36,7 +36,7 @@ const Header = () => {
     location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#081729] py-3 text-[#f7f9fc] shadow-md lg:py-4">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#2a140e] py-3 text-[#fff7ee] shadow-md lg:py-4">
       <div className="container mx-auto flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
         <Link to="/" className="flex flex-col items-center">
           <div className="flex items-center gap-2 text-lg font-serif font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] lg:text-2xl lg:tracking-widest">
@@ -85,7 +85,7 @@ const Header = () => {
             <div className="relative">
               <ShoppingBag size={22} className="text-brand-accent" />
               {cartItems.length > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-[#081729]">
+                <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-accent text-[10px] font-bold text-[#2a140e]">
                   {cartItems.reduce((acc, item) => acc + item.qty, 0)}
                 </span>
               )}
@@ -106,7 +106,7 @@ const Header = () => {
               </button>
 
               {accountMenuOpen && (
-                <div className="absolute right-0 mt-3 w-64 overflow-hidden rounded-[24px] border border-gray-100 bg-white p-3 text-brand-dark shadow-[0_18px_40px_rgba(11,31,58,0.18)]">
+                <div className="absolute right-0 mt-3 w-64 overflow-hidden rounded-[24px] border border-gray-100 bg-white p-3 text-brand-dark shadow-[0_18px_40px_rgba(53, 26, 17,0.18)]">
                   <Link
                     to="/profile"
                     onClick={() => setAccountMenuOpen(false)}
@@ -223,7 +223,7 @@ const Header = () => {
               </Link>
               <Link
                 to="/register"
-                className="rounded-full border border-brand-accent/30 px-3 py-2 text-sm font-semibold uppercase tracking-[0.16em] text-brand-accent transition-colors duration-200 hover:bg-brand-accent hover:text-[#081729] xl:px-4"
+                className="rounded-full border border-brand-accent/30 px-3 py-2 text-sm font-semibold uppercase tracking-[0.16em] text-brand-accent transition-colors duration-200 hover:bg-brand-accent hover:text-[#2a140e] xl:px-4"
               >
                 Register
               </Link>
@@ -242,7 +242,7 @@ const Header = () => {
       </div>
 
       {accountMenuOpen && (
-        <div className="border-t border-white/10 bg-[#060f1d] px-4 py-4 lg:hidden">
+        <div className="border-t border-white/10 bg-[#1f0f0a] px-4 py-4 lg:hidden">
           <div className="container mx-auto space-y-3">
             <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
               {PRIMARY_NAV_LINKS.map(([label, path]) => (

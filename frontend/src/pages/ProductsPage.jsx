@@ -168,22 +168,22 @@ const ProductsPage = () => {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f4f7fb] py-16">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#e2e9f3] to-transparent opacity-70" />
+    <div className="relative min-h-screen overflow-hidden bg-[#f8efe6] py-16">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#ead6c6] to-transparent opacity-70" />
       <div className="pointer-events-none absolute left-0 top-0 h-64 w-64 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-multiply" />
 
       <div className="relative z-10 container mx-auto max-w-7xl px-4">
-        <div className="rounded-[36px] bg-[#0d2340] px-6 py-14 text-center text-white shadow-[0_24px_60px_rgba(11,31,58,0.25)] sm:px-10">
+        <div className="rounded-[36px] bg-[#3a1b12] px-6 py-14 text-center text-white shadow-[0_24px_60px_rgba(53, 26, 17,0.25)] sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">The Global Product Library</p>
-          <h1 className="mt-4 font-serif text-4xl font-bold text-[#f5f8fc] [text-shadow:0_4px_24px_rgba(0,0,0,0.35)] sm:text-6xl">
+          <h1 className="mt-4 font-serif text-4xl font-bold text-[#fbf3ea] [text-shadow:0_4px_24px_rgba(0,0,0,0.35)] sm:text-6xl">
             Shop our curated collection
           </h1>
-          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-[#edf1f8] sm:text-base">
+          <p className="mx-auto mt-5 max-w-3xl text-sm leading-7 text-[#f5e7da] sm:text-base">
             Explore premium products across textiles, food, technology, industrial equipment, and more — with refined filtering built for real shopping.
           </p>
         </div>
 
-        <div className="mt-10 rounded-[30px] bg-white p-6 shadow-[0_20px_60px_rgba(11,31,58,0.08)]">
+        <div className="mt-10 rounded-[30px] bg-white p-6 shadow-[0_20px_60px_rgba(53, 26, 17,0.08)]">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="relative w-full lg:max-w-md">
               <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -193,7 +193,7 @@ const ProductsPage = () => {
               <input
                 type="text"
                 placeholder="Search products, brands, origin, or SKU..."
-                className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-gray-600 shadow-sm outline-none transition focus:border-brand-accent"
+                className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-gray-600 shadow-sm outline-none transition focus:border-brand-accent"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
               />
@@ -228,7 +228,7 @@ const ProductsPage = () => {
                   value={filters.minPrice}
                   onChange={(event) => updateFilter('minPrice', event.target.value)}
                   placeholder="0"
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </label>
               <label className="block">
@@ -242,7 +242,7 @@ const ProductsPage = () => {
                   value={filters.maxPrice}
                   onChange={(event) => updateFilter('maxPrice', event.target.value)}
                   placeholder="50"
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </label>
             </div>
@@ -323,11 +323,11 @@ const ProductsPage = () => {
           ) : loading ? (
             <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {[...Array(PRODUCT_PAGE_SIZE)].map((_, index) => (
-                <div key={index} className="h-[470px] animate-pulse rounded-[28px] bg-[#f4f7fb]" />
+                <div key={index} className="h-[470px] animate-pulse rounded-[28px] bg-[#f8efe6]" />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="mt-10 rounded-3xl border border-dashed border-brand-accent/30 bg-[#f4f7fb] px-6 py-12 text-center">
+            <div className="mt-10 rounded-3xl border border-dashed border-brand-accent/30 bg-[#f8efe6] px-6 py-12 text-center">
               <p className="font-serif text-3xl font-bold text-brand-dark">No products match your filters</p>
               <p className="mt-3 text-sm text-gray-500">
                 Try widening your price range, changing categories, or resetting the shop controls.
@@ -356,7 +356,7 @@ const ProductsPage = () => {
                 ))}
               </div>
 
-              <div className="mt-10 flex flex-col gap-4 border-t border-[#e1e8f2] pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-10 flex flex-col gap-4 border-t border-[#ecd9ca] pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-gray-500">
                   Page <span className="font-semibold text-brand-dark">{meta.currentPage}</span> of{' '}
                   <span className="font-semibold text-brand-dark">{meta.totalPages}</span>
@@ -395,11 +395,11 @@ const ProductsPage = () => {
             ['Fast Delivery', 'Premium products shipped with care worldwide.'],
           ].map(([title, subtitle]) => (
             <div key={title} className="flex items-start gap-4 rounded-[24px] bg-white/70 p-5 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-brand-accent/30 bg-[#edf1f8]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-brand-accent/30 bg-[#f5e7da]">
                 <BadgeCheck className="text-brand-primary" size={20} />
               </div>
               <div>
-                <h4 className="mb-1 text-sm font-bold text-[#081729]">{title}</h4>
+                <h4 className="mb-1 text-sm font-bold text-[#2a140e]">{title}</h4>
                 <p className="text-xs leading-6 text-gray-500">{subtitle}</p>
               </div>
             </div>

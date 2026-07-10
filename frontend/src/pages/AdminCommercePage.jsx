@@ -11,7 +11,7 @@ const Field = ({ label, value, onChange, type = 'text' }) => (
       type={type}
       value={value}
       onChange={(event) => onChange(type === 'number' ? Number(event.target.value) : event.target.value)}
-      className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none focus:border-brand-accent"
+      className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none focus:border-brand-accent"
     />
   </label>
 );
@@ -151,7 +151,7 @@ const AdminCommercePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-10">
+    <div className="min-h-screen bg-[#fff7ee] py-10">
       <div className="container mx-auto max-w-7xl px-4">
         <Link to="/admin" className="inline-flex items-center text-sm font-semibold text-brand-primary">
           <ArrowLeft size={16} className="mr-2" /> Back to Admin

@@ -55,7 +55,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.fullName}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div>
@@ -65,7 +65,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.phone}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div className="md:col-span-2">
@@ -75,7 +75,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.addressLine1}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div className="md:col-span-2">
@@ -85,7 +85,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.addressLine2}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div>
@@ -95,7 +95,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.city}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div>
@@ -105,7 +105,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.state}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div>
@@ -115,7 +115,7 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.postalCode}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
     <div>
@@ -125,10 +125,10 @@ const AddressFormFields = ({ form, onChange }) => (
         type="text"
         value={form.country}
         onChange={onChange}
-        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
       />
     </div>
-    <label className="md:col-span-2 flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold text-brand-dark">
+    <label className="md:col-span-2 flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm font-semibold text-brand-dark">
       <input
         name="isDefault"
         type="checkbox"
@@ -498,7 +498,7 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#f7f9fc]">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#fff7ee]">
         <div className="h-14 w-14 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent" />
         <p className="mt-4 font-serif text-xl text-brand-dark">Preparing your account dashboard...</p>
       </div>
@@ -523,7 +523,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-12">
+    <div className="min-h-screen bg-[#fff7ee] py-12">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -557,9 +557,9 @@ const ProfilePage = () => {
 
         <div className="mt-8 grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)]">
           <aside className="space-y-6">
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <div className="text-center">
-                <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#f7f9fc] bg-brand-primary text-4xl font-serif font-bold text-white shadow-md">
+                <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 border-[#fff7ee] bg-brand-primary text-4xl font-serif font-bold text-white shadow-md">
                   {profile.name?.charAt(0).toUpperCase()}
                 </div>
                 <h2 className="mt-4 font-serif text-2xl font-bold text-brand-dark">{profile.name}</h2>
@@ -596,7 +596,7 @@ const ProfilePage = () => {
               </button>
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Quick Actions</p>
               <div className="mt-5 grid gap-3">
                 {[
@@ -609,7 +609,7 @@ const ProfilePage = () => {
                     key={tabId}
                     type="button"
                     onClick={() => updateTab(tabId)}
-                    className="inline-flex items-center justify-between rounded-2xl border border-gray-100 bg-brand-light px-4 py-4 text-left transition-colors duration-200 hover:bg-[#eaeef6]"
+                    className="inline-flex items-center justify-between rounded-2xl border border-gray-100 bg-brand-light px-4 py-4 text-left transition-colors duration-200 hover:bg-[#f0e1d4]"
                   >
                     <span className="inline-flex items-center text-sm font-semibold text-brand-dark">
                       <Icon size={16} className="mr-3 text-brand-accent" /> {label}
@@ -634,7 +634,7 @@ const ProfilePage = () => {
             {activeTab === 'overview' && (
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-3">
-                  <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+                  <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                       <User size={20} />
                     </div>
@@ -651,7 +651,7 @@ const ProfilePage = () => {
                     </button>
                   </div>
 
-                  <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+                  <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                       <Home size={20} />
                     </div>
@@ -677,7 +677,7 @@ const ProfilePage = () => {
                     </button>
                   </div>
 
-                  <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+                  <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                       <Package size={20} />
                     </div>
@@ -695,7 +695,7 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+                <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                   <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Order Snapshot</p>
@@ -768,7 +768,7 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'profile' && (
-              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Profile Details</p>
                 <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Update your account information</h2>
 
@@ -793,7 +793,7 @@ const ProfilePage = () => {
                         type="text"
                         value={profileForm.name}
                         onChange={handleProfileChange}
-                        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                       />
                     </div>
                     <div>
@@ -803,7 +803,7 @@ const ProfilePage = () => {
                         type="text"
                         value={profileForm.phone}
                         onChange={handleProfileChange}
-                        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                       />
                     </div>
                   </div>
@@ -814,7 +814,7 @@ const ProfilePage = () => {
                       type="email"
                       value={profileForm.email}
                       onChange={handleProfileChange}
-                      className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                      className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                     />
                   </div>
                   <button
@@ -831,7 +831,7 @@ const ProfilePage = () => {
 
             {activeTab === 'addresses' && (
               <div className="space-y-8">
-                <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+                <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                   <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Address Book</p>
@@ -873,7 +873,7 @@ const ProfilePage = () => {
                   </form>
                 </div>
 
-                <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+                <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                   <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Saved Addresses</p>
                   <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Your delivery destinations</h2>
 
@@ -944,7 +944,7 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'orders' && (
-              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Order History</p>
@@ -1040,7 +1040,7 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'wishlist' && (
-              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Wishlist</p>
                 <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Saved for later</h2>
 
@@ -1086,7 +1086,7 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'returns' && (
-              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Returns / RMA</p>
                 <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Return request history</h2>
 
@@ -1107,7 +1107,7 @@ const ProfilePage = () => {
                             <p className="font-mono text-xs font-bold text-brand-primary">{returnRequest.order?._id || returnRequest.order}</p>
                             <h3 className="mt-2 font-serif text-2xl font-bold text-brand-dark">{returnRequest.resolution}</h3>
                           </div>
-                          <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-blue-700">
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-amber-800">
                             {returnRequest.status}
                           </span>
                         </div>
@@ -1123,7 +1123,7 @@ const ProfilePage = () => {
             )}
 
             {activeTab === 'password' && (
-              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+              <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Password Management</p>
                 <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Keep your account secure</h2>
 
@@ -1147,7 +1147,7 @@ const ProfilePage = () => {
                       type="password"
                       value={passwordForm.currentPassword}
                       onChange={handlePasswordChange}
-                      className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                      className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                     />
                   </div>
                   <div className="grid gap-5 md:grid-cols-2">
@@ -1158,7 +1158,7 @@ const ProfilePage = () => {
                         type="password"
                         value={passwordForm.newPassword}
                         onChange={handlePasswordChange}
-                        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                       />
                     </div>
                     <div>
@@ -1168,7 +1168,7 @@ const ProfilePage = () => {
                         type="password"
                         value={passwordForm.confirmPassword}
                         onChange={handlePasswordChange}
-                        className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                       />
                     </div>
                   </div>

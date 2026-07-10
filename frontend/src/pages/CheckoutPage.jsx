@@ -76,11 +76,11 @@ const validateCheckoutForm = (form) => {
 const cardElementOptions = {
   style: {
     base: {
-      color: '#0b1f3a',
+      color: '#351a11',
       fontFamily: 'Georgia, serif',
       fontSize: '16px',
       '::placeholder': {
-        color: '#7b8aa1',
+        color: '#9f8068',
       },
     },
     invalid: {
@@ -498,7 +498,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
   if (cartItems.length === 0 && !success) {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-20">
-        <div className="rounded-[32px] border border-dashed border-brand-accent/30 bg-white px-6 py-14 text-center shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+        <div className="rounded-[32px] border border-dashed border-brand-accent/30 bg-white px-6 py-14 text-center shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-light text-brand-primary shadow-sm">
             <Home size={28} />
           </div>
@@ -538,7 +538,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
 
   if (!userInfo && !guestCheckoutEnabled) {
     return (
-      <div className="min-h-screen bg-[#f7f9fc] py-16">
+      <div className="min-h-screen bg-[#fff7ee] py-16">
         <div className="container mx-auto max-w-4xl px-4">
           <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Checkout</p>
@@ -549,7 +549,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
           </div>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                 <LogIn size={24} />
               </div>
@@ -574,7 +574,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               </div>
             </section>
 
-            <aside className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <aside className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <h2 className="border-b border-gray-100 pb-4 font-serif text-2xl font-bold text-brand-dark">
                 Order Summary
               </h2>
@@ -641,7 +641,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-12">
+    <div className="min-h-screen bg-[#fff7ee] py-12">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Checkout</p>
@@ -658,14 +658,14 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
         )}
 
         {pendingOrderId && !success && (
-          <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
             Your order has already been created and is waiting for payment confirmation. You can safely retry payment without losing your cart.
           </div>
         )}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
           <form onSubmit={placeOrderHandler} className="space-y-8">
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <MapPin size={20} />
@@ -740,7 +740,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               )}
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <RotateCcw size={20} />
@@ -794,7 +794,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                       setCouponCode(event.target.value.toUpperCase());
                       setQuote(null);
                     }}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -806,7 +806,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                       setGiftCardCode(event.target.value.toUpperCase());
                       setQuote(null);
                     }}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
@@ -822,7 +822,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               </button>
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <UserRound size={20} />
@@ -842,7 +842,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.fullName}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -853,7 +853,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.phone}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -864,13 +864,13 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="email"
                     value={form.email}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <Home size={20} />
@@ -890,7 +890,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.addressLine1}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -901,7 +901,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.addressLine2}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -912,7 +912,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.city}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -923,7 +923,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.state}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -934,7 +934,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.postalCode}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -945,13 +945,13 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                     type="text"
                     value={form.country}
                     onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold text-brand-dark">
+                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm font-semibold text-brand-dark">
                   <input
                     type="checkbox"
                     checked={saveAddressToBook}
@@ -960,7 +960,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                   />
                   Save this address to my address book
                 </label>
-                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm font-semibold text-brand-dark">
+                <label className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm font-semibold text-brand-dark">
                   <input
                     type="checkbox"
                     checked={setDefaultAddress}
@@ -973,7 +973,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               </div>
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <CreditCard size={20} />
@@ -987,7 +987,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               </div>
 
               {stripeEnabled ? (
-                <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#f5f8fc] p-5">
+                <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
                   <div className="mb-4 flex items-center gap-2 text-brand-dark">
                     <LockKeyhole size={16} />
                     <p className="text-sm font-semibold">Secure payment powered by Stripe</p>
@@ -1000,7 +1000,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                   </p>
                 </div>
               ) : (
-                <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#f5f8fc] p-5">
+                <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
                     Development mode
                   </p>
@@ -1015,7 +1015,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               )}
             </section>
 
-            <section className="rounded-[28px] border border-brand-accent/20 bg-[#f5f8fc] p-6 shadow-sm">
+            <section className="rounded-[28px] border border-brand-accent/20 bg-[#fbf3ea] p-6 shadow-sm">
               <div className="flex items-start gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
                   <ShieldCheck size={20} />
@@ -1031,7 +1031,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
           </form>
 
           <aside className="space-y-6">
-            <div className="sticky top-24 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <div className="sticky top-24 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <h2 className="border-b border-gray-100 pb-4 font-serif text-2xl font-bold text-brand-dark">
                 Order Summary
               </h2>

@@ -199,7 +199,7 @@ const HomePage = () => {
           className="absolute inset-0"
           style={{
             backgroundImage:
-              'radial-gradient(ellipse at 20% 20%, rgba(201,162,39,0.14), transparent 52%), radial-gradient(ellipse at 80% 75%, rgba(22,54,95,0.85), transparent 62%), linear-gradient(155deg, #081729 0%, #0b1f3a 45%, #10294d 100%)',
+              'radial-gradient(ellipse at 20% 20%, rgba(217, 154, 50,0.14), transparent 52%), radial-gradient(ellipse at 80% 75%, rgba(140, 59, 42,0.85), transparent 62%), linear-gradient(155deg, #2a140e 0%, #351a11 45%, #4a2317 100%)',
           }}
         ></div>
         <div
@@ -216,7 +216,7 @@ const HomePage = () => {
           className="absolute inset-0 opacity-[0.05]"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(201,162,39,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(201,162,39,0.6) 1px, transparent 1px)',
+              'linear-gradient(rgba(217, 154, 50,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(217, 154, 50,0.6) 1px, transparent 1px)',
             backgroundSize: '56px 56px',
           }}
         ></div>
@@ -242,36 +242,36 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="border-y border-brand-accent/45 bg-gradient-to-r from-[#10294d] via-[#16365f] to-[#0a1e3c] py-6 text-white md:py-8">
+      <div className="border-y border-brand-accent/45 bg-gradient-to-r from-[#4a2317] via-[#8c3b2a] to-[#31160f] py-6 text-white md:py-8">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#12294a] text-brand-accent md:mb-3 md:h-11 md:w-11">
+              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
                 <Truck size={19} />
               </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#f3f6fc] md:text-sm">Global Logistics</h4>
-              <p className="mt-1 text-[11px] text-[#c8d5e8] md:text-xs">Free shipping over $50</p>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Global Logistics</h4>
+              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">Free shipping over $50</p>
             </div>
             <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#12294a] text-brand-accent md:mb-3 md:h-11 md:w-11">
+              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
                 <Globe size={19} />
               </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#f3f6fc] md:text-sm">Verified Suppliers</h4>
-              <p className="mt-1 text-[11px] text-[#c8d5e8] md:text-xs">Audited worldwide network</p>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Verified Suppliers</h4>
+              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">Audited worldwide network</p>
             </div>
             <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#12294a] text-brand-accent md:mb-3 md:h-11 md:w-11">
+              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
                 <ShieldCheck size={19} />
               </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#f3f6fc] md:text-sm">Quality Promise</h4>
-              <p className="mt-1 text-[11px] text-[#c8d5e8] md:text-xs">30-day return policy</p>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Quality Promise</h4>
+              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">30-day return policy</p>
             </div>
             <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#12294a] text-brand-accent md:mb-3 md:h-11 md:w-11">
+              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
                 <Award size={19} />
               </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#f3f6fc] md:text-sm">Enterprise Grade</h4>
-              <p className="mt-1 text-[11px] text-[#c8d5e8] md:text-xs">Trusted by businesses</p>
+              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Enterprise Grade</h4>
+              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">Trusted by businesses</p>
             </div>
           </div>
         </div>
@@ -288,7 +288,7 @@ const HomePage = () => {
             {categories.slice(0, 3).map((category) => (
               <Link key={category._id} to={`/category/${category.slug}`} className="group relative h-80 cursor-pointer overflow-hidden rounded-lg shadow-lg">
                 {isCategoryImageFailed(category) ? (
-                  <div className="h-full w-full bg-gradient-to-br from-[#14304f] via-[#1d3f66] to-[#081729]" />
+                  <div className="h-full w-full bg-gradient-to-br from-[#5a2a1a] via-[#78341f] to-[#2a140e]" />
                 ) : (
                   <img
                     src={getCategoryCardImage(category)}
@@ -327,7 +327,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="bg-[radial-gradient(circle_at_top,_rgba(201,162,39,0.10),_transparent_58%),#fafbfd] py-10 md:py-12">
+      <div className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-10 md:py-12">
         <div className="container mx-auto px-4">
           <div className="mb-10 text-center md:mb-12">
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Curated Signature Picks</p>
@@ -341,7 +341,7 @@ const HomePage = () => {
           {loading ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, index) => (
-                <div key={index} className="h-[460px] animate-pulse rounded-[28px] border border-[#dce4ef] bg-[#eff3f9]" />
+                <div key={index} className="h-[460px] animate-pulse rounded-[28px] border border-[#ead6c6] bg-[#f6eadf]" />
               ))}
             </div>
           ) : error ? (
@@ -355,7 +355,7 @@ const HomePage = () => {
               </Link>
             </div>
           ) : featuredProducts.length === 0 ? (
-            <div className="rounded-xl border border-brand-accent/25 bg-[#f2f5fa] px-6 py-10 text-center text-brand-primary">
+            <div className="rounded-xl border border-brand-accent/25 bg-[#f8eee5] px-6 py-10 text-center text-brand-primary">
               <p className="font-serif text-2xl font-bold text-brand-dark">No featured products yet</p>
               <p className="mt-2 text-sm">Explore the full marketplace while our team curates featured highlights.</p>
               <Link
@@ -383,7 +383,7 @@ const HomePage = () => {
       </div>
 
       {!loading && bestSellers.length > 0 && (
-        <div className="bg-[#edf1f8] py-20">
+        <div className="bg-[#f5e7da] py-20">
           <div className="container mx-auto px-4">
             <div className="mb-12 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -407,7 +407,7 @@ const HomePage = () => {
         </div>
       )}
 
-      <div className="bg-[#edf1f7] py-24">
+      <div className="bg-[#f6eadf] py-24">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-16 md:flex-row">
             <div className="relative md:w-1/2">
@@ -439,7 +439,7 @@ const HomePage = () => {
         className="relative overflow-hidden py-6 text-white md:py-8"
         style={{
           backgroundImage:
-            'radial-gradient(ellipse at 15% 10%, rgba(201,162,39,0.16), transparent 50%), linear-gradient(150deg, #060f1d 0%, #0b1f3a 55%, #10294d 100%)',
+            'radial-gradient(ellipse at 15% 10%, rgba(217, 154, 50,0.16), transparent 50%), linear-gradient(150deg, #1f0f0a 0%, #351a11 55%, #4a2317 100%)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -452,14 +452,14 @@ const HomePage = () => {
           </div>
 
           <div
-            className="relative mx-auto max-w-4xl rounded-[18px] border border-brand-accent/45 bg-[#0b1f3a]/55 px-4 py-4 shadow-[0_16px_34px_rgba(0,0,0,0.38)] backdrop-blur-[2px] sm:px-5 md:rounded-[22px] md:px-7 md:py-5"
+            className="relative mx-auto max-w-4xl rounded-[18px] border border-brand-accent/45 bg-[#351a11]/55 px-4 py-4 shadow-[0_16px_34px_rgba(0,0,0,0.38)] backdrop-blur-[2px] sm:px-5 md:rounded-[22px] md:px-7 md:py-5"
             onMouseEnter={() => setIsReviewPaused(true)}
             onMouseLeave={() => setIsReviewPaused(false)}
           >
             <button
               onClick={prevTestimonial}
               aria-label="Previous review"
-              className="absolute -left-2 top-1/2 z-20 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-brand-accent/70 bg-[#0e2440]/85 text-brand-accent shadow-[0_0_14px_rgba(201,162,39,0.24)] transition hover:bg-brand-accent hover:text-[#0b1f3a] md:-left-5 md:h-10 md:w-10"
+              className="absolute -left-2 top-1/2 z-20 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-brand-accent/70 bg-[#3a1b12]/85 text-brand-accent shadow-[0_0_14px_rgba(217, 154, 50,0.24)] transition hover:bg-brand-accent hover:text-[#351a11] md:-left-5 md:h-10 md:w-10"
             >
               <ChevronLeft size={18} />
             </button>
@@ -467,7 +467,7 @@ const HomePage = () => {
             <button
               onClick={nextTestimonial}
               aria-label="Next review"
-              className="absolute -right-2 top-1/2 z-20 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-brand-accent/70 bg-[#0e2440]/85 text-brand-accent shadow-[0_0_14px_rgba(201,162,39,0.24)] transition hover:bg-brand-accent hover:text-[#0b1f3a] md:-right-5 md:h-10 md:w-10"
+              className="absolute -right-2 top-1/2 z-20 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-brand-accent/70 bg-[#3a1b12]/85 text-brand-accent shadow-[0_0_14px_rgba(217, 154, 50,0.24)] transition hover:bg-brand-accent hover:text-[#351a11] md:-right-5 md:h-10 md:w-10"
             >
               <ChevronRight size={18} />
             </button>
@@ -482,13 +482,13 @@ const HomePage = () => {
                     <div className="mb-1 text-3xl font-serif leading-none text-brand-accent md:mb-2 md:text-4xl">
                       &ldquo;
                     </div>
-                    <p className="mx-auto max-w-2xl font-serif text-base italic leading-relaxed text-[#eef2f8] md:text-xl md:leading-[1.45]">
+                    <p className="mx-auto max-w-2xl font-serif text-base italic leading-relaxed text-[#f5e9dd] md:text-xl md:leading-[1.45]">
                       {testimonial.text}
                     </p>
                     <div className="mx-auto mt-3 h-px w-20 bg-gradient-to-r from-transparent via-brand-accent/70 to-transparent md:mt-4 md:w-24"></div>
 
                     <div className="mt-3 flex flex-col items-center justify-center gap-2 md:mt-4 md:flex-row md:gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-accent/70 bg-[#14304f]/70 font-serif text-sm font-bold text-brand-accent md:h-12 md:w-12 md:text-base">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-brand-accent/70 bg-[#5a2a1a]/70 font-serif text-sm font-bold text-brand-accent md:h-12 md:w-12 md:text-base">
                         {testimonial.name
                           .split(' ')
                           .map((part) => part[0])
@@ -496,10 +496,10 @@ const HomePage = () => {
                           .slice(0, 2)}
                       </div>
                       <div className="text-center md:text-left">
-                        <h4 className="font-serif text-lg font-bold text-[#ead9a0] md:text-xl">
+                        <h4 className="font-serif text-lg font-bold text-[#f1c46d] md:text-xl">
                           {testimonial.name}
                         </h4>
-                        <p className="mt-0.5 text-xs text-[#d8c17c]">
+                        <p className="mt-0.5 text-xs text-[#d99a3a]">
                           {testimonial.role}
                         </p>
                       </div>

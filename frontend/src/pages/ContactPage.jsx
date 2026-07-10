@@ -80,7 +80,7 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-16">
+    <div className="min-h-screen bg-[#fff7ee] py-16">
       <div className="container mx-auto max-w-6xl px-4">
         <section className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Contact Apex Link Group</p>
@@ -92,7 +92,7 @@ const ContactPage = () => {
 
         <div className="mt-8 grid gap-8 xl:grid-cols-[0.85fr_1.15fr]">
           <aside className="space-y-6">
-            <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Customer Care</p>
               <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">How we can help</h2>
               <p className="mt-3 text-sm leading-7 text-gray-600">
@@ -104,7 +104,7 @@ const ContactPage = () => {
               {contactCards.map(({ icon: Icon, title, body }) => (
                 <article
                   key={title}
-                  className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]"
+                  className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]"
                 >
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                     <Icon size={20} />
@@ -116,7 +116,7 @@ const ContactPage = () => {
             </div>
           </aside>
 
-          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                 <MessageSquareText size={20} />
@@ -150,7 +150,7 @@ const ContactPage = () => {
                     required
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
                 <div>
@@ -162,7 +162,7 @@ const ContactPage = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
@@ -176,7 +176,7 @@ const ContactPage = () => {
                     type="text"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                     placeholder="Optional"
                   />
                 </div>
@@ -189,7 +189,7 @@ const ContactPage = () => {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                     placeholder="Order support, wholesale, gifting, product question..."
                   />
                 </div>
@@ -204,12 +204,12 @@ const ContactPage = () => {
                   rows="7"
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm leading-7 text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm leading-7 text-brand-dark outline-none transition focus:border-brand-accent"
                   placeholder="Tell us about your question, order number, or what kind of help you need."
                 />
               </div>
 
-              <div className="rounded-[24px] border border-brand-accent/15 bg-[#f5f8fc] px-5 py-4 text-sm leading-7 text-gray-600">
+              <div className="rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] px-5 py-4 text-sm leading-7 text-gray-600">
                 We review every message manually. For the fastest order support, include your order ID and the email address used during checkout.
               </div>
 

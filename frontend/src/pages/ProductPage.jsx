@@ -181,7 +181,7 @@ const ProductPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center bg-[#f7f9fc]">
+      <div className="flex min-h-[70vh] items-center justify-center bg-[#fff7ee]">
         <div className="h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-brand-primary"></div>
       </div>
     );
@@ -295,7 +295,7 @@ const ProductPage = () => {
   };
 
   return (
-    <div className="bg-[#f7f9fc] pb-20">
+    <div className="bg-[#fff7ee] pb-20">
       <div className="container mx-auto max-w-7xl px-4 py-10">
         <Link
           to="/products"
@@ -306,7 +306,7 @@ const ProductPage = () => {
 
         <div className="mt-8 grid gap-10 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-5">
-            <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_24px_70px_rgba(11,31,58,0.10)]">
+            <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_24px_70px_rgba(53, 26, 17,0.10)]">
               <img
                 src={selectedImage || product.image}
                 alt={product.name}
@@ -336,7 +336,7 @@ const ProductPage = () => {
             )}
           </section>
 
-          <section className="rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(11,31,58,0.10)] sm:p-8">
+          <section className="rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.10)] sm:p-8">
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 to={`/category/${slugifyCategoryName(product.category)}`}
@@ -345,7 +345,7 @@ const ProductPage = () => {
                 {product.category}
               </Link>
               {product.isFeatured && (
-                <span className="rounded-full bg-[#f3f6fc] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a6d14]">
+                <span className="rounded-full bg-[#fff7ee] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#b36a2e]">
                   Featured
                 </span>
               )}
@@ -395,7 +395,7 @@ const ProductPage = () => {
                 {formatCurrency(effectivePrice)}
               </p>
               {product.weight && (
-                <span className="rounded-full bg-[#eef2f8] px-3 py-1 text-sm font-semibold text-[#2c4a73]">
+                <span className="rounded-full bg-[#f5e9dd] px-3 py-1 text-sm font-semibold text-[#744126]">
                   {product.weight}
                 </span>
               )}
@@ -405,7 +405,7 @@ const ProductPage = () => {
               {product.description}
             </p>
 
-            <div className="mt-8 grid gap-4 rounded-[28px] bg-[#f4f7fb] p-5 sm:grid-cols-2">
+            <div className="mt-8 grid gap-4 rounded-[28px] bg-[#f8efe6] p-5 sm:grid-cols-2">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Origin</p>
                 <p className="mt-2 text-sm leading-7 text-gray-700">{product.origin || 'Premium source details coming soon.'}</p>
@@ -416,7 +416,7 @@ const ProductPage = () => {
               </div>
             </div>
 
-            <div className="mt-8 rounded-[28px] border border-[#e1e8f2] p-5">
+            <div className="mt-8 rounded-[28px] border border-[#ecd9ca] p-5">
               {product.variants?.length > 0 && (
                 <div className="mb-6">
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Variant</p>
@@ -453,7 +453,7 @@ const ProductPage = () => {
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Quantity</p>
-                  <div className="mt-3 inline-flex items-center rounded-full border border-gray-200 bg-[#f7f9fc] p-1">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-gray-200 bg-[#fff7ee] p-1">
                     <button
                       type="button"
                       onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
@@ -514,7 +514,7 @@ const ProductPage = () => {
           </section>
         </div>
 
-        <section className="mt-16 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(11,31,58,0.08)] sm:p-8">
+        <section className="mt-16 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-8">
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Reviews</p>
             <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Customer feedback</h2>
@@ -579,7 +579,7 @@ const ProductPage = () => {
           </div>
         </section>
 
-        <section className="mt-16 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(11,31,58,0.08)] sm:p-8">
+        <section className="mt-16 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-8">
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Trust & Quality</p>
             <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Why customers choose Apex Link Group</h2>
@@ -590,7 +590,7 @@ const ProductPage = () => {
               const Icon = [BadgeCheck, Sparkles, ShieldCheck, Truck][index];
 
               return (
-                <div key={title} className="rounded-[24px] bg-[#f4f7fb] p-5">
+                <div key={title} className="rounded-[24px] bg-[#f8efe6] p-5">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
                     <Icon size={20} />
                   </div>

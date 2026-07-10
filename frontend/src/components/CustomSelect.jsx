@@ -194,17 +194,17 @@ const CustomSelect = ({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
-        className={`group w-full rounded-xl border border-[#ccd6e4] bg-[#f7f9fc] py-3 text-left text-sm text-brand-dark shadow-[0_8px_20px_rgba(11,31,58,0.05)] transition-all hover:border-brand-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent/50 disabled:cursor-not-allowed disabled:opacity-60 ${leftIcon ? 'pl-11 pr-10' : 'px-4 pr-10'} ${buttonClassName}`}
+        className={`group w-full rounded-xl border border-[#dfc3ae] bg-[#fff7ee] py-3 text-left text-sm text-brand-dark shadow-[0_8px_20px_rgba(53, 26, 17,0.05)] transition-all hover:border-brand-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent/50 disabled:cursor-not-allowed disabled:opacity-60 ${leftIcon ? 'pl-11 pr-10' : 'px-4 pr-10'} ${buttonClassName}`}
         onClick={() => (isOpen ? closeListbox() : openListbox())}
         onKeyDown={onButtonKeyDown}
       >
         {leftIcon ? (
-          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[#93a5bf]">
+          <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[#b99276]">
             {leftIcon}
           </span>
         ) : null}
         <span className={`${!selectedOption ? 'text-gray-400' : ''}`}>{selectedLabel}</span>
-        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#c9a227]">
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#d99a32]">
           <ChevronDown
             size={18}
             className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
@@ -218,7 +218,7 @@ const CustomSelect = ({
           id={listboxId}
           aria-labelledby={selectId}
           tabIndex={-1}
-          className={`absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-[#d7dfeb] bg-[#fafbfd] py-1.5 shadow-[0_22px_40px_rgba(11,31,58,0.16)] ${listClassName}`}
+          className={`absolute z-50 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-[#e8cfbb] bg-[#fffaf4] py-1.5 shadow-[0_22px_40px_rgba(53, 26, 17,0.16)] ${listClassName}`}
           onKeyDown={onListboxKeyDown}
         >
           {options.map((option, index) => {
@@ -238,10 +238,10 @@ const CustomSelect = ({
                   option.disabled
                     ? 'cursor-not-allowed text-gray-300'
                     : isActive
-                      ? 'bg-[#e8edf5] text-brand-dark'
+                      ? 'bg-[#f0dfd0] text-brand-dark'
                       : isSelected
-                        ? 'bg-[#f1f4fa] text-brand-dark'
-                        : 'text-[#1c3a61] hover:bg-[#edf1f8]'
+                        ? 'bg-[#f8eee5] text-brand-dark'
+                        : 'text-[#5b2c1d] hover:bg-[#f5e7da]'
                 }`}
                 onMouseEnter={() => {
                   if (!option.disabled) {

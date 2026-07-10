@@ -8,10 +8,10 @@ export default {
     extend: {
       colors: {
         brand: {
-          dark: '#0b1f3a', // Deep navy
-          light: '#f7f9fc', // Ice white
-          accent: '#c9a227', // Refined gold
-          primary: '#16365f', // Royal navy
+          dark: '#351a11', // Deep chocolate
+          light: '#fff7ee', // Warm cream
+          accent: '#d99a32', // Spice amber
+          primary: '#8c3b2a', // Burnt rust
         }
       },
       fontFamily: {

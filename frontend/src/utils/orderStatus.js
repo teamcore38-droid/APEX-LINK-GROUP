@@ -63,7 +63,7 @@ export const ORDER_QUICK_ACTIONS = [
   {
     status: 'Shipped',
     label: 'Ship',
-    className: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
+    className: 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100',
   },
   {
     status: 'Delivered',
@@ -107,7 +107,7 @@ export const getOrderStatusBadgeClass = (status) => {
   switch (status) {
     case 'Shipped':
     case 'Out for Delivery':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-amber-50 text-amber-800 border-amber-200';
     case 'Delivered':
       return 'bg-green-50 text-green-700 border-green-200';
     case 'Cancelled':
@@ -132,7 +132,7 @@ export const getPaymentBadgeClass = (paymentStatusOrValue, isPaid) => {
     case 'Refunded':
       return 'bg-gray-100 text-gray-700 border-gray-200';
     case 'Payment Pending':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-amber-50 text-amber-800 border-amber-200';
     case 'Unpaid':
     default:
       return 'bg-red-50 text-red-700 border-red-200';
@@ -171,7 +171,7 @@ export const getRefundBadgeClass = (refundStatus) => {
     case 'Refunded':
       return 'bg-green-50 text-green-700 border-green-200';
     case 'Partially Refunded':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
+      return 'bg-amber-50 text-amber-800 border-amber-200';
     case 'Refund Failed':
       return 'bg-red-50 text-red-700 border-red-200';
     case 'Not Refunded':

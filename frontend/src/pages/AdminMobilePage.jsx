@@ -91,7 +91,7 @@ const AdminMobilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#eef3f8] py-5 sm:py-8">
+    <div className="min-h-screen bg-[#f5e9dd] py-5 sm:py-8">
       <div className="mx-auto max-w-3xl px-3 sm:px-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
@@ -121,7 +121,7 @@ const AdminMobilePage = () => {
           <MiniStat label="Processing" value={countFor(summary?.orderCounts, 'Processing')} />
           <MiniStat label="Shipped" value={countFor(summary?.orderCounts, 'Shipped')} />
           <MiniStat label="Pending Cancels" value={summary?.pendingCancellations || 0} tone="bg-amber-50" />
-          <MiniStat label="Open Support" value={countFor(summary?.supportCounts, 'Open') + countFor(summary?.supportCounts, 'Pending Staff')} tone="bg-blue-50" />
+          <MiniStat label="Open Support" value={countFor(summary?.supportCounts, 'Open') + countFor(summary?.supportCounts, 'Pending Staff')} tone="bg-amber-50" />
         </div>
 
         <section className="mt-5 rounded-lg bg-white p-4 shadow-sm">

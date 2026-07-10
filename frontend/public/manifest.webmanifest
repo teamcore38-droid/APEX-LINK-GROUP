@@ -6,8 +6,8 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "browser"],
-  "background_color": "#f7f9fc",
-  "theme_color": "#081729",
+  "background_color": "#fff7ee",
+  "theme_color": "#2a140e",
   "orientation": "portrait-primary",
   "categories": ["shopping", "business", "productivity"],
   "icons": [

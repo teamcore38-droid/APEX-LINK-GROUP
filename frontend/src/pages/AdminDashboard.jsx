@@ -770,7 +770,7 @@ const AdminDashboard = () => {
                                     {product.category}
                                   </p>
                                   {product.isFeatured && (
-                                    <span className="inline-flex rounded-full bg-[#f3f6fc] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8a6d14]">
+                                    <span className="inline-flex rounded-full bg-[#fff7ee] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#b36a2e]">
                                       Featured
                                     </span>
                                   )}
@@ -831,7 +831,7 @@ const AdminDashboard = () => {
                                 type="button"
                                 disabled={productActionKey === featuredActionKey}
                                 onClick={() => toggleFeaturedHandler(product)}
-                                className="inline-flex items-center rounded-full border border-[#c3d1e4] px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#7a5f10] transition-colors duration-200 hover:bg-[#f3f6fc] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="inline-flex items-center rounded-full border border-[#e0c3ae] px-3 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#8a4a24] transition-colors duration-200 hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {productActionKey === featuredActionKey ? (
                                   <Loader2 size={12} className="mr-2 animate-spin" />
@@ -919,7 +919,7 @@ const AdminDashboard = () => {
                                   <span
                                     className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                       product.isFeatured
-                                        ? 'bg-[#f3f6fc] text-[#8a6d14]'
+                                        ? 'bg-[#fff7ee] text-[#b36a2e]'
                                         : 'bg-gray-100 text-gray-500'
                                     }`}
                                   >
@@ -947,7 +947,7 @@ const AdminDashboard = () => {
                                       type="button"
                                       disabled={productActionKey === featuredActionKey}
                                       onClick={() => toggleFeaturedHandler(product)}
-                                      className="inline-flex items-center rounded-full border border-[#c3d1e4] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#7a5f10] transition-colors duration-200 hover:bg-[#f3f6fc] disabled:cursor-not-allowed disabled:opacity-60"
+                                      className="inline-flex items-center rounded-full border border-[#e0c3ae] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#8a4a24] transition-colors duration-200 hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                       {productActionKey === featuredActionKey ? (
                                         <Loader2 size={11} className="mr-1 animate-spin" />

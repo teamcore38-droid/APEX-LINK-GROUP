@@ -44,9 +44,9 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="bg-[#f7f9fc] py-20">
+    <div className="bg-[#fff7ee] py-20">
       <div className="container mx-auto flex justify-center px-4">
-        <div className="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(11,31,58,0.08)] border border-gray-100">
+        <div className="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] border border-gray-100">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Create Your Account</p>
             <h1 className="mt-4 font-serif text-4xl font-bold text-brand-dark">Join the Apex Link Group marketplace</h1>
@@ -72,7 +72,7 @@ const RegisterPage = () => {
                     required
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                     placeholder="Your name"
                   />
                 </div>
@@ -86,7 +86,7 @@ const RegisterPage = () => {
                     type="text"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                     placeholder="Optional"
                   />
                 </div>
@@ -102,7 +102,7 @@ const RegisterPage = () => {
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                   placeholder="you@example.com"
                 />
               </div>
@@ -118,7 +118,7 @@ const RegisterPage = () => {
                     required
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                     placeholder="At least 6 characters"
                   />
                 </div>
@@ -133,7 +133,7 @@ const RegisterPage = () => {
                     required
                     value={confirmPassword}
                     onChange={(event) => setConfirmPassword(event.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                     placeholder="Repeat your password"
                   />
                 </div>

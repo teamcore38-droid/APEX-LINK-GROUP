@@ -216,7 +216,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
   if (loading) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#f7f9fc]">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#fff7ee]">
         <div className="h-14 w-14 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent" />
         <p className="mt-4 font-serif text-xl text-brand-dark">
           {isEditMode ? 'Loading product editor...' : 'Preparing a new product form...'}
@@ -226,7 +226,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-12">
+    <div className="min-h-screen bg-[#fff7ee] py-12">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <Link
@@ -261,7 +261,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
         <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1fr)_360px]">
           <form
             onSubmit={submitHandler}
-            className="space-y-8 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8"
+            className="space-y-8 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8"
           >
             {error && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -293,7 +293,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.name}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -308,7 +308,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.slug}
                     onChange={handleChange}
                     placeholder="Auto-generated from the product name"
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
                   />
                   <p className="mt-2 text-xs text-gray-500">
                     Preview: <span className="font-semibold text-brand-primary">/api/products/slug/{slugifyProductName(form.slug || form.name) || 'product-slug'}</span>
@@ -350,7 +350,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     type="text"
                     value={form.brand}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -365,7 +365,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.sku}
                     onChange={handleChange}
                     placeholder="APX-..."
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -380,7 +380,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.weight}
                     onChange={handleChange}
                     placeholder="100g, 250g, 1kg"
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.price}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -423,7 +423,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.compareAtPrice}
                     onChange={handleChange}
                     placeholder="Optional"
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -439,7 +439,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.countInStock}
                     onChange={handleChange}
                     required
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -454,7 +454,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     min="0"
                     value={form.lowStockThreshold}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
@@ -477,7 +477,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   value={form.image}
                   onChange={handleChange}
                   placeholder="https://..."
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -492,7 +492,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   value={form.imageList}
                   onChange={handleChange}
                   placeholder="One image URL per line"
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -507,7 +507,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   value={form.variantsJson}
                   onChange={handleChange}
                   placeholder='[{"label":"500g pouch","sku":"SKU-500","weight":"500g","packaging":"Pouch","priceAdjustment":0,"countInStock":25}]'
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 font-mono text-xs text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 font-mono text-xs text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -522,7 +522,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   value={form.shortDescription}
                   onChange={handleChange}
                   placeholder="A concise premium summary for product cards and key merchandising surfaces."
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -537,7 +537,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   value={form.description}
                   onChange={handleChange}
                   placeholder="Tell the product story, tasting notes, recommended uses, and what makes it premium."
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
               </div>
 
@@ -553,7 +553,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.origin}
                     onChange={handleChange}
                     placeholder="Sri Lanka, Kerala, Madagascar..."
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
 
@@ -568,7 +568,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     value={form.ingredients}
                     onChange={handleChange}
                     placeholder="100% pure turmeric, no additives"
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
               </div>
@@ -588,7 +588,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                 ].map(([name, label]) => (
                   <label
                     key={name}
-                    className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#f7f9fc] px-4 py-4 text-sm font-semibold text-brand-dark"
+                    className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-[#fff7ee] px-4 py-4 text-sm font-semibold text-brand-dark"
                   >
                     <input
                       name={name}
@@ -629,11 +629,11 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
           </form>
 
           <aside className="space-y-6">
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Live Preview</p>
               <h2 className="mt-2 font-serif text-2xl font-bold text-brand-dark">Storefront impression</h2>
 
-              <div className="mt-5 overflow-hidden rounded-[24px] border border-[#dce4ef] bg-[#f4f7fb]">
+              <div className="mt-5 overflow-hidden rounded-[24px] border border-[#ead6c6] bg-[#f8efe6]">
                 <img
                   src={
                     previewProduct.image ||
@@ -647,7 +647,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-brand-accent">
                       {previewProduct.category || 'Category'}
                     </span>
-                    <span className="rounded-full bg-[#e8edf5] px-3 py-1 text-xs font-semibold text-[#2c4a73]">
+                    <span className="rounded-full bg-[#f0dfd0] px-3 py-1 text-xs font-semibold text-[#744126]">
                       {previewProduct.weight || 'Weight'}
                     </span>
                   </div>
@@ -675,9 +675,9 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
               </div>
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#edf1f8] text-brand-primary">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f5e7da] text-brand-primary">
                   <Sparkles size={18} />
                 </div>
                 <div>

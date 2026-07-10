@@ -57,7 +57,7 @@ const CookieConsentBanner = () => {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[70] border-t border-gray-200 bg-white shadow-[0_-14px_40px_rgba(8,23,41,0.16)]">
+    <div className="fixed inset-x-0 bottom-0 z-[70] border-t border-gray-200 bg-white shadow-[0_-14px_40px_rgba(42, 20, 14,0.16)]">
       <div className="container mx-auto flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
           <p className="flex items-center text-sm font-bold uppercase tracking-[0.18em] text-brand-dark">

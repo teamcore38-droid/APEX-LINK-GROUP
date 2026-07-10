@@ -84,7 +84,7 @@ const OrderSuccessPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#f7f9fc]">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#fff7ee]">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent"></div>
         <p className="mt-4 font-serif text-lg text-brand-dark">Retrieving your order details...</p>
       </div>
@@ -111,7 +111,7 @@ const OrderSuccessPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#fff7ee] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         {!isConfirmation && (
           <div className="mb-6">
@@ -146,10 +146,10 @@ const OrderSuccessPage = () => {
           </div>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-[32px] bg-white shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+        <div className="mt-8 overflow-hidden rounded-[32px] bg-white shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
           <div className="grid gap-8 px-6 py-8 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
             <div className="space-y-8">
-              <section className="rounded-[28px] border border-gray-100 bg-[#fafbfd] p-5">
+              <section className="rounded-[28px] border border-gray-100 bg-[#fffaf4] p-5">
                 <div className="flex flex-wrap gap-3">
                   <span className="rounded-full border border-gray-200 bg-white px-4 py-2 font-mono text-xs font-bold text-brand-primary">
                     Order ID: {order._id}

@@ -67,7 +67,7 @@ const AdminPackingSlipPage = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#f7f9fc]">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#fff7ee]">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent" />
         <p className="mt-4 font-serif text-lg text-brand-dark">Preparing packing slip...</p>
       </div>
@@ -92,7 +92,7 @@ const AdminPackingSlipPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-12">
+    <div className="min-h-screen bg-[#fff7ee] py-12">
       <style>{`
         @media print {
           .print-hidden { display: none !important; }
@@ -127,7 +127,7 @@ const AdminPackingSlipPage = () => {
           </div>
         </div>
 
-        <div className="print-surface overflow-hidden rounded-[32px] border border-brand-accent/20 bg-white shadow-[0_20px_60px_rgba(11,31,58,0.1)]">
+        <div className="print-surface overflow-hidden rounded-[32px] border border-brand-accent/20 bg-white shadow-[0_20px_60px_rgba(53, 26, 17,0.1)]">
           <div className="bg-gradient-to-r from-brand-dark via-brand-primary to-brand-accent px-6 py-10 text-white sm:px-10">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">APEX LINK GROUP</p>
             <h1 className="mt-4 font-serif text-4xl font-bold">Packing Slip</h1>

@@ -118,7 +118,7 @@ const TrackOrderPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] py-16">
+    <div className="min-h-screen bg-[#fff7ee] py-16">
       <div className="container mx-auto max-w-6xl px-4">
         <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Track Order</p>
@@ -129,7 +129,7 @@ const TrackOrderPage = () => {
         </div>
 
         <div className="mt-8 grid gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">
-          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)]">
+          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Tracking Lookup</p>
             <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Find your order</h2>
 
@@ -151,7 +151,7 @@ const TrackOrderPage = () => {
                     required
                     value={form.orderId}
                     onChange={(event) => setForm((currentForm) => ({ ...currentForm, orderId: event.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                     placeholder="Paste your order ID"
                   />
                 </div>
@@ -165,7 +165,7 @@ const TrackOrderPage = () => {
                   type="email"
                   value={form.email}
                   onChange={(event) => setForm((currentForm) => ({ ...currentForm, email: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                   placeholder="Use the email placed on the order"
                 />
               </div>
@@ -178,7 +178,7 @@ const TrackOrderPage = () => {
                   type="text"
                   value={form.phone}
                   onChange={(event) => setForm((currentForm) => ({ ...currentForm, phone: event.target.value }))}
-                  className="w-full rounded-xl border border-gray-200 bg-[#f7f9fc] px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
                   placeholder="Optional alternative to email"
                 />
               </div>
@@ -218,7 +218,7 @@ const TrackOrderPage = () => {
                             phone: userInfo.phone || '',
                           })
                         }
-                        className="flex w-full items-center justify-between rounded-2xl bg-white px-4 py-3 text-left transition-colors duration-200 hover:bg-[#f5f8fc]"
+                        className="flex w-full items-center justify-between rounded-2xl bg-white px-4 py-3 text-left transition-colors duration-200 hover:bg-[#fbf3ea]"
                       >
                         <div>
                           <p className="font-mono text-xs font-bold text-brand-primary">{order._id}</p>
@@ -239,7 +239,7 @@ const TrackOrderPage = () => {
             )}
           </section>
 
-          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(11,31,58,0.08)] sm:p-8">
+          <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
             {!result ? (
               <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-[24px] border border-dashed border-brand-accent/30 bg-brand-light px-6 text-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
@@ -336,7 +336,7 @@ const TrackOrderPage = () => {
                 )}
 
                 <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                  <div className="rounded-[24px] border border-gray-100 bg-[#fafbfd] p-5">
+                  <div className="rounded-[24px] border border-gray-100 bg-[#fffaf4] p-5">
                     <div className="flex items-center gap-3">
                       <div className="rounded-2xl bg-brand-light p-3 text-brand-primary">
                         <UserRound size={18} />
@@ -372,7 +372,7 @@ const TrackOrderPage = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-[24px] border border-gray-100 bg-[#fafbfd] p-5">
+                  <div className="rounded-[24px] border border-gray-100 bg-[#fffaf4] p-5">
                     <div className="flex items-center gap-3">
                       <div className="rounded-2xl bg-brand-light p-3 text-brand-primary">
                         <MapPin size={18} />
@@ -402,7 +402,7 @@ const TrackOrderPage = () => {
                     {result.items.map((item) => (
                       <article
                         key={`${item.name}-${item.image}`}
-                        className="flex items-center justify-between gap-4 rounded-[24px] border border-gray-100 bg-[#fafbfd] p-4"
+                        className="flex items-center justify-between gap-4 rounded-[24px] border border-gray-100 bg-[#fffaf4] p-4"
                       >
                         <div className="flex items-center gap-4">
                           <img src={item.image} alt={item.name} className="h-16 w-16 rounded-2xl object-cover" />
@@ -417,7 +417,7 @@ const TrackOrderPage = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 rounded-[24px] border border-gray-100 bg-[#fafbfd] p-5">
+                <div className="mt-8 rounded-[24px] border border-gray-100 bg-[#fffaf4] p-5">
                   <div className="flex items-center gap-3">
                     <div className="rounded-2xl bg-brand-light p-3 text-brand-primary">
                       <CreditCard size={18} />
