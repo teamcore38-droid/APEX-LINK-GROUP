@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned } from 'lucide-react';
+import { ChevronDown, Mail, Menu, PackagePlus, Shirt, ShoppingBag, User, LogOut, MapPinned } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -36,17 +36,19 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#2a140e] py-3 text-[#fff7ee] shadow-md lg:py-4">
       <div className="container mx-auto flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
-        <Link to="/" className="flex min-w-0 shrink-0 flex-col items-center">
-          <div className="flex items-center gap-2 text-lg font-serif font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] xl:text-2xl xl:tracking-widest">
-            <img
-              src="/Apex Logo.jpg"
-              alt="Apex Link Group logo"
-              className="h-10 w-10 rounded-full object-cover ring-1 ring-white/20 sm:h-12 sm:w-12"
-            />
-            <span className="whitespace-nowrap">APEX LINK GROUP</span>
-          </div>
-          <span className="mt-1 hidden text-[10px] tracking-[0.18em] text-brand-accent/80 xl:block">
-            GLOBAL MARKETPLACE
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2.5">
+          <Shirt
+            aria-hidden="true"
+            className="h-7 w-7 shrink-0 text-brand-accent sm:h-8 sm:w-8"
+            strokeWidth={2.2}
+          />
+          <span className="flex min-w-0 flex-col">
+            <span className="whitespace-nowrap font-serif text-lg font-bold uppercase tracking-[0.14em] text-brand-accent sm:text-xl sm:tracking-[0.18em] xl:text-2xl xl:tracking-widest">
+              APEX FASHION
+            </span>
+            <span className="mt-0.5 hidden text-[10px] font-semibold uppercase tracking-[0.24em] text-brand-accent/80 sm:block">
+              Curated. Modern. Global.
+            </span>
           </span>
         </Link>
 
