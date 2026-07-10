@@ -35,6 +35,7 @@ const fallbackCategories = [
 ];
 
 const heroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-bg-${index + 1}.webp`);
+const mobileHeroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-mobile-${index + 1}.webp`);
 
 const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -91,7 +92,9 @@ const HomePage = () => {
 
   useEffect(() => {
     const heroTimer = window.setInterval(() => {
-      setActiveHeroImage((prev) => (prev + 1) % heroBackgroundImages.length);
+      setActiveHeroImage((prev) => (
+        (prev + 1) % Math.max(heroBackgroundImages.length, mobileHeroBackgroundImages.length)
+      ));
     }, 7000);
 
     return () => window.clearInterval(heroTimer);
@@ -203,9 +206,18 @@ const HomePage = () => {
           }}
         ></div>
         <div
-          className="absolute inset-0 transition-opacity duration-1000"
+          className="absolute inset-0 transition-opacity duration-1000 md:hidden"
           style={{
-            backgroundImage: `url(${heroBackgroundImages[activeHeroImage]})`,
+            backgroundImage: `url(${mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.42,
+          }}
+        ></div>
+        <div
+          className="absolute inset-0 hidden transition-opacity duration-1000 md:block"
+          style={{
+            backgroundImage: `url(${heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundAttachment: 'fixed',
