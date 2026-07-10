@@ -59,6 +59,12 @@ export const createInitialProductForm = () => ({
   isBestSeller: false,
 });
 
+const parseImageList = (value = '') =>
+  String(value || '')
+    .split(/\r?\n/)
+    .map((image) => image.trim())
+    .filter(Boolean);
+
 export const normalizeProductPayload = (data) => {
   if (Array.isArray(data)) {
     return {
@@ -107,6 +113,23 @@ export const getProductImages = (product = {}) => {
   return [...new Set(gallery)];
 };
 
+export const getProductFormGalleryImages = (form = {}) =>
+  getProductImages({
+    image: form.image,
+    images: parseImageList(form.imageList),
+  });
+
+export const setProductFormGalleryImages = (form = {}, images = []) => {
+  const gallery = [...new Set(images.map((image) => String(image || '').trim()).filter(Boolean))];
+  const [primaryImage = '', ...additionalImages] = gallery;
+
+  return {
+    ...form,
+    image: primaryImage,
+    imageList: additionalImages.join('\n'),
+  };
+};
+
 export const getStockPresentation = (countInStock = 0) => {
   if (countInStock <= 0) {
     return {
@@ -153,51 +176,57 @@ export const getProductStatusBadge = (product = {}) => {
   return null;
 };
 
-export const buildProductFormFromProduct = (product = {}) => ({
-  name: product.name || '',
-  slug: product.slug || '',
-  category: product.category || '',
-  price: product.price ?? 0,
-  compareAtPrice: product.compareAtPrice ?? '',
-  weight: product.weight || '',
-  countInStock: product.countInStock ?? 0,
-  lowStockThreshold: product.lowStockThreshold ?? 10,
-  image: product.image || '',
-  imageList: Array.isArray(product.images) ? product.images.filter((image) => image && image !== product.image).join('\n') : '',
-  variantsJson: JSON.stringify(product.variants || [], null, 2),
-  shortDescription: product.shortDescription || '',
-  description: product.description || '',
-  origin: product.origin || '',
-  ingredients: product.ingredients || '',
-  brand: product.brand || 'Apex Link Group',
-  sku: product.sku || '',
-  isFeatured: Boolean(product.isFeatured),
-  isActive: product.isActive ?? true,
-  isBestSeller: Boolean(product.isBestSeller),
-});
+export const buildProductFormFromProduct = (product = {}) => {
+  const gallery = getProductImages(product);
+  const [primaryImage = product.image || '', ...additionalImages] = gallery;
 
-export const buildProductPayloadFromForm = (form) => ({
-  name: form.name.trim(),
-  slug: form.slug.trim(),
-  category: form.category,
-  price: Number(form.price),
-  compareAtPrice: form.compareAtPrice === '' ? 0 : Number(form.compareAtPrice),
-  weight: form.weight.trim(),
-  countInStock: Number(form.countInStock),
-  lowStockThreshold: Number(form.lowStockThreshold ?? 10),
-  image: form.image.trim(),
-  images: form.imageList
-    .split('\n')
-    .map((image) => image.trim())
-    .filter(Boolean),
-  variants: JSON.parse(form.variantsJson || '[]'),
-  shortDescription: form.shortDescription.trim(),
-  description: form.description.trim(),
-  origin: form.origin.trim(),
-  ingredients: form.ingredients.trim(),
-  brand: form.brand.trim(),
-  sku: form.sku.trim(),
-  isFeatured: Boolean(form.isFeatured),
-  isActive: Boolean(form.isActive),
-  isBestSeller: Boolean(form.isBestSeller),
-});
+  return {
+    name: product.name || '',
+    slug: product.slug || '',
+    category: product.category || '',
+    price: product.price ?? 0,
+    compareAtPrice: product.compareAtPrice ?? '',
+    weight: product.weight || '',
+    countInStock: product.countInStock ?? 0,
+    lowStockThreshold: product.lowStockThreshold ?? 10,
+    image: primaryImage,
+    imageList: additionalImages.join('\n'),
+    variantsJson: JSON.stringify(product.variants || [], null, 2),
+    shortDescription: product.shortDescription || '',
+    description: product.description || '',
+    origin: product.origin || '',
+    ingredients: product.ingredients || '',
+    brand: product.brand || 'Apex Link Group',
+    sku: product.sku || '',
+    isFeatured: Boolean(product.isFeatured),
+    isActive: product.isActive ?? true,
+    isBestSeller: Boolean(product.isBestSeller),
+  };
+};
+
+export const buildProductPayloadFromForm = (form) => {
+  const gallery = getProductFormGalleryImages(form);
+
+  return {
+    name: form.name.trim(),
+    slug: form.slug.trim(),
+    category: form.category,
+    price: Number(form.price),
+    compareAtPrice: form.compareAtPrice === '' ? 0 : Number(form.compareAtPrice),
+    weight: form.weight.trim(),
+    countInStock: Number(form.countInStock),
+    lowStockThreshold: Number(form.lowStockThreshold ?? 10),
+    image: gallery[0] || '',
+    images: gallery,
+    variants: JSON.parse(form.variantsJson || '[]'),
+    shortDescription: form.shortDescription.trim(),
+    description: form.description.trim(),
+    origin: form.origin.trim(),
+    ingredients: form.ingredients.trim(),
+    brand: form.brand.trim(),
+    sku: form.sku.trim(),
+    isFeatured: Boolean(form.isFeatured),
+    isActive: Boolean(form.isActive),
+    isBestSeller: Boolean(form.isBestSeller),
+  };
+};

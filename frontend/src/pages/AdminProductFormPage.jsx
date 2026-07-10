@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Loader2, Plus, Save, Sparkles } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  ImagePlus,
+  Loader2,
+  Plus,
+  Save,
+  Sparkles,
+  Star,
+  Trash2,
+  UploadCloud,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 import {
@@ -9,9 +21,89 @@ import {
   buildProductPayloadFromForm,
   createInitialProductForm,
   formatCurrency,
+  getProductFormGalleryImages,
   getProductImages,
+  setProductFormGalleryImages,
   slugifyProductName,
 } from '../utils/productUi';
+
+const MAX_GALLERY_IMAGES = 12;
+const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const TARGET_UPLOAD_BYTES = 420 * 1024;
+const MAX_UPLOAD_DIMENSION = 1400;
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Unable to read image file.'));
+    reader.readAsDataURL(file);
+  });
+
+const canvasToBlob = (canvas, quality) =>
+  new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/jpeg', quality);
+  });
+
+const blobToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Unable to process optimized image.'));
+    reader.readAsDataURL(blob);
+  });
+
+const optimizeImageFile = async (file) => {
+  if (!file.type.startsWith('image/')) {
+    throw new Error(`${file.name} is not an image file.`);
+  }
+
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error(`${file.name} is larger than 8MB.`);
+  }
+
+  if (file.type === 'image/svg+xml') {
+    return readFileAsDataUrl(file);
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error(`Unable to load ${file.name}.`));
+      image.src = objectUrl;
+    });
+
+    const ratio = Math.min(1, MAX_UPLOAD_DIMENSION / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * ratio));
+    const height = Math.max(1, Math.round(image.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0, width, height);
+
+    let quality = 0.82;
+    let blob = await canvasToBlob(canvas, quality);
+
+    while (blob && blob.size > TARGET_UPLOAD_BYTES && quality > 0.58) {
+      quality -= 0.08;
+      blob = await canvasToBlob(canvas, quality);
+    }
+
+    if (!blob) {
+      throw new Error(`Unable to optimize ${file.name}.`);
+    }
+
+    return blobToDataUrl(blob);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
 
 const validateForm = (form) => {
   if (!form.name.trim()) {
@@ -61,6 +153,8 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [uploadStatus, setUploadStatus] = useState('');
 
   useEffect(() => {
     if (!userInfo?.token) {
@@ -148,6 +242,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     }
   }, [form, id]);
 
+  const galleryImages = useMemo(() => getProductFormGalleryImages(form), [form]);
   const previewImages = useMemo(() => getProductImages(previewProduct), [previewProduct]);
 
   const handleChange = (event) => {
@@ -172,6 +267,86 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     if (name === 'slug') {
       setSlugTouched(true);
     }
+  };
+
+  const updateGalleryImages = (images) => {
+    setError('');
+    setSuccess('');
+    setForm((currentForm) => setProductFormGalleryImages(currentForm, images.slice(0, MAX_GALLERY_IMAGES)));
+  };
+
+  const handleGalleryUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const availableSlots = Math.max(0, MAX_GALLERY_IMAGES - galleryImages.length);
+
+    if (availableSlots === 0) {
+      setError(`A product can have up to ${MAX_GALLERY_IMAGES} images.`);
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setUploadStatus(`Optimizing ${Math.min(files.length, availableSlots)} image${Math.min(files.length, availableSlots) === 1 ? '' : 's'}...`);
+
+    try {
+      const optimizedImages = [];
+
+      for (const file of files.slice(0, availableSlots)) {
+        optimizedImages.push(await optimizeImageFile(file));
+      }
+
+      updateGalleryImages([...galleryImages, ...optimizedImages]);
+      setUploadStatus(`Added ${optimizedImages.length} optimized image${optimizedImages.length === 1 ? '' : 's'} to the gallery.`);
+    } catch (uploadError) {
+      setError(uploadError.message || 'Unable to upload product images.');
+      setUploadStatus('');
+    }
+  };
+
+  const addGalleryUrl = () => {
+    const nextUrl = imageUrlInput.trim();
+
+    if (!nextUrl) {
+      return;
+    }
+
+    if (galleryImages.length >= MAX_GALLERY_IMAGES) {
+      setError(`A product can have up to ${MAX_GALLERY_IMAGES} images.`);
+      return;
+    }
+
+    updateGalleryImages([...galleryImages, nextUrl]);
+    setImageUrlInput('');
+    setUploadStatus('Image URL added to the gallery.');
+  };
+
+  const removeGalleryImage = (image) => {
+    updateGalleryImages(galleryImages.filter((galleryImage) => galleryImage !== image));
+    setUploadStatus('Image removed from the gallery.');
+  };
+
+  const moveGalleryImage = (image, direction) => {
+    const currentIndex = galleryImages.indexOf(image);
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= galleryImages.length) {
+      return;
+    }
+
+    const nextImages = [...galleryImages];
+    [nextImages[currentIndex], nextImages[nextIndex]] = [nextImages[nextIndex], nextImages[currentIndex]];
+    updateGalleryImages(nextImages);
+  };
+
+  const setPrimaryGalleryImage = (image) => {
+    updateGalleryImages([image, ...galleryImages.filter((galleryImage) => galleryImage !== image)]);
+    setUploadStatus('Primary product image updated.');
   };
 
   const submitHandler = async (event) => {
@@ -466,34 +641,141 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                 <h2 className="mt-2 font-serif text-2xl font-bold text-brand-dark">Visuals and selling copy</h2>
               </div>
 
-              <div>
-                <label htmlFor="image" className="mb-2 block text-sm font-semibold text-brand-dark">
-                  Main Image URL
-                </label>
-                <input
-                  id="image"
-                  name="image"
-                  type="text"
-                  value={form.image}
-                  onChange={handleChange}
-                  placeholder="https://..."
-                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                />
-              </div>
+              <div className="rounded-[24px] border border-[#ead6c6] bg-[#fffaf4] p-4 sm:p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-brand-dark">Product Image Gallery</p>
+                    <p className="mt-1 text-xs leading-6 text-gray-500">
+                      Upload optimized product photos or add image URLs. The first image is the primary storefront image.
+                    </p>
+                  </div>
 
-              <div>
-                <label htmlFor="imageList" className="mb-2 block text-sm font-semibold text-brand-dark">
-                  Additional Image URLs
-                </label>
-                <textarea
-                  id="imageList"
-                  name="imageList"
-                  rows="4"
-                  value={form.imageList}
-                  onChange={handleChange}
-                  placeholder="One image URL per line"
-                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                />
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-brand-primary px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors duration-200 hover:bg-brand-dark">
+                      <UploadCloud size={16} className="mr-2" />
+                      Upload
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGalleryUpload}
+                        className="sr-only"
+                      />
+                    </label>
+                    <span className="text-xs font-semibold text-gray-500">
+                      {galleryImages.length}/{MAX_GALLERY_IMAGES} images
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <input
+                    type="url"
+                    value={imageUrlInput}
+                    onChange={(event) => setImageUrlInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addGalleryUrl();
+                      }
+                    }}
+                    placeholder="Paste an image URL and add it to the gallery"
+                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                  />
+                  <button
+                    type="button"
+                    onClick={addGalleryUrl}
+                    className="inline-flex items-center justify-center rounded-xl border border-brand-primary/20 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
+                  >
+                    <ImagePlus size={16} className="mr-2" />
+                    Add URL
+                  </button>
+                </div>
+
+                {uploadStatus && (
+                  <p className="mt-3 rounded-xl bg-[#f5e7da] px-4 py-2 text-xs font-semibold text-[#744126]">
+                    {uploadStatus}
+                  </p>
+                )}
+
+                <div className="mt-5">
+                  {galleryImages.length > 0 ? (
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {galleryImages.map((image, index) => (
+                        <article
+                          key={image}
+                          className="overflow-hidden rounded-[20px] border border-[#ead6c6] bg-white shadow-sm"
+                        >
+                          <div className="relative aspect-[4/3] bg-[#f4e7db]">
+                            <img
+                              src={image}
+                              alt={`${form.name || 'Product'} gallery image ${index + 1}`}
+                              loading="lazy"
+                              className="h-full w-full object-cover"
+                            />
+                            {index === 0 && (
+                              <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-brand-primary px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow">
+                                <Star size={12} className="mr-1" />
+                                Primary
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-5 gap-2 p-3">
+                            <button
+                              type="button"
+                              onClick={() => setPrimaryGalleryImage(image)}
+                              disabled={index === 0}
+                              title="Set as primary image"
+                              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary transition-colors hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <Star size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveGalleryImage(image, -1)}
+                              disabled={index === 0}
+                              title="Move image up"
+                              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary transition-colors hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <ArrowUp size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveGalleryImage(image, 1)}
+                              disabled={index === galleryImages.length - 1}
+                              title="Move image down"
+                              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary transition-colors hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <ArrowDown size={15} />
+                            </button>
+                            <a
+                              href={image}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Open image"
+                              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary transition-colors hover:bg-[#fff7ee]"
+                            >
+                              <Sparkles size={15} />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => removeGalleryImage(image)}
+                              title="Remove image"
+                              className="inline-flex h-10 items-center justify-center rounded-lg border border-red-100 text-red-600 transition-colors hover:bg-red-50"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-[20px] border border-dashed border-brand-accent/30 bg-white px-4 py-10 text-center text-sm text-gray-500">
+                      Upload product images or add URLs to build the gallery.
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

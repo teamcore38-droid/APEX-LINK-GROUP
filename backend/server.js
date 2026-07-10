@@ -91,8 +91,8 @@ app.use(
 app.use(cors(corsOptions));
 // Stripe webhook signature verification needs raw body on this path.
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.json({ limit: '8mb' }));
+app.use(express.urlencoded({ extended: true, limit: '8mb' }));
 app.use(sanitizeRequest);
 
 app.get('/', (req, res) => {

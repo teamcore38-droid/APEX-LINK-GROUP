@@ -4,8 +4,11 @@ import axios from 'axios';
 import {
   ArrowLeft,
   BadgeCheck,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   Loader2,
+  Maximize2,
   MessageSquare,
   Minus,
   Plus,
@@ -13,6 +16,8 @@ import {
   Sparkles,
   Star,
   Truck,
+  X,
+  ZoomIn,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +66,8 @@ const ProductPage = () => {
   const [error, setError] = useState('');
   const [qty, setQty] = useState(1);
   const [selectedImage, setSelectedImage] = useState('');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isLightboxZoomed, setIsLightboxZoomed] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewMessage, setReviewMessage] = useState('');
@@ -100,7 +107,8 @@ const ProductPage = () => {
           },
           { token: userInfo?.token }
         );
-        setSelectedImage(data.image);
+        const gallery = getProductImages(data);
+        setSelectedImage(gallery[0] || data.image);
         setSelectedVariantId(data.variants?.find((variant) => variant.isActive !== false)?._id || '');
         setQty(1);
 
@@ -171,6 +179,7 @@ const ProductPage = () => {
   }, [id, userInfo?.token]);
 
   const productImages = useMemo(() => getProductImages(product || {}), [product]);
+  const selectedImageIndex = Math.max(0, productImages.indexOf(selectedImage));
   const selectedVariant = useMemo(
     () => product?.variants?.find((variant) => variant._id === selectedVariantId) || null,
     [product, selectedVariantId]
@@ -178,6 +187,40 @@ const ProductPage = () => {
   const effectivePrice = Number(product?.price || 0) + Number(selectedVariant?.priceAdjustment || 0);
   const effectiveStock = selectedVariant ? selectedVariant.countInStock : product?.countInStock || 0;
   const stockPresentation = getStockPresentation(effectiveStock || 0);
+
+  useEffect(() => {
+    if (!isLightboxOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsLightboxOpen(false);
+      }
+
+      if (event.key === 'ArrowLeft') {
+        setSelectedImage((currentImage) => {
+          const currentIndex = Math.max(0, productImages.indexOf(currentImage));
+          return productImages[(currentIndex - 1 + productImages.length) % productImages.length] || currentImage;
+        });
+      }
+
+      if (event.key === 'ArrowRight') {
+        setSelectedImage((currentImage) => {
+          const currentIndex = Math.max(0, productImages.indexOf(currentImage));
+          return productImages[(currentIndex + 1) % productImages.length] || currentImage;
+        });
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, productImages]);
 
   if (loading) {
     return (
@@ -203,6 +246,21 @@ const ProductPage = () => {
       </div>
     );
   }
+
+  const showGalleryImage = (image) => {
+    setSelectedImage(image);
+    setIsLightboxZoomed(false);
+  };
+
+  const showPreviousImage = () => {
+    const currentIndex = Math.max(0, productImages.indexOf(selectedImage));
+    showGalleryImage(productImages[(currentIndex - 1 + productImages.length) % productImages.length] || selectedImage);
+  };
+
+  const showNextImage = () => {
+    const currentIndex = Math.max(0, productImages.indexOf(selectedImage));
+    showGalleryImage(productImages[(currentIndex + 1) % productImages.length] || selectedImage);
+  };
 
   const handleAddToCart = () => {
     addToCart(
@@ -306,29 +364,49 @@ const ProductPage = () => {
 
         <div className="mt-8 grid gap-10 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-5">
-            <div className="overflow-hidden rounded-[32px] bg-white shadow-[0_24px_70px_rgba(53, 26, 17,0.10)]">
-              <img
-                src={selectedImage || product.image}
-                alt={product.name}
-                className="h-[520px] w-full object-cover"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLightboxOpen(true);
+                setIsLightboxZoomed(false);
+              }}
+              className="group relative block w-full overflow-hidden rounded-[28px] bg-white text-left shadow-[0_24px_70px_rgba(53,26,17,0.10)] focus:outline-none focus:ring-4 focus:ring-brand-accent/30 sm:rounded-[32px]"
+              aria-label={`Open ${product.name} image gallery`}
+            >
+              <div className="relative aspect-square bg-[#f4e7db] sm:aspect-[5/4] lg:aspect-[4/3] xl:aspect-[1.08/1]">
+                <img
+                  src={selectedImage || product.image}
+                  alt={product.name}
+                  fetchPriority="high"
+                  className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/35 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+                <span className="absolute bottom-4 right-4 inline-flex items-center rounded-full bg-white/95 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-dark shadow-lg transition group-hover:bg-brand-primary group-hover:text-white">
+                  <ZoomIn size={16} className="mr-2" />
+                  Zoom
+                </span>
+              </div>
+            </button>
 
             {productImages.length > 1 && (
-              <div className="grid gap-4 sm:grid-cols-4">
-                {productImages.map((image) => (
+              <div className="product-thumbnail-strip flex gap-3 overflow-x-auto pb-2 sm:gap-4">
+                {productImages.map((image, index) => (
                   <button
                     key={image}
                     type="button"
-                    onClick={() => setSelectedImage(image)}
-                    className={`overflow-hidden rounded-[20px] border-2 transition ${
-                      selectedImage === image ? 'border-brand-primary' : 'border-transparent'
+                    onClick={() => showGalleryImage(image)}
+                    className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 bg-white transition sm:h-24 sm:w-24 lg:h-28 lg:w-28 ${
+                      selectedImage === image
+                        ? 'border-brand-primary shadow-[0_12px_24px_rgba(140,59,42,0.20)]'
+                        : 'border-[#ead6c6] opacity-80 hover:border-brand-accent hover:opacity-100'
                     }`}
+                    aria-label={`Show ${product.name} image ${index + 1}`}
                   >
                     <img
                       src={image}
-                      alt={`${product.name} gallery`}
-                      className="h-28 w-full object-cover"
+                      alt={`${product.name} gallery thumbnail ${index + 1}`}
+                      loading="lazy"
+                      className="h-full w-full object-cover"
                     />
                   </button>
                 ))}
@@ -641,6 +719,116 @@ const ProductPage = () => {
           </section>
         )}
       </div>
+
+      {isLightboxOpen && (
+        <div
+          className="product-lightbox fixed inset-0 z-[90] flex flex-col bg-[#1f0f0a]/95 px-4 py-4 text-white sm:px-8 sm:py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${product.name} image gallery`}
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-accent">
+                {selectedImageIndex + 1} / {productImages.length || 1}
+              </p>
+              <p className="mt-1 line-clamp-1 font-serif text-xl font-bold">{product.name}</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsLightboxZoomed((current) => !current);
+                }}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+                aria-label={isLightboxZoomed ? 'Fit image to screen' : 'Zoom image'}
+              >
+                <Maximize2 size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsLightboxOpen(false);
+                }}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+                aria-label="Close image gallery"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative mt-4 flex min-h-0 flex-1 items-center justify-center" onClick={(event) => event.stopPropagation()}>
+            {productImages.length > 1 && (
+              <button
+                type="button"
+                onClick={showPreviousImage}
+                className="absolute left-0 z-10 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:bg-white/20 sm:left-4"
+                aria-label="Show previous product image"
+              >
+                <ChevronLeft size={24} />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsLightboxZoomed((current) => !current)}
+              className={`max-h-full overflow-auto rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-accent/40 ${
+                isLightboxZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+              }`}
+              aria-label={isLightboxZoomed ? 'Zoom out product image' : 'Zoom in product image'}
+            >
+              <img
+                src={selectedImage || product.image}
+                alt={product.name}
+                className={`mx-auto rounded-2xl object-contain shadow-2xl transition duration-300 ${
+                  isLightboxZoomed
+                    ? 'max-h-none max-w-none scale-100'
+                    : 'max-h-[72vh] max-w-full'
+                }`}
+              />
+            </button>
+
+            {productImages.length > 1 && (
+              <button
+                type="button"
+                onClick={showNextImage}
+                className="absolute right-0 z-10 inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition hover:bg-white/20 sm:right-4"
+                aria-label="Show next product image"
+              >
+                <ChevronRight size={24} />
+              </button>
+            )}
+          </div>
+
+          {productImages.length > 1 && (
+            <div className="product-thumbnail-strip mt-4 flex max-w-full justify-center gap-3 overflow-x-auto pb-2" onClick={(event) => event.stopPropagation()}>
+              {productImages.map((image, index) => (
+                <button
+                  key={image}
+                  type="button"
+                  onClick={() => showGalleryImage(image)}
+                  className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition sm:h-20 sm:w-20 ${
+                    selectedImage === image ? 'border-brand-accent' : 'border-white/20 opacity-70 hover:opacity-100'
+                  }`}
+                  aria-label={`Show ${product.name} image ${index + 1}`}
+                >
+                  <img
+                    src={image}
+                    alt={`${product.name} lightbox thumbnail ${index + 1}`}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

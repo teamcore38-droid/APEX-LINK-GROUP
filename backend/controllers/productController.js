@@ -19,6 +19,7 @@ const PRODUCT_SORT_OPTIONS = {
 const DEFAULT_PRODUCT_SORT = { isFeatured: -1, isBestSeller: -1, createdAt: -1 };
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=1000';
+const MAX_PRODUCT_IMAGES = 12;
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -109,7 +110,7 @@ const normalizeImageList = (images = [], image = '') => {
     }
   });
 
-  return [...uniqueImages];
+  return [...uniqueImages].slice(0, MAX_PRODUCT_IMAGES);
 };
 
 const normalizeVariants = (variants = []) => {
