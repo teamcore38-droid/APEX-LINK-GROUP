@@ -637,31 +637,33 @@ const ProductPage = () => {
                 </div>
 
                 <div className="flex flex-1 flex-col gap-3 sm:items-end">
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    disabled={effectiveStock === 0}
-                    className={`inline-flex w-full items-center justify-center rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-[0.2em] transition-colors duration-200 sm:w-auto ${
-                      effectiveStock === 0
-                        ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                        : 'bg-brand-primary text-white hover:bg-brand-dark'
-                    }`}
-                  >
-                    {effectiveStock === 0 ? 'Currently Out of Stock' : 'Add to Cart'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={addToWishlist}
-                    disabled={wishlistSaving}
-                    className="inline-flex items-center justify-center rounded-xl border border-brand-primary/20 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                  >
-                    {wishlistSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Heart size={16} className="mr-2" />}
-                    Save
-                  </button>
+                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={handleAddToCart}
+                      disabled={effectiveStock === 0}
+                      className={`inline-flex min-h-14 w-full items-center justify-center rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-[0.2em] transition-colors duration-200 sm:w-auto sm:min-w-[190px] ${
+                        effectiveStock === 0
+                          ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                          : 'bg-brand-primary text-white hover:bg-brand-dark'
+                      }`}
+                    >
+                      {effectiveStock === 0 ? 'Currently Out of Stock' : 'Add to Cart'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={addToWishlist}
+                      disabled={wishlistSaving}
+                      className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-brand-primary/20 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[132px]"
+                    >
+                      {wishlistSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Heart size={16} className="mr-2" />}
+                      Save
+                    </button>
+                  </div>
 
                   <Link
                     to="/products"
-                    className="inline-flex items-center justify-center rounded-xl border border-brand-primary/20 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
+                    className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-brand-primary/20 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white sm:w-auto"
                   >
                     Continue Shopping
                   </Link>
