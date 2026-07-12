@@ -1,8 +1,10 @@
+import { memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, ShoppingCart, Star } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import {
   formatCurrency,
+  getOptimizedImageUrl,
   getProductStatusBadge,
   getStockPresentation,
 } from '../utils/productUi';
@@ -28,8 +30,11 @@ const Product = ({ product }) => {
       <Link to={`/product/${product._id}`} className="relative block">
         <div className="relative aspect-square overflow-hidden bg-[#f4e7db] sm:aspect-[4/3]">
           <img
-            src={product.image}
+            src={getOptimizedImageUrl(product.image, { width: 520, height: 520, crop: 'fill' })}
             alt={product.name}
+            loading="lazy"
+            decoding="async"
+            sizes="(min-width: 1280px) 240px, (min-width: 768px) 30vw, 50vw"
             className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
@@ -138,4 +143,4 @@ const Product = ({ product }) => {
   );
 };
 
-export default Product;
+export default memo(Product);

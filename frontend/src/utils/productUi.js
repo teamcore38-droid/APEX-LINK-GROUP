@@ -33,7 +33,7 @@ export const PRODUCT_ACTIVE_FILTER_OPTIONS = [
   { value: 'false', label: 'Inactive Only' },
 ];
 
-export const PRODUCT_PAGE_SIZE = 9;
+export const PRODUCT_PAGE_SIZE = 12;
 export const ADMIN_PRODUCT_PAGE_SIZE = 8;
 
 export const createInitialProductForm = () => ({

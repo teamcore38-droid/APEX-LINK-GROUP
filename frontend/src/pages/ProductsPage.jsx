@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -53,13 +53,13 @@ const ProductsPage = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [mobilePanel, setMobilePanel] = useState(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [filterDraft, setFilterDraft] = useState(INITIAL_FILTERS);
-  const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -68,6 +68,9 @@ const ProductsPage = () => {
     hasPrevPage: false,
   });
   const [facets, setFacets] = useState({ categories: [], brands: [], origins: [], availability: [], priceRange: {} });
+  const loaderRef = useRef(null);
+  const queryVersionRef = useRef(0);
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -81,7 +84,6 @@ const ProductsPage = () => {
           keyword: searchInput.trim(),
         };
       });
-      setPage(1);
     }, 350);
 
     return () => clearTimeout(timeoutId);
@@ -132,18 +134,30 @@ const ProductsPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const requestVersion = queryVersionRef.current + 1;
+    queryVersionRef.current = requestVersion;
+    const controller = new AbortController();
+
+    const fetchFirstPage = async () => {
       setLoading(true);
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
       setError('');
+      setProducts([]);
 
       try {
         const { data } = await axios.get('/api/customer/search', {
           params: {
             ...filters,
-            page,
+            page: 1,
             limit: PRODUCT_PAGE_SIZE,
           },
+          signal: controller.signal,
         });
+
+        if (queryVersionRef.current !== requestVersion) {
+          return;
+        }
 
         const payload = normalizeProductPayload(data);
         setProducts(payload.products);
@@ -155,24 +169,99 @@ const ProductsPage = () => {
           hasNextPage: payload.hasNextPage,
           hasPrevPage: payload.hasPrevPage,
         });
-
-        if (payload.currentPage !== page) {
-          setPage(payload.currentPage);
-        }
       } catch (fetchError) {
+        if (fetchError.name === 'CanceledError' || fetchError.code === 'ERR_CANCELED') {
+          return;
+        }
+
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load products right now.');
       } finally {
-        setLoading(false);
+        if (queryVersionRef.current === requestVersion) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchProducts();
-  }, [filters, page]);
+    fetchFirstPage();
+
+    return () => {
+      controller.abort();
+    };
+  }, [filters]);
+
+  const loadMoreProducts = useCallback(async () => {
+    if (loading || loadingMore || loadingMoreRef.current || !meta.hasNextPage) {
+      return;
+    }
+
+    const requestVersion = queryVersionRef.current;
+    const nextPage = meta.currentPage + 1;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setError('');
+
+    try {
+      const { data } = await axios.get('/api/customer/search', {
+        params: {
+          ...filters,
+          page: nextPage,
+          limit: PRODUCT_PAGE_SIZE,
+        },
+      });
+
+      if (queryVersionRef.current !== requestVersion) {
+        return;
+      }
+
+      const payload = normalizeProductPayload(data);
+      setProducts((currentProducts) => {
+        const seenProductIds = new Set(currentProducts.map((product) => product._id));
+        const nextProducts = payload.products.filter((product) => !seenProductIds.has(product._id));
+        return [...currentProducts, ...nextProducts];
+      });
+      setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
+      setMeta({
+        currentPage: payload.currentPage,
+        totalPages: payload.totalPages,
+        totalProducts: payload.totalProducts,
+        hasNextPage: payload.hasNextPage,
+        hasPrevPage: payload.hasPrevPage,
+      });
+    } catch (fetchError) {
+      console.error(fetchError);
+      setError(fetchError.response?.data?.message || 'Unable to load more products right now.');
+    } finally {
+      if (queryVersionRef.current === requestVersion) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    }
+  }, [filters, loading, loadingMore, meta.currentPage, meta.hasNextPage]);
+
+  useEffect(() => {
+    const loaderElement = loaderRef.current;
+
+    if (!loaderElement || loading || !meta.hasNextPage) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadMoreProducts();
+        }
+      },
+      { root: null, rootMargin: '900px 0px 700px', threshold: 0 }
+    );
+
+    observer.observe(loaderElement);
+
+    return () => observer.disconnect();
+  }, [loadMoreProducts, loading, meta.hasNextPage]);
 
   const updateFilter = (key, value) => {
     setError('');
-    setPage(1);
     setFilters((currentFilters) => ({
       ...currentFilters,
       [key]: value,
@@ -182,7 +271,6 @@ const ProductsPage = () => {
   const resetFilters = () => {
     setSearchInput('');
     setFilters(INITIAL_FILTERS);
-    setPage(1);
     setError('');
   };
 
@@ -207,7 +295,6 @@ const ProductsPage = () => {
 
   const applyMobileFilters = () => {
     setError('');
-    setPage(1);
     setFilters((currentFilters) => ({
       ...currentFilters,
       ...Object.fromEntries(MOBILE_FILTER_KEYS.map((key) => [key, filterDraft[key]])),
@@ -503,32 +590,36 @@ const ProductsPage = () => {
                 {products.map((product) => (
                   <Product key={product._id} product={product} />
                 ))}
+                {loadingMore
+                  ? [...Array(4)].map((_, index) => (
+                      <div key={`loading-more-${index}`} className="min-h-[330px] animate-pulse rounded-2xl bg-[#f8efe6] sm:min-h-[430px]" />
+                    ))
+                  : null}
               </div>
 
-              <div className="mt-10 flex flex-col gap-4 border-t border-[#ecd9ca] pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-gray-500">
-                  Page <span className="font-semibold text-brand-dark">{meta.currentPage}</span> of{' '}
-                  <span className="font-semibold text-brand-dark">{meta.totalPages}</span>
-                </p>
+              <div ref={loaderRef} className="h-10" aria-hidden="true" />
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={!meta.hasPrevPage}
-                    onClick={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
-                    className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-brand-dark transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!meta.hasNextPage}
-                    onClick={() => setPage((currentPage) => currentPage + 1)}
-                    className="rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next Page
-                  </button>
-                </div>
+              <div className="mt-6 flex flex-col items-center gap-4 border-t border-[#ecd9ca] pt-6 text-center">
+                {meta.hasNextPage ? (
+                  <>
+                    <p className="text-sm text-gray-500">
+                      Showing <span className="font-semibold text-brand-dark">{products.length}</span> of{' '}
+                      <span className="font-semibold text-brand-dark">{meta.totalProducts}</span> products
+                    </p>
+                    <button
+                      type="button"
+                      disabled={loadingMore}
+                      onClick={loadMoreProducts}
+                      className="rounded-full bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-brand-dark disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {loadingMore ? 'Loading products...' : 'Load More'}
+                    </button>
+                  </>
+                ) : (
+                  <p className="text-sm font-semibold text-gray-500">
+                    All <span className="text-brand-dark">{meta.totalProducts}</span> products are loaded.
+                  </p>
+                )}
               </div>
             </>
           )}
