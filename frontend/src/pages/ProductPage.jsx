@@ -560,38 +560,55 @@ const ProductPage = () => {
                 <div className="mb-6">
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Variant</p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {product.variants.filter((variant) => variant.isActive !== false).map((variant) => (
-                      <button
-                        key={variant._id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedVariantId(variant._id ? String(variant._id) : '');
-                          const variantImages = getVariantImageUrls(variant);
-                          if (variantImages.length > 0) {
-                            setSelectedImage(variantImages[0]);
-                          } else {
-                            const fallbackImages = getProductImages(product || {});
-                            setSelectedImage(fallbackImages[0] || product.image);
-                          }
-                          setQty(1);
-                        }}
-                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                          String(selectedVariantId) === String(variant._id)
-                            ? 'border-brand-primary bg-brand-light text-brand-dark'
-                            : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/40'
-                        }`}
-                      >
-                        <span className="block font-semibold">{variant.label}</span>
-                        <span className="mt-1 block text-xs">
-                          {[variant.size, variant.color, variant.weight, variant.packaging].filter(Boolean).join(' | ') || 'Standard option'}
-                        </span>
-                        {variant.priceAdjustment !== 0 && (
-                          <span className="mt-1 block text-xs font-semibold text-brand-primary">
-                            {variant.priceAdjustment > 0 ? '+' : ''}{formatCurrency(variant.priceAdjustment)}
+                    {product.variants.filter((variant) => variant.isActive !== false).map((variant) => {
+                      const variantImages = getVariantImageUrls(variant);
+                      const variantImage = variantImages[0];
+
+                      return (
+                        <button
+                          key={variant._id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedVariantId(variant._id ? String(variant._id) : '');
+                            if (variantImages.length > 0) {
+                              setSelectedImage(variantImages[0]);
+                            } else {
+                              const fallbackImages = getProductImages(product || {});
+                              setSelectedImage(fallbackImages[0] || product.image);
+                            }
+                            setQty(1);
+                          }}
+                          className={`flex min-h-[82px] items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition ${
+                            String(selectedVariantId) === String(variant._id)
+                              ? 'border-brand-primary bg-brand-light text-brand-dark'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/40'
+                          }`}
+                        >
+                          {variantImage && (
+                            <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#ead6c6] bg-[#f8efe6]">
+                              <img
+                                src={getProductThumbnailUrl(variantImage)}
+                                alt={`${variant.label} option`}
+                                loading="lazy"
+                                decoding="async"
+                                className="h-full w-full object-cover"
+                              />
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-semibold">{variant.label}</span>
+                            <span className="mt-1 block truncate text-xs">
+                              {[variant.size, variant.color, variant.weight, variant.packaging].filter(Boolean).join(' | ') || 'Standard option'}
+                            </span>
+                            {variant.priceAdjustment !== 0 && (
+                              <span className="mt-1 block text-xs font-semibold text-brand-primary">
+                                {variant.priceAdjustment > 0 ? '+' : ''}{formatCurrency(variant.priceAdjustment)}
+                              </span>
+                            )}
                           </span>
-                        )}
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
