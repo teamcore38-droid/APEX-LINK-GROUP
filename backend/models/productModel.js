@@ -22,6 +22,20 @@ const variantSchema = mongoose.Schema(
       default: '',
       trim: true,
     },
+    image: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    imagePublicId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    images: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
     weight: {
       type: String,
       default: '',

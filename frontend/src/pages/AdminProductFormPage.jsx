@@ -24,15 +24,32 @@ import {
   getProductFormGalleryImages,
   getProductImageUrl,
   getProductImages,
+  getVariantImageAssets,
+  setVariantImageAssets,
   setProductFormGalleryImages,
   slugifyProductName,
 } from '../utils/productUi';
 
 const MAX_GALLERY_IMAGES = 12;
+const MAX_VARIANT_IMAGES = 8;
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 const getAssetKey = (asset = {}) => asset.publicId || asset.url || getProductImageUrl(asset);
 const getPublicIds = (assets = []) =>
   assets.map((asset) => asset.publicId).filter(Boolean);
+
+const parseVariantsJson = (value = '[]') => {
+  try {
+    const variants = JSON.parse(value || '[]');
+    return Array.isArray(variants) ? variants : [];
+  } catch {
+    return [];
+  }
+};
+
+const getFormPublicIds = (form) => {
+  const variantImages = parseVariantsJson(form.variantsJson).flatMap((variant) => getVariantImageAssets(variant));
+  return getPublicIds([...(form.imageAssets || []), ...variantImages]);
+};
 
 const validateForm = (form) => {
   if (!form.name.trim()) {
@@ -83,6 +100,8 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const [success, setSuccess] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState('');
+  const [variantImageUrlInputs, setVariantImageUrlInputs] = useState({});
+  const [variantUploadStatus, setVariantUploadStatus] = useState({});
   const [uploadStatus, setUploadStatus] = useState('');
   const [persistedImagePublicIds, setPersistedImagePublicIds] = useState(new Set());
 
@@ -131,7 +150,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
           const nextForm = buildProductFormFromProduct(productResponse.data);
           setCategories(categoryResponse.data);
           setForm(nextForm);
-          setPersistedImagePublicIds(new Set(getPublicIds(nextForm.imageAssets)));
+          setPersistedImagePublicIds(new Set(getFormPublicIds(nextForm)));
           setSlugTouched(Boolean(productResponse.data.slug));
         } else {
           const { data } = await categoryPromise;
@@ -177,6 +196,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
   const galleryImages = useMemo(() => getProductFormGalleryImages(form), [form]);
   const previewImages = useMemo(() => getProductImages(previewProduct), [previewProduct]);
+  const variants = useMemo(() => parseVariantsJson(form.variantsJson), [form.variantsJson]);
 
   const handleChange = (event) => {
     const { checked, name, type, value } = event.target;
@@ -339,6 +359,227 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     setUploadStatus('Primary product image updated.');
   };
 
+  const updateVariants = (updater) => {
+    setError('');
+    setSuccess('');
+    setForm((currentForm) => {
+      const currentVariants = parseVariantsJson(currentForm.variantsJson);
+      const nextVariants = typeof updater === 'function' ? updater(currentVariants) : updater;
+
+      return {
+        ...currentForm,
+        variantsJson: JSON.stringify(nextVariants, null, 2),
+      };
+    });
+  };
+
+  const addVariant = () => {
+    updateVariants((currentVariants) => [
+      ...currentVariants,
+      {
+        label: `Color option ${currentVariants.length + 1}`,
+        sku: '',
+        size: '',
+        color: '',
+        image: '',
+        imagePublicId: '',
+        images: [],
+        weight: '',
+        packaging: '',
+        priceAdjustment: 0,
+        countInStock: 0,
+        lowStockThreshold: 5,
+        isActive: true,
+      },
+    ]);
+  };
+
+  const removeVariant = (variantIndex) => {
+    updateVariants((currentVariants) => currentVariants.filter((_, index) => index !== variantIndex));
+  };
+
+  const updateVariantField = (variantIndex, field, value) => {
+    updateVariants((currentVariants) =>
+      currentVariants.map((variant, index) => (
+        index === variantIndex
+          ? {
+              ...variant,
+              [field]: value,
+            }
+          : variant
+      ))
+    );
+  };
+
+  const updateVariantImages = (variantIndex, images) => {
+    updateVariants((currentVariants) =>
+      currentVariants.map((variant, index) => (
+        index === variantIndex
+          ? setVariantImageAssets(variant, images.slice(0, MAX_VARIANT_IMAGES))
+          : variant
+      ))
+    );
+  };
+
+  const handleVariantImageUpload = async (variantIndex, event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const variant = variants[variantIndex];
+    const variantImages = getVariantImageAssets(variant);
+    const availableSlots = Math.max(0, MAX_VARIANT_IMAGES - variantImages.length);
+
+    if (availableSlots === 0) {
+      setError(`A variant can have up to ${MAX_VARIANT_IMAGES} images.`);
+      return;
+    }
+
+    const selectedFiles = files.slice(0, availableSlots);
+    const invalidFile = selectedFiles.find((file) => !file.type.startsWith('image/') || file.size > MAX_UPLOAD_BYTES);
+
+    if (invalidFile) {
+      setError(
+        !invalidFile.type.startsWith('image/')
+          ? `${invalidFile.name} is not an image file.`
+          : `${invalidFile.name} is larger than 8MB.`
+      );
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setVariantUploadStatus((currentStatus) => ({
+      ...currentStatus,
+      [variantIndex]: `Uploading ${selectedFiles.length} variant image${selectedFiles.length === 1 ? '' : 's'}...`,
+    }));
+
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append('images', file));
+      const { data } = await axios.post('/api/products/images', formData, {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const uploadedImages = data.images || [];
+
+      updateVariantImages(variantIndex, [...variantImages, ...uploadedImages]);
+      setVariantUploadStatus((currentStatus) => ({
+        ...currentStatus,
+        [variantIndex]: `Added ${uploadedImages.length} color image${uploadedImages.length === 1 ? '' : 's'}.`,
+      }));
+    } catch (uploadError) {
+      setError(uploadError.response?.data?.message || uploadError.message || 'Unable to upload variant images.');
+      setVariantUploadStatus((currentStatus) => ({
+        ...currentStatus,
+        [variantIndex]: '',
+      }));
+    }
+  };
+
+  const addVariantImageUrl = async (variantIndex) => {
+    const nextUrl = String(variantImageUrlInputs[variantIndex] || '').trim();
+
+    if (!nextUrl) {
+      return;
+    }
+
+    const variantImages = getVariantImageAssets(variants[variantIndex]);
+
+    if (variantImages.length >= MAX_VARIANT_IMAGES) {
+      setError(`A variant can have up to ${MAX_VARIANT_IMAGES} images.`);
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setVariantUploadStatus((currentStatus) => ({
+      ...currentStatus,
+      [variantIndex]: 'Importing variant image URL into Cloudinary...',
+    }));
+
+    try {
+      const { data } = await axios.post(
+        '/api/products/images',
+        { sourceUrl: nextUrl },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const [uploadedImage] = data.images || [];
+
+      if (uploadedImage) {
+        updateVariantImages(variantIndex, [...variantImages, uploadedImage]);
+        setVariantImageUrlInputs((currentInputs) => ({
+          ...currentInputs,
+          [variantIndex]: '',
+        }));
+        setVariantUploadStatus((currentStatus) => ({
+          ...currentStatus,
+          [variantIndex]: 'Variant image URL imported to Cloudinary.',
+        }));
+      }
+    } catch (uploadError) {
+      setError(uploadError.response?.data?.message || uploadError.message || 'Unable to import that variant image URL.');
+      setVariantUploadStatus((currentStatus) => ({
+        ...currentStatus,
+        [variantIndex]: '',
+      }));
+    }
+  };
+
+  const removeVariantImage = async (variantIndex, image) => {
+    const publicId = image.publicId || '';
+    const variantImages = getVariantImageAssets(variants[variantIndex]);
+    updateVariantImages(
+      variantIndex,
+      variantImages.filter((variantImage) => getAssetKey(variantImage) !== getAssetKey(image))
+    );
+
+    if (publicId && !persistedImagePublicIds.has(publicId)) {
+      try {
+        await axios.delete('/api/products/images', {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+          },
+          data: { publicId },
+        });
+      } catch (deleteError) {
+        setError(deleteError.response?.data?.message || 'Variant image removed from the form, but Cloudinary cleanup failed.');
+      }
+    }
+  };
+
+  const moveVariantImage = (variantIndex, image, direction) => {
+    const variantImages = getVariantImageAssets(variants[variantIndex]);
+    const currentIndex = variantImages.findIndex((variantImage) => getAssetKey(variantImage) === getAssetKey(image));
+    const nextIndex = currentIndex + direction;
+
+    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= variantImages.length) {
+      return;
+    }
+
+    const nextImages = [...variantImages];
+    [nextImages[currentIndex], nextImages[nextIndex]] = [nextImages[nextIndex], nextImages[currentIndex]];
+    updateVariantImages(variantIndex, nextImages);
+  };
+
+  const setPrimaryVariantImage = (variantIndex, image) => {
+    const variantImages = getVariantImageAssets(variants[variantIndex]);
+    updateVariantImages(
+      variantIndex,
+      [image, ...variantImages.filter((variantImage) => getAssetKey(variantImage) !== getAssetKey(image))]
+    );
+  };
+
   const submitHandler = async (event) => {
     event.preventDefault();
 
@@ -367,7 +608,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
         const { data } = await axios.put(`/api/products/${id}`, payload, config);
         const nextForm = buildProductFormFromProduct(data);
         setForm(nextForm);
-        setPersistedImagePublicIds(new Set(getPublicIds(nextForm.imageAssets)));
+        setPersistedImagePublicIds(new Set(getFormPublicIds(nextForm)));
         setSuccess('Product updated successfully.');
       } else {
         const { data } = await axios.post('/api/products', payload, config);
@@ -776,19 +1017,259 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="variantsJson" className="mb-2 block text-sm font-semibold text-brand-dark">
-                  Variants JSON
-                </label>
-                <textarea
-                  id="variantsJson"
-                  name="variantsJson"
-                  rows="8"
-                  value={form.variantsJson}
-                  onChange={handleChange}
-                  placeholder='[{"label":"500g pouch","sku":"SKU-500","weight":"500g","packaging":"Pouch","priceAdjustment":0,"countInStock":25}]'
-                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 font-mono text-xs text-brand-dark outline-none transition focus:border-brand-accent"
-                />
+              <div className="rounded-[24px] border border-[#ead6c6] bg-[#fffaf4] p-4 sm:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-brand-dark">Color Variants</p>
+                    <p className="mt-1 text-xs leading-6 text-gray-500">
+                      Add color, size, SKU, stock, and dedicated image galleries for each variant.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors duration-200 hover:bg-brand-dark"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Variant
+                  </button>
+                </div>
+
+                <div className="mt-5 space-y-5">
+                  {variants.length === 0 ? (
+                    <div className="rounded-[20px] border border-dashed border-brand-accent/30 bg-white px-4 py-10 text-center text-sm text-gray-500">
+                      No variants yet. Add a color variant when a product has separate images, stock, or pricing by color.
+                    </div>
+                  ) : (
+                    variants.map((variant, variantIndex) => {
+                      const variantImages = getVariantImageAssets(variant);
+
+                      return (
+                        <article
+                          key={variant._id || `variant-${variantIndex}`}
+                          className="rounded-[22px] border border-[#ead6c6] bg-white p-4 shadow-sm"
+                        >
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="grid flex-1 gap-4 md:grid-cols-2">
+                              <label className="block">
+                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                  Label
+                                </span>
+                                <input
+                                  type="text"
+                                  value={variant.label || ''}
+                                  onChange={(event) => updateVariantField(variantIndex, 'label', event.target.value)}
+                                  placeholder="Black / Size 42"
+                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                  Color
+                                </span>
+                                <input
+                                  type="text"
+                                  value={variant.color || ''}
+                                  onChange={(event) => updateVariantField(variantIndex, 'color', event.target.value)}
+                                  placeholder="Black, Tan, Red..."
+                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                  Size
+                                </span>
+                                <input
+                                  type="text"
+                                  value={variant.size || ''}
+                                  onChange={(event) => updateVariantField(variantIndex, 'size', event.target.value)}
+                                  placeholder="S, M, L, 42..."
+                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                  SKU
+                                </span>
+                                <input
+                                  type="text"
+                                  value={variant.sku || ''}
+                                  onChange={(event) => updateVariantField(variantIndex, 'sku', event.target.value)}
+                                  placeholder="SKU-BLK-42"
+                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                  Stock
+                                </span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={variant.countInStock ?? 0}
+                                  onChange={(event) => updateVariantField(variantIndex, 'countInStock', Number(event.target.value))}
+                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                                  Price Adjustment
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={variant.priceAdjustment ?? 0}
+                                  onChange={(event) => updateVariantField(variantIndex, 'priceAdjustment', Number(event.target.value))}
+                                  placeholder="0"
+                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                                />
+                              </label>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => removeVariant(variantIndex)}
+                              className="inline-flex items-center justify-center rounded-xl border border-red-100 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-red-600 transition-colors hover:bg-red-50"
+                            >
+                              <Trash2 size={15} className="mr-2" />
+                              Remove
+                            </button>
+                          </div>
+
+                          <div className="mt-5 rounded-[20px] bg-[#fffaf4] p-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">
+                                  {variant.color || variant.label || `Variant ${variantIndex + 1}`} Images
+                                </p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  {variantImages.length}/{MAX_VARIANT_IMAGES} images for this color.
+                                </p>
+                              </div>
+                              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-brand-primary px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors duration-200 hover:bg-brand-dark">
+                                <UploadCloud size={16} className="mr-2" />
+                                Upload
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  multiple
+                                  onChange={(event) => void handleVariantImageUpload(variantIndex, event)}
+                                  className="sr-only"
+                                />
+                              </label>
+                            </div>
+
+                            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                              <input
+                                type="url"
+                                value={variantImageUrlInputs[variantIndex] || ''}
+                                onChange={(event) =>
+                                  setVariantImageUrlInputs((currentInputs) => ({
+                                    ...currentInputs,
+                                    [variantIndex]: event.target.value,
+                                  }))
+                                }
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    void addVariantImageUrl(variantIndex);
+                                  }
+                                }}
+                                placeholder="Paste a color-specific image URL"
+                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => void addVariantImageUrl(variantIndex)}
+                                className="inline-flex items-center justify-center rounded-xl border border-brand-primary/20 px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
+                              >
+                                <ImagePlus size={16} className="mr-2" />
+                                Add URL
+                              </button>
+                            </div>
+
+                            {variantUploadStatus[variantIndex] && (
+                              <p className="mt-3 rounded-xl bg-[#f5e7da] px-4 py-2 text-xs font-semibold text-[#744126]">
+                                {variantUploadStatus[variantIndex]}
+                              </p>
+                            )}
+
+                            {variantImages.length > 0 ? (
+                              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {variantImages.map((image, imageIndex) => {
+                                  const imageUrl = getProductImageUrl(image);
+                                  const imageKey = getAssetKey(image);
+
+                                  return (
+                                    <article
+                                      key={imageKey}
+                                      className="overflow-hidden rounded-[18px] border border-[#ead6c6] bg-white"
+                                    >
+                                      <div className="relative aspect-square bg-[#f4e7db]">
+                                        <img
+                                          src={imageUrl}
+                                          alt={`${variant.label || 'Variant'} image ${imageIndex + 1}`}
+                                          loading="lazy"
+                                          className="h-full w-full object-cover"
+                                        />
+                                        {imageIndex === 0 && (
+                                          <span className="absolute left-2 top-2 rounded-full bg-brand-primary px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white">
+                                            Primary
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="grid grid-cols-4 gap-1.5 p-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setPrimaryVariantImage(variantIndex, image)}
+                                          disabled={imageIndex === 0}
+                                          title="Set as primary variant image"
+                                          className="inline-flex h-9 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                          <Star size={14} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => moveVariantImage(variantIndex, image, -1)}
+                                          disabled={imageIndex === 0}
+                                          title="Move image up"
+                                          className="inline-flex h-9 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                          <ArrowUp size={14} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => moveVariantImage(variantIndex, image, 1)}
+                                          disabled={imageIndex === variantImages.length - 1}
+                                          title="Move image down"
+                                          className="inline-flex h-9 items-center justify-center rounded-lg border border-[#ead6c6] text-brand-primary hover:bg-[#fff7ee] disabled:cursor-not-allowed disabled:opacity-40"
+                                        >
+                                          <ArrowDown size={14} />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => void removeVariantImage(variantIndex, image)}
+                                          title="Remove image"
+                                          className="inline-flex h-9 items-center justify-center rounded-lg border border-red-100 text-red-600 hover:bg-red-50"
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </div>
+                                    </article>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="mt-4 rounded-[18px] border border-dashed border-brand-accent/30 bg-white px-4 py-8 text-center text-xs text-gray-500">
+                                Add images for this color. These images will appear when customers select this variant.
+                              </div>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               <div>

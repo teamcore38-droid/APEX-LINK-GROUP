@@ -27,8 +27,10 @@ import { trackEvent } from '../utils/analytics';
 import { applySeo, buildProductStructuredData } from '../utils/seo';
 import {
   formatCurrency,
+  getProductImageUrl,
   getProductImages,
   getStockPresentation,
+  getVariantImageAssets,
   normalizeProductPayload,
 } from '../utils/productUi';
 
@@ -108,8 +110,10 @@ const ProductPage = () => {
           { token: userInfo?.token }
         );
         const gallery = getProductImages(data);
-        setSelectedImage(gallery[0] || data.image);
-        setSelectedVariantId(data.variants?.find((variant) => variant.isActive !== false)?._id || '');
+        const firstActiveVariant = data.variants?.find((variant) => variant.isActive !== false);
+        const firstVariantGallery = getVariantImageAssets(firstActiveVariant).map((image) => getProductImageUrl(image));
+        setSelectedImage(firstVariantGallery[0] || gallery[0] || data.image);
+        setSelectedVariantId(firstActiveVariant?._id || '');
         setQty(1);
 
         try {
@@ -178,12 +182,16 @@ const ProductPage = () => {
     fetchProduct();
   }, [id, userInfo?.token]);
 
-  const productImages = useMemo(() => getProductImages(product || {}), [product]);
-  const selectedImageIndex = Math.max(0, productImages.indexOf(selectedImage));
   const selectedVariant = useMemo(
     () => product?.variants?.find((variant) => variant._id === selectedVariantId) || null,
     [product, selectedVariantId]
   );
+  const productImages = useMemo(() => {
+    const variantImages = getVariantImageAssets(selectedVariant).map((image) => getProductImageUrl(image));
+
+    return variantImages.length > 0 ? variantImages : getProductImages(product || {});
+  }, [product, selectedVariant]);
+  const selectedImageIndex = Math.max(0, productImages.indexOf(selectedImage));
   const effectivePrice = Number(product?.price || 0) + Number(selectedVariant?.priceAdjustment || 0);
   const effectiveStock = selectedVariant ? selectedVariant.countInStock : product?.countInStock || 0;
   const stockPresentation = getStockPresentation(effectiveStock || 0);
@@ -505,6 +513,13 @@ const ProductPage = () => {
                         type="button"
                         onClick={() => {
                           setSelectedVariantId(variant._id);
+                          const variantImages = getVariantImageAssets(variant).map((image) => getProductImageUrl(image));
+                          if (variantImages.length > 0) {
+                            setSelectedImage(variantImages[0]);
+                          } else {
+                            const fallbackImages = getProductImages(product || {});
+                            setSelectedImage(fallbackImages[0] || product.image);
+                          }
                           setQty(1);
                         }}
                         className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${

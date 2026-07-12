@@ -148,6 +148,34 @@ export const getProductImageAssets = (product = {}) => {
   return [...uniqueAssets.values()];
 };
 
+export const getVariantImageAssets = (variant = {}) =>
+  getProductImageAssets({
+    image: variant.image,
+    imagePublicId: variant.imagePublicId,
+    images: Array.isArray(variant.images) ? variant.images : [],
+  });
+
+export const setVariantImageAssets = (variant = {}, images = []) => {
+  const uniqueAssets = new Map();
+
+  images
+    .map((image) => normalizeProductImageAsset(image))
+    .filter(Boolean)
+    .forEach((asset) => {
+      uniqueAssets.set(asset.publicId || asset.url, asset);
+    });
+
+  const gallery = [...uniqueAssets.values()];
+  const [primaryImage = { url: '', publicId: '' }] = gallery;
+
+  return {
+    ...variant,
+    image: primaryImage.url,
+    imagePublicId: primaryImage.publicId,
+    images: gallery,
+  };
+};
+
 export const getProductFormGalleryImages = (form = {}) =>
   Array.isArray(form.imageAssets) && form.imageAssets.length > 0
     ? getProductImageAssets({ images: form.imageAssets })

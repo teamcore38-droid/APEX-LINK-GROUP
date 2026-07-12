@@ -186,20 +186,27 @@ const normalizeVariants = (variants = []) => {
   const incomingVariants = Array.isArray(variants) ? variants : [];
 
   return incomingVariants
-    .map((variant) => ({
-      _id: variant._id,
-      label: String(variant.label || '').trim(),
-      sku: String(variant.sku || '').trim(),
-      size: String(variant.size || '').trim(),
-      color: String(variant.color || '').trim(),
-      weight: String(variant.weight || '').trim(),
-      packaging: String(variant.packaging || '').trim(),
-      priceAdjustment: Number(variant.priceAdjustment || 0),
-      countInStock: Number(variant.countInStock || 0),
-      reservedStock: Number(variant.reservedStock || 0),
-      lowStockThreshold: Number(variant.lowStockThreshold ?? 5),
-      isActive: parseBooleanValue(variant.isActive) ?? true,
-    }))
+    .map((variant) => {
+      const normalizedImages = normalizeImageList(variant.images, variant.image, variant.imagePublicId);
+
+      return {
+        _id: variant._id,
+        label: String(variant.label || '').trim(),
+        sku: String(variant.sku || '').trim(),
+        size: String(variant.size || '').trim(),
+        color: String(variant.color || '').trim(),
+        image: normalizedImages.image,
+        imagePublicId: normalizedImages.imagePublicId,
+        images: normalizedImages.images,
+        weight: String(variant.weight || '').trim(),
+        packaging: String(variant.packaging || '').trim(),
+        priceAdjustment: Number(variant.priceAdjustment || 0),
+        countInStock: Number(variant.countInStock || 0),
+        reservedStock: Number(variant.reservedStock || 0),
+        lowStockThreshold: Number(variant.lowStockThreshold ?? 5),
+        isActive: parseBooleanValue(variant.isActive) ?? true,
+      };
+    })
     .filter((variant) => variant.label);
 };
 
