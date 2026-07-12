@@ -86,6 +86,36 @@ export const normalizeProductImageAsset = (entry = {}) => {
 export const getProductImageUrl = (entry = '') =>
   typeof entry === 'string' ? entry : String(entry?.url || entry?.secureUrl || '').trim();
 
+export const getOptimizedImageUrl = (entry = '', options = {}) => {
+  const url = getProductImageUrl(entry);
+
+  if (!url.includes('/image/upload/')) {
+    return url;
+  }
+
+  const {
+    width,
+    height,
+    crop = 'limit',
+    quality = 'auto:eco',
+    format = 'auto',
+  } = options;
+  const transformations = [
+    format ? `f_${format}` : '',
+    quality ? `q_${quality}` : '',
+    width ? `w_${width}` : '',
+    height ? `h_${height}` : '',
+    crop ? `c_${crop}` : '',
+    'dpr_auto',
+  ].filter(Boolean);
+
+  if (!transformations.length || /\/image\/upload\/[^/]*(?:f_auto|q_auto)/.test(url)) {
+    return url;
+  }
+
+  return url.replace('/image/upload/', `/image/upload/${transformations.join(',')}/`);
+};
+
 export const normalizeProductPayload = (data) => {
   if (Array.isArray(data)) {
     return {

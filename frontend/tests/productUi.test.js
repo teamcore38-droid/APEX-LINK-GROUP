@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildProductPayloadFromForm,
   formatCurrency,
+  getOptimizedImageUrl,
   getProductFormGalleryImages,
   getVariantImageAssets,
   getStockPresentation,
@@ -20,6 +21,18 @@ test('getStockPresentation distinguishes out of stock', () => {
   const result = getStockPresentation(0);
   assert.equal(result.label, 'Out of Stock');
   assert.match(result.className, /red/);
+});
+
+test('getOptimizedImageUrl adds lightweight Cloudinary transforms', () => {
+  const result = getOptimizedImageUrl(
+    'https://res.cloudinary.com/demo/image/upload/v123/products/shoe.jpg',
+    { width: 600, height: 600, crop: 'fill' }
+  );
+
+  assert.equal(
+    result,
+    'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto:eco,w_600,h_600,c_fill,dpr_auto/v123/products/shoe.jpg'
+  );
 });
 
 test('product gallery helpers preserve primary image ordering', () => {

@@ -27,6 +27,7 @@ import { trackEvent } from '../utils/analytics';
 import { applySeo, buildProductStructuredData } from '../utils/seo';
 import {
   formatCurrency,
+  getOptimizedImageUrl,
   getProductImageUrl,
   getProductImages,
   getStockPresentation,
@@ -59,6 +60,15 @@ const getVariantImageUrls = (variant) =>
     .map((image) => getProductImageUrl(image))
     .filter(Boolean);
 
+const getProductDetailImageUrl = (image) =>
+  getOptimizedImageUrl(image, { width: 1200, crop: 'limit', quality: 'auto:good' });
+
+const getProductThumbnailUrl = (image) =>
+  getOptimizedImageUrl(image, { width: 240, height: 240, crop: 'fill', quality: 'auto:eco' });
+
+const getProductLightboxImageUrl = (image) =>
+  getOptimizedImageUrl(image, { width: 1800, crop: 'limit', quality: 'auto:good' });
+
 const ProductPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -82,109 +92,141 @@ const ProductPage = () => {
   const [wishlistSaving, setWishlistSaving] = useState(false);
 
   useEffect(() => {
+    let isActive = true;
+
+    const applyProductSeo = (data, seoData = null) => {
+      applySeo({
+        title: seoData?.title || data.seo?.title || data.name,
+        description:
+          seoData?.description ||
+          data.seo?.description ||
+          data.shortDescription ||
+          data.description?.slice(0, 160),
+        keywords: seoData?.keywords || data.seo?.keywords || [data.category, data.brand, data.sku].filter(Boolean),
+        canonicalUrl: seoData?.canonicalUrl || window.location.href,
+        ogImage: seoData?.ogImage || data.seo?.ogImage || data.image,
+        type: 'product',
+        structuredData: seoData?.structuredData || buildProductStructuredData(data),
+      });
+    };
+
+    const buildSessionHeaders = (sessionId) => ({
+      ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
+      'x-session-id': sessionId,
+    });
+
+    const loadSupportingProductData = async (data) => {
+      const sessionId = getCustomerSessionId();
+
+      void trackEvent(
+        'product_view',
+        {
+          productId: data._id,
+          name: data.name,
+          category: data.category,
+          price: data.price,
+          currency: 'LKR',
+        },
+        { token: userInfo?.token }
+      );
+
+      const [seoResult, recentlyViewedResult, recommendationResult, reviewResult, relatedResult] = await Promise.allSettled([
+        axios.get(`/api/seo/product/${data._id}`),
+        axios.post(
+          '/api/customer/recently-viewed',
+          { productId: data._id, sessionId },
+          { headers: buildSessionHeaders(sessionId) }
+        ),
+        axios.get('/api/customer/recommendations', {
+          params: { sessionId, limit: 4 },
+          headers: buildSessionHeaders(sessionId),
+        }),
+        axios.get(`/api/reviews/product/${data._id}`),
+        axios.get('/api/products', {
+          params: {
+            category: slugifyCategoryName(data.category),
+            exclude: data._id,
+            limit: 4,
+            sort: '',
+          },
+        }),
+      ]);
+
+      if (!isActive) {
+        return;
+      }
+
+      if (seoResult.status === 'fulfilled') {
+        applyProductSeo(data, seoResult.value.data);
+      }
+
+      if (recommendationResult.status === 'fulfilled') {
+        setRecommendedProducts(recommendationResult.value.data.filter((item) => item._id !== data._id));
+      } else {
+        console.error(recommendationResult.reason);
+        setRecommendedProducts([]);
+      }
+
+      if (reviewResult.status === 'fulfilled') {
+        setReviews(reviewResult.value.data);
+      } else {
+        console.error(reviewResult.reason);
+        setReviews([]);
+      }
+
+      if (relatedResult.status === 'fulfilled') {
+        const relatedPayload = normalizeProductPayload(relatedResult.value.data);
+        setRelatedProducts(relatedPayload.products);
+      } else {
+        console.error(relatedResult.reason);
+        setRelatedProducts([]);
+      }
+
+      if (recentlyViewedResult.status === 'rejected') {
+        console.error(recentlyViewedResult.reason);
+      }
+    };
+
     const fetchProduct = async () => {
       setLoading(true);
       setError('');
+      setRelatedProducts([]);
+      setRecommendedProducts([]);
+      setReviews([]);
 
       try {
         const { data } = await axios.get(`/api/products/${id}`);
+        if (!isActive) {
+          return;
+        }
+
         setProduct(data);
-        const seoResponse = await axios.get(`/api/seo/product/${data._id}`).catch(() => null);
-        applySeo({
-          title: seoResponse?.data?.title || data.seo?.title || data.name,
-          description:
-            seoResponse?.data?.description ||
-            data.seo?.description ||
-            data.shortDescription ||
-            data.description?.slice(0, 160),
-          keywords: seoResponse?.data?.keywords || data.seo?.keywords || [data.category, data.brand, data.sku].filter(Boolean),
-          canonicalUrl: seoResponse?.data?.canonicalUrl || window.location.href,
-          ogImage: seoResponse?.data?.ogImage || data.seo?.ogImage || data.image,
-          type: 'product',
-          structuredData: seoResponse?.data?.structuredData || buildProductStructuredData(data),
-        });
-        trackEvent(
-          'product_view',
-          {
-            productId: data._id,
-            name: data.name,
-            category: data.category,
-            price: data.price,
-            currency: 'LKR',
-          },
-          { token: userInfo?.token }
-        );
+        applyProductSeo(data);
         const gallery = getProductImages(data);
         const firstActiveVariant = data.variants?.find((variant) => variant.isActive !== false);
         const firstVariantGallery = getVariantImageUrls(firstActiveVariant);
         setSelectedImage(firstVariantGallery[0] || gallery[0] || data.image);
         setSelectedVariantId(firstActiveVariant?._id ? String(firstActiveVariant._id) : '');
         setQty(1);
+        setLoading(false);
 
-        try {
-          const sessionId = getCustomerSessionId();
-          await axios.post(
-            '/api/customer/recently-viewed',
-            { productId: data._id, sessionId },
-            {
-              headers: {
-                ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
-                'x-session-id': sessionId,
-              },
-            }
-          );
-        } catch (viewError) {
-          console.error(viewError);
-        }
-
-        try {
-          const sessionId = getCustomerSessionId();
-          const recommendationResponse = await axios.get('/api/customer/recommendations', {
-            params: { sessionId, limit: 4 },
-            headers: {
-              ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
-              'x-session-id': sessionId,
-            },
-          });
-          setRecommendedProducts(recommendationResponse.data.filter((item) => item._id !== data._id));
-        } catch (recommendationError) {
-          console.error(recommendationError);
-          setRecommendedProducts([]);
-        }
-
-        try {
-          const reviewResponse = await axios.get(`/api/reviews/product/${data._id}`);
-          setReviews(reviewResponse.data);
-        } catch (reviewError) {
-          console.error(reviewError);
-          setReviews([]);
-        }
-
-        try {
-          const relatedResponse = await axios.get('/api/products', {
-            params: {
-              category: slugifyCategoryName(data.category),
-              exclude: data._id,
-              limit: 4,
-              sort: '',
-            },
-          });
-
-          const relatedPayload = normalizeProductPayload(relatedResponse.data);
-          setRelatedProducts(relatedPayload.products);
-        } catch (relatedError) {
-          console.error(relatedError);
-          setRelatedProducts([]);
-        }
+        void loadSupportingProductData(data);
       } catch (fetchError) {
+        if (!isActive) {
+          return;
+        }
+
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load this product right now.');
-      } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
+
+    return () => {
+      isActive = false;
+    };
   }, [id, userInfo?.token]);
 
   const selectedVariant = useMemo(
@@ -391,9 +433,11 @@ const ProductPage = () => {
             >
               <div className="relative aspect-square bg-[#f4e7db] sm:aspect-[5/4] lg:aspect-[4/3] xl:aspect-[1.08/1]">
                 <img
-                  src={currentGalleryImage || product.image}
+                  src={getProductDetailImageUrl(currentGalleryImage || product.image)}
                   alt={product.name}
                   fetchPriority="high"
+                  decoding="async"
+                  sizes="(min-width: 1280px) 640px, (min-width: 768px) 90vw, 100vw"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/35 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
@@ -419,9 +463,10 @@ const ProductPage = () => {
                     aria-label={`Show ${product.name} image ${index + 1}`}
                   >
                     <img
-                      src={image}
+                      src={getProductThumbnailUrl(image)}
                       alt={`${product.name} gallery thumbnail ${index + 1}`}
                       loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   </button>
@@ -806,8 +851,9 @@ const ProductPage = () => {
               aria-label={isLightboxZoomed ? 'Zoom out product image' : 'Zoom in product image'}
             >
               <img
-                src={currentGalleryImage || product.image}
+                src={getProductLightboxImageUrl(currentGalleryImage || product.image)}
                 alt={product.name}
+                decoding="async"
                 className={`mx-auto rounded-2xl object-contain shadow-2xl transition duration-300 ${
                   isLightboxZoomed
                     ? 'max-h-none max-w-none scale-100'
@@ -841,9 +887,10 @@ const ProductPage = () => {
                   aria-label={`Show ${product.name} image ${index + 1}`}
                 >
                   <img
-                    src={image}
+                    src={getProductThumbnailUrl(image)}
                     alt={`${product.name} lightbox thumbnail ${index + 1}`}
                     loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover"
                   />
                 </button>
