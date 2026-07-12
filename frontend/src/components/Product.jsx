@@ -72,16 +72,12 @@ const Product = ({ product }) => {
         </div>
 
         <Link to={`/product/${product._id}`} className="block">
-          <h3 className="line-clamp-2 min-h-10 break-words font-serif text-base font-bold leading-5 text-[#2a140e] transition-colors duration-200 group-hover:text-[#c9822b] sm:min-h-12 sm:text-lg sm:leading-6 xl:text-xl">
+          <h3 className="line-clamp-2 min-h-10 break-words font-serif text-base font-bold leading-5 text-[#2a140e] transition-colors duration-200 group-hover:text-[#c9822b] sm:min-h-11 sm:text-lg sm:leading-6 xl:text-xl">
             {product.name}
           </h3>
         </Link>
 
-        <p className="mt-2 hidden text-sm leading-6 text-gray-600 sm:line-clamp-2">
-          {product.shortDescription || product.description}
-        </p>
-
-        <div className="mt-3 flex items-center justify-between sm:mt-4">
+        <div className="mt-2 flex items-center justify-between sm:mt-3">
           <div className="flex min-w-0 flex-wrap items-center text-[#d99a32]">
             {[...Array(5)].map((_, index) => (
               <Star
@@ -96,17 +92,20 @@ const Product = ({ product }) => {
             <span className="ml-2 hidden text-xs font-semibold text-gray-500 sm:inline">
               {product.numReviews || 0} reviews
             </span>
+            <span className="ml-2 text-[10px] font-semibold text-gray-500 sm:hidden">
+              {product.numReviews || 0}
+            </span>
           </div>
         </div>
 
-        <div className="mt-auto flex flex-col gap-3 border-t border-[#efdfd2] pt-3 sm:mt-5 sm:gap-4 sm:pt-4">
+        <div className="mt-2 flex flex-col gap-3 border-t border-[#efdfd2] pt-2.5 sm:mt-3 sm:gap-3 sm:pt-3">
           <div>
             {product.compareAtPrice > product.price && (
-              <p className="text-xs text-gray-400 line-through sm:text-sm">
+              <p className="text-[11px] leading-tight text-gray-400 line-through sm:text-sm">
                 {formatCurrency(product.compareAtPrice)}
               </p>
             )}
-            <p className="break-words font-serif text-sm font-bold leading-tight text-[#2a140e] sm:text-xl xl:text-2xl">
+            <p className="break-words font-serif text-lg font-bold leading-tight text-[#2a140e] sm:text-xl xl:text-2xl">
               {formatCurrency(product.price)}
             </p>
           </div>
