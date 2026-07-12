@@ -412,7 +412,7 @@ const ProductPage = () => {
 
   return (
     <div className="bg-[#fff7ee] pb-20">
-      <div className="container mx-auto max-w-7xl px-4 py-10">
+      <div className="container mx-auto max-w-7xl px-4 pb-10 pt-5 sm:pt-6">
         <Link
           to="/products"
           className="inline-flex items-center text-sm font-semibold text-gray-600 transition-colors duration-200 hover:text-brand-primary"
@@ -420,7 +420,7 @@ const ProductPage = () => {
           <ArrowLeft size={16} className="mr-2" /> Back to Shop
         </Link>
 
-        <div className="mt-8 grid gap-10 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="mt-5 grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-5">
             <button
               type="button"
@@ -679,7 +679,7 @@ const ProductPage = () => {
           </section>
         </div>
 
-        <section className="mt-16 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-8">
+        <section className="mt-8 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:mt-10 sm:p-8">
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Reviews</p>
             <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Customer feedback</h2>
