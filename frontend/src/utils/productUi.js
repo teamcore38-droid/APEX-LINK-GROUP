@@ -150,11 +150,20 @@ export const getProductImageAssets = (product = {}) => {
 
 export const getVariantImageAssets = (variant = {}) => {
   const safeVariant = variant || {};
+  const images = Array.isArray(safeVariant.images)
+    ? safeVariant.images
+    : Array.isArray(safeVariant.imageAssets)
+      ? safeVariant.imageAssets
+      : Array.isArray(safeVariant.galleryImages)
+        ? safeVariant.galleryImages
+        : Array.isArray(safeVariant.gallery)
+          ? safeVariant.gallery
+          : [];
 
   return getProductImageAssets({
-    image: safeVariant.image,
-    imagePublicId: safeVariant.imagePublicId,
-    images: Array.isArray(safeVariant.images) ? safeVariant.images : [],
+    image: safeVariant.image || safeVariant.imageUrl,
+    imagePublicId: safeVariant.imagePublicId || safeVariant.publicId,
+    images,
   });
 };
 

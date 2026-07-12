@@ -188,6 +188,7 @@ const normalizeVariants = (variants = []) => {
   return incomingVariants
     .map((variant) => {
       const normalizedImages = normalizeImageList(variant.images, variant.image, variant.imagePublicId);
+      const primaryImage = normalizedImages[0] || { url: '', publicId: '' };
 
       return {
         _id: variant._id,
@@ -195,9 +196,9 @@ const normalizeVariants = (variants = []) => {
         sku: String(variant.sku || '').trim(),
         size: String(variant.size || '').trim(),
         color: String(variant.color || '').trim(),
-        image: normalizedImages.image,
-        imagePublicId: normalizedImages.imagePublicId,
-        images: normalizedImages.images,
+        image: primaryImage.url,
+        imagePublicId: primaryImage.publicId,
+        images: normalizedImages,
         weight: String(variant.weight || '').trim(),
         packaging: String(variant.packaging || '').trim(),
         priceAdjustment: Number(variant.priceAdjustment || 0),

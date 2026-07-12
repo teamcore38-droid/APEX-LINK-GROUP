@@ -54,6 +54,11 @@ const getCustomerSessionId = () => {
   return next;
 };
 
+const getVariantImageUrls = (variant) =>
+  getVariantImageAssets(variant)
+    .map((image) => getProductImageUrl(image))
+    .filter(Boolean);
+
 const ProductPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -111,9 +116,9 @@ const ProductPage = () => {
         );
         const gallery = getProductImages(data);
         const firstActiveVariant = data.variants?.find((variant) => variant.isActive !== false);
-        const firstVariantGallery = getVariantImageAssets(firstActiveVariant).map((image) => getProductImageUrl(image));
+        const firstVariantGallery = getVariantImageUrls(firstActiveVariant);
         setSelectedImage(firstVariantGallery[0] || gallery[0] || data.image);
-        setSelectedVariantId(firstActiveVariant?._id || '');
+        setSelectedVariantId(firstActiveVariant?._id ? String(firstActiveVariant._id) : '');
         setQty(1);
 
         try {
@@ -183,15 +188,18 @@ const ProductPage = () => {
   }, [id, userInfo?.token]);
 
   const selectedVariant = useMemo(
-    () => product?.variants?.find((variant) => variant._id === selectedVariantId) || null,
+    () => product?.variants?.find((variant) => String(variant._id) === String(selectedVariantId)) || null,
     [product, selectedVariantId]
   );
   const productImages = useMemo(() => {
-    const variantImages = getVariantImageAssets(selectedVariant).map((image) => getProductImageUrl(image));
+    const variantImages = getVariantImageUrls(selectedVariant);
 
     return variantImages.length > 0 ? variantImages : getProductImages(product || {});
   }, [product, selectedVariant]);
-  const selectedImageIndex = Math.max(0, productImages.indexOf(selectedImage));
+  const currentGalleryImage = productImages.includes(selectedImage)
+    ? selectedImage
+    : productImages[0] || selectedImage || product?.image || '';
+  const selectedImageIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
   const effectivePrice = Number(product?.price || 0) + Number(selectedVariant?.priceAdjustment || 0);
   const effectiveStock = selectedVariant ? selectedVariant.countInStock : product?.countInStock || 0;
   const stockPresentation = getStockPresentation(effectiveStock || 0);
@@ -261,13 +269,13 @@ const ProductPage = () => {
   };
 
   const showPreviousImage = () => {
-    const currentIndex = Math.max(0, productImages.indexOf(selectedImage));
-    showGalleryImage(productImages[(currentIndex - 1 + productImages.length) % productImages.length] || selectedImage);
+    const currentIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
+    showGalleryImage(productImages[(currentIndex - 1 + productImages.length) % productImages.length] || currentGalleryImage);
   };
 
   const showNextImage = () => {
-    const currentIndex = Math.max(0, productImages.indexOf(selectedImage));
-    showGalleryImage(productImages[(currentIndex + 1) % productImages.length] || selectedImage);
+    const currentIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
+    showGalleryImage(productImages[(currentIndex + 1) % productImages.length] || currentGalleryImage);
   };
 
   const handleAddToCart = () => {
@@ -383,7 +391,7 @@ const ProductPage = () => {
             >
               <div className="relative aspect-square bg-[#f4e7db] sm:aspect-[5/4] lg:aspect-[4/3] xl:aspect-[1.08/1]">
                 <img
-                  src={selectedImage || product.image}
+                  src={currentGalleryImage || product.image}
                   alt={product.name}
                   fetchPriority="high"
                   className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
@@ -404,7 +412,7 @@ const ProductPage = () => {
                     type="button"
                     onClick={() => showGalleryImage(image)}
                     className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 bg-white transition sm:h-24 sm:w-24 lg:h-28 lg:w-28 ${
-                      selectedImage === image
+                      currentGalleryImage === image
                         ? 'border-brand-primary shadow-[0_12px_24px_rgba(140,59,42,0.20)]'
                         : 'border-[#ead6c6] opacity-80 hover:border-brand-accent hover:opacity-100'
                     }`}
@@ -512,8 +520,8 @@ const ProductPage = () => {
                         key={variant._id}
                         type="button"
                         onClick={() => {
-                          setSelectedVariantId(variant._id);
-                          const variantImages = getVariantImageAssets(variant).map((image) => getProductImageUrl(image));
+                          setSelectedVariantId(variant._id ? String(variant._id) : '');
+                          const variantImages = getVariantImageUrls(variant);
                           if (variantImages.length > 0) {
                             setSelectedImage(variantImages[0]);
                           } else {
@@ -523,7 +531,7 @@ const ProductPage = () => {
                           setQty(1);
                         }}
                         className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                          selectedVariantId === variant._id
+                          String(selectedVariantId) === String(variant._id)
                             ? 'border-brand-primary bg-brand-light text-brand-dark'
                             : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/40'
                         }`}
@@ -798,7 +806,7 @@ const ProductPage = () => {
               aria-label={isLightboxZoomed ? 'Zoom out product image' : 'Zoom in product image'}
             >
               <img
-                src={selectedImage || product.image}
+                src={currentGalleryImage || product.image}
                 alt={product.name}
                 className={`mx-auto rounded-2xl object-contain shadow-2xl transition duration-300 ${
                   isLightboxZoomed
@@ -828,7 +836,7 @@ const ProductPage = () => {
                   type="button"
                   onClick={() => showGalleryImage(image)}
                   className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition sm:h-20 sm:w-20 ${
-                    selectedImage === image ? 'border-brand-accent' : 'border-white/20 opacity-70 hover:opacity-100'
+                    currentGalleryImage === image ? 'border-brand-accent' : 'border-white/20 opacity-70 hover:opacity-100'
                   }`}
                   aria-label={`Show ${product.name} image ${index + 1}`}
                 >

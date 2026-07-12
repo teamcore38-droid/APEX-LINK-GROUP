@@ -4,8 +4,10 @@ import {
   buildProductPayloadFromForm,
   formatCurrency,
   getProductFormGalleryImages,
+  getVariantImageAssets,
   getStockPresentation,
   setProductFormGalleryImages,
+  setVariantImageAssets,
 } from '../src/utils/productUi.js';
 
 test('formatCurrency returns a currency formatted string', () => {
@@ -66,5 +68,26 @@ test('product gallery helpers preserve primary image ordering', () => {
     { url: 'primary.jpg', publicId: 'products/primary' },
     { url: 'detail.jpg', publicId: 'products/detail' },
     { url: 'packaging.jpg', publicId: 'products/packaging' },
+  ]);
+});
+
+test('variant gallery helpers preserve color-specific image ordering', () => {
+  const variant = setVariantImageAssets(
+    { label: 'Black / M', color: 'Black', size: 'M' },
+    [
+      { url: 'black-primary.jpg', publicId: 'variants/black-primary' },
+      { url: 'black-side.jpg', publicId: 'variants/black-side' },
+    ]
+  );
+
+  assert.equal(variant.image, 'black-primary.jpg');
+  assert.equal(variant.imagePublicId, 'variants/black-primary');
+  assert.deepEqual(getVariantImageAssets(variant), [
+    { url: 'black-primary.jpg', publicId: 'variants/black-primary' },
+    { url: 'black-side.jpg', publicId: 'variants/black-side' },
+  ]);
+
+  assert.deepEqual(getVariantImageAssets({ galleryImages: ['legacy-black.jpg'] }), [
+    { url: 'legacy-black.jpg', publicId: '' },
   ]);
 });
