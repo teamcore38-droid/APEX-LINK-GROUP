@@ -148,12 +148,15 @@ export const getProductImageAssets = (product = {}) => {
   return [...uniqueAssets.values()];
 };
 
-export const getVariantImageAssets = (variant = {}) =>
-  getProductImageAssets({
-    image: variant.image,
-    imagePublicId: variant.imagePublicId,
-    images: Array.isArray(variant.images) ? variant.images : [],
+export const getVariantImageAssets = (variant = {}) => {
+  const safeVariant = variant || {};
+
+  return getProductImageAssets({
+    image: safeVariant.image,
+    imagePublicId: safeVariant.imagePublicId,
+    images: Array.isArray(safeVariant.images) ? safeVariant.images : [],
   });
+};
 
 export const setVariantImageAssets = (variant = {}, images = []) => {
   const uniqueAssets = new Map();
