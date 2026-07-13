@@ -20,10 +20,6 @@ export default defineConfig({
             return undefined
           }
 
-          if (id.includes('@stripe')) {
-            return 'stripe-vendor'
-          }
-
           if (id.includes('react-router-dom')) {
             return 'router-vendor'
           }

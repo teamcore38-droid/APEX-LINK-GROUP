@@ -141,12 +141,12 @@
         }
       }
     },
-    "/api/payments/create-payment-intent": {
+    "/api/payments/payhere/create": {
       "post": {
-        "summary": "Create Stripe payment intent with fraud screening",
+        "summary": "Create signed PayHere checkout payload with fraud screening",
         "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": { "description": "Payment intent client secret" },
+          "200": { "description": "PayHere checkout URL and signed form fields" },
           "403": { "description": "Payment blocked for manual review" }
         }
       }

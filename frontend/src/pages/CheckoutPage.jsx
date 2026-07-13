@@ -6,7 +6,6 @@ import {
   CreditCard,
   Home,
   Loader2,
-  LockKeyhole,
   LogIn,
   MapPin,
   ShieldCheck,
@@ -14,17 +13,12 @@ import {
   UserRound,
   RotateCcw,
 } from 'lucide-react';
-import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 import { formatCurrency } from '../utils/productUi';
 import { normalizeShippingAddress } from '../utils/orderUi';
 import { getMarketingSessionId, trackEvent } from '../utils/analytics';
-
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY || '';
-const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
 
 const createInitialCheckoutForm = (shippingAddress = {}, userInfo = null) => {
   const normalized = normalizeShippingAddress(shippingAddress, {
@@ -73,23 +67,25 @@ const validateCheckoutForm = (form) => {
   return '';
 };
 
-const cardElementOptions = {
-  style: {
-    base: {
-      color: '#351a11',
-      fontFamily: 'Georgia, serif',
-      fontSize: '16px',
-      '::placeholder': {
-        color: '#9f8068',
-      },
-    },
-    invalid: {
-      color: '#b91c1c',
-    },
-  },
+const submitPayHereForm = ({ checkoutUrl, fields }) => {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = checkoutUrl;
+  form.style.display = 'none';
+
+  Object.entries(fields || {}).forEach(([name, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = value ?? '';
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+  form.submit();
 };
 
-const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
+const CheckoutInner = () => {
   const { cartItems, shippingAddress, saveShippingAddress, clearCart } = useCart();
   const { userInfo } = useAuth();
   const navigate = useNavigate();
@@ -290,8 +286,8 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
       {
         orderItems: cartItems,
         shippingAddress: nextShippingAddress,
-        paymentMethod: userInfo?.token && stripeEnabled ? 'Card' : 'Development Placeholder',
-        paymentProvider: userInfo?.token && stripeEnabled ? 'Stripe' : 'Manual',
+        paymentMethod: 'PayHere',
+        paymentProvider: 'PayHere',
         couponCode,
         giftCardCode,
         shippingRateId,
@@ -382,11 +378,6 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
       return;
     }
 
-    if (stripeEnabled && (!stripe || !elements)) {
-      setError('Secure payment is still loading. Please wait a moment and try again.');
-      return;
-    }
-
     const nextShippingAddress = {
       ...form,
       address: form.addressLine1,
@@ -399,7 +390,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
       await requestQuote(nextShippingAddress);
       let order = null;
 
-      if (pendingOrderId) {
+      if (pendingOrderId && userInfo?.token) {
         const { data } = await axios.get(`/api/orders/${pendingOrderId}`, {
           headers: {
             Authorization: `Bearer ${userInfo.token}`,
@@ -416,73 +407,34 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
         return;
       }
 
-      if (!stripeEnabled || !userInfo?.token) {
-        finalizeSuccess(order);
-        return;
-      }
-
-      const { data: paymentIntentData } = await axios.post(
-        '/api/payments/create-payment-intent',
-        { orderId: order._id },
+      const guestAccessToken = localStorage.getItem(`apexGuestOrder:${order._id}`) || '';
+      const { data: payHereCheckout } = await axios.post(
+        '/api/payments/payhere/create',
         {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${userInfo.token}`,
-          },
-        }
-      );
-
-      const cardElement = elements.getElement(CardElement);
-
-      if (!cardElement) {
-        throw new Error('Card details are not ready yet.');
-      }
-
-      const paymentConfirmation = await stripe.confirmCardPayment(
-        paymentIntentData.clientSecret,
-        {
-          payment_method: {
-            card: cardElement,
-            billing_details: {
-              name: form.fullName,
-              email: form.email,
-              phone: form.phone,
-              address: {
-                line1: form.addressLine1,
-                line2: form.addressLine2,
-                city: form.city,
-                state: form.state,
-                postal_code: form.postalCode,
-                country: form.country,
-              },
-            },
-          },
-        }
-      );
-
-      if (paymentConfirmation.error) {
-        setError(
-          paymentConfirmation.error.message ||
-            'Payment could not be completed. Please review your card details and try again.'
-        );
-        return;
-      }
-
-      const { data: paidOrder } = await axios.put(
-        `/api/orders/${order._id}/pay`,
-        {
-          paymentIntentId:
-            paymentConfirmation.paymentIntent?.id || paymentIntentData.paymentIntentId,
+          orderId: order._id,
+          guestAccessToken,
+          guestEmail: form.email,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${userInfo.token}`,
+            ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
           },
         }
       );
 
-      finalizeSuccess(paidOrder);
+      trackEvent(
+        'add_payment_info',
+        {
+          orderId: order._id,
+          value: order.totalPrice,
+          currency: order.currency || currency,
+          paymentProvider: 'PayHere',
+        },
+        { token: userInfo?.token }
+      );
+
+      submitPayHereForm(payHereCheckout);
     } catch (submitError) {
       console.error(submitError);
       setError(
@@ -981,38 +933,23 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Payment Method</p>
                   <h2 className="font-serif text-2xl font-bold text-brand-dark">
-                    {stripeEnabled ? 'Secure card payment' : 'Development payment mode'}
+                    Pay securely with PayHere
                   </h2>
                 </div>
               </div>
 
-              {stripeEnabled ? (
-                <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
-                  <div className="mb-4 flex items-center gap-2 text-brand-dark">
-                    <LockKeyhole size={16} />
-                    <p className="text-sm font-semibold">Secure payment powered by Stripe</p>
-                  </div>
-                  <div className="rounded-2xl border border-gray-200 bg-white px-4 py-4">
-                    <CardElement options={cardElementOptions} />
-                  </div>
-                  <p className="mt-4 text-sm leading-7 text-gray-600">
-                    Your card is confirmed securely through Stripe. Apex Link Group never stores your raw card details.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
-                    Development mode
-                  </p>
-                  <p className="mt-3 text-sm leading-7 text-gray-600">
-                    Stripe keys are not configured, so checkout will place the order in safe manual-payment mode. This keeps development moving without blocking checkout.
-                  </p>
-                  <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
-                    <input type="radio" checked readOnly className="mr-2" />
-                    Manual / Development Placeholder
-                  </label>
-                </div>
-              )}
+              <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
+                  PayHere checkout
+                </p>
+                <p className="mt-3 text-sm leading-7 text-gray-600">
+                  After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Link Group never stores raw card details.
+                </p>
+                <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
+                  <input type="radio" checked readOnly className="mr-2" />
+                  PayHere
+                </label>
+              </div>
             </section>
 
             <section className="rounded-[28px] border border-brand-accent/20 bg-[#fbf3ea] p-6 shadow-sm">
@@ -1023,7 +960,7 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                 <div>
                   <h2 className="font-serif text-2xl font-bold text-brand-dark">Trust & Security</h2>
                   <p className="mt-3 text-sm leading-7 text-gray-600">
-                    We use your checkout details to fulfill your order, support delivery, and connect updates to your account history. If Stripe is enabled, payment is confirmed before we clear your cart.
+                    We use your checkout details to fulfill your order, support delivery, and connect updates to your account history. Payment is confirmed only after PayHere sends a verified callback.
                   </p>
                 </div>
               </div>
@@ -1095,9 +1032,9 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
               <button
                 type="button"
                 onClick={placeOrderHandler}
-                disabled={loading || (stripeEnabled && (!stripe || !elements))}
+                disabled={loading}
                 className={`mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-primary px-5 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors duration-200 hover:bg-brand-dark ${
-                  loading || (stripeEnabled && (!stripe || !elements))
+                  loading
                     ? 'cursor-not-allowed opacity-70'
                     : ''
                 }`}
@@ -1108,12 +1045,8 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
                   <Truck size={18} className="mr-2" />
                 )}
                 {loading
-                  ? stripeEnabled
-                    ? 'Processing Payment...'
-                    : 'Placing Order...'
-                  : stripeEnabled
-                    ? 'Pay & Place Order'
-                    : 'Place Order'}
+                  ? 'Redirecting to PayHere...'
+                  : 'Pay with PayHere'}
               </button>
             </div>
           </aside>
@@ -1123,25 +1056,6 @@ const CheckoutInner = ({ stripeEnabled, stripe = null, elements = null }) => {
   );
 };
 
-const StripeCheckoutContent = () => {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  return <CheckoutInner stripeEnabled stripe={stripe} elements={elements} />;
-};
-
-const ManualCheckoutContent = () => <CheckoutInner stripeEnabled={false} />;
-
-const CheckoutPage = () => {
-  if (stripePromise) {
-    return (
-      <Elements stripe={stripePromise}>
-        <StripeCheckoutContent />
-      </Elements>
-    );
-  }
-
-  return <ManualCheckoutContent />;
-};
+const CheckoutPage = () => <CheckoutInner />;
 
 export default CheckoutPage;

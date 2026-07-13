@@ -32,7 +32,7 @@ router.route('/shipping-rates').post(protectOptional, getOrderShippingRates);
 router.route('/:id/invoice').get(protect, getOrderInvoice);
 router.route('/:id/packing-slip').get(protect, requirePermission(PERMISSIONS.ORDERS_READ), getOrderPackingSlip);
 router.route('/:id/pay').put(protect, markOrderAsPaid);
-router.route('/:id').get(protect, getOrderById);
+router.route('/:id').get(protectOptional, getOrderById);
 router.route('/:id/status').put(protect, requirePermission(PERMISSIONS.ORDERS_WRITE), updateOrderStatus);
 router.route('/:id/cancellation-requests').post(protectOptional, createCancellationRequest);
 router

@@ -5,7 +5,7 @@ const requiredPaths = [
   '/api/products',
   '/api/orders/quote',
   '/api/orders/guest',
-  '/api/payments/create-payment-intent',
+  '/api/payments/payhere/create',
   '/api/privacy/consent',
   '/api/ops/health',
 ];

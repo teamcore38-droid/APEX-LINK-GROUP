@@ -1,11 +1,16 @@
 import mongoose from 'mongoose';
 
-const stripeEventSchema = mongoose.Schema(
+const paymentEventSchema = mongoose.Schema(
   {
     eventId: {
       type: String,
       required: true,
       unique: true,
+      index: true,
+    },
+    provider: {
+      type: String,
+      default: 'PayHere',
       index: true,
     },
     type: {
@@ -29,6 +34,10 @@ const stripeEventSchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    payload: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: {
@@ -38,6 +47,6 @@ const stripeEventSchema = mongoose.Schema(
   }
 );
 
-const StripeEvent = mongoose.model('StripeEvent', stripeEventSchema);
+const PaymentEvent = mongoose.model('PaymentEvent', paymentEventSchema);
 
-export default StripeEvent;
+export default PaymentEvent;

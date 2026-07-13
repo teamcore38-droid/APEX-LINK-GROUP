@@ -19,9 +19,11 @@ Required:
 - `JWT_SECRET`
 - `NODE_ENV`
 - `FRONTEND_URL`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_CURRENCY`
+- `PAYHERE_MERCHANT_ID`
+- `PAYHERE_MERCHANT_SECRET`
+- `PAYHERE_CURRENCY`
+- `PAYHERE_SANDBOX`
+- `PAYHERE_NOTIFY_URL` or `BACKEND_PUBLIC_URL`
 - `EMAIL_HOST`
 - `EMAIL_PORT`
 - `EMAIL_USER`
@@ -41,13 +43,11 @@ Recommended:
 ### Frontend (`frontend/.env`)
 
 - `VITE_API_URL` (deployed backend base URL, no trailing slash)
-- `VITE_STRIPE_PUBLIC_KEY`
 - `VITE_APP_ENV` (optional display/debug label)
 
 Security rules:
 
-- Stripe secret and webhook secret must never be exposed in frontend env.
-- Stripe publishable key must never be stored in backend-only env stores.
+- PayHere merchant secret must never be exposed in frontend env.
 
 ## 3. CORS + Cross-Domain Setup
 
@@ -80,50 +80,47 @@ For production split-domain deployments, set:
 - Health endpoint:
   - `GET /api/health`
   - returns `status`, `uptime`, `environment`, `timestamp`, DB connection state
-- Stripe webhook raw-body route preserved:
-  - `POST /api/payments/webhook`
+- PayHere notification route:
+  - `POST /api/payments/payhere/notify`
 - Operational endpoints:
   - `GET /api/ops/health`
   - `GET /api/ops/readiness`
   - `GET /api/ops/metrics`
-  - `GET /api/docs/openapi.json`
+- `GET /api/docs/openapi.json`
 - Structured JSON logging, optional Sentry-compatible error delivery via `SENTRY_DSN`, and alert webhook support via `ALERT_WEBHOOK_URL`.
 
-## 5. Stripe Test-Mode Verification Checklist
+## 5. PayHere Sandbox Verification Checklist
 
 Required env:
 
-- Backend: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CURRENCY`
-- Frontend: `VITE_STRIPE_PUBLIC_KEY`
+- Backend: `PAYHERE_MERCHANT_ID`, `PAYHERE_MERCHANT_SECRET`, `PAYHERE_CURRENCY=LKR`, `PAYHERE_SANDBOX=true`
+- Backend callback: `PAYHERE_NOTIFY_URL=https://<backend-domain>/api/payments/payhere/notify`
+- Frontend: `VITE_API_URL=https://<backend-domain>`
 
-Local webhook forward:
+Local callback testing:
 
 ```bash
-stripe listen --forward-to localhost:5000/api/payments/webhook
+ngrok http 5000
 ```
 
-Subscribe/forward required events:
+Use the ngrok HTTPS URL as:
 
-- `payment_intent.succeeded`
-- `payment_intent.payment_failed`
-- `payment_intent.canceled`
-- `charge.refunded`
-- `refund.created`
-- `refund.updated`
-- `refund.failed`
+```env
+PAYHERE_NOTIFY_URL=https://<ngrok-subdomain>/api/payments/payhere/notify
+```
 
-Test card scenarios:
+Sandbox card scenarios:
 
-1. Successful card payment (`4242 4242 4242 4242`)
-2. Failed card payment (`4000 0000 0000 9995`)
-3. 3DS/authentication required (`4000 0025 0000 3155`)
-4. Admin refund (partial and full)
+1. Successful Visa payment: `4916217501611292`
+2. Successful MasterCard payment: `5307732125531191`
+3. Failed/declined sandbox card from PayHere's sandbox card list
+4. Admin refund record, partial and full
 
 Expected app behavior:
 
 - Payment success marks order paid and updates timeline
 - Payment failure keeps order unpaid with failure status
-- Duplicate webhook event does not double-process
+- Duplicate PayHere notification does not double-process
 - Refund updates admin detail, customer detail, invoice, and history safely
 
 ## 6. Email Production Setup
@@ -189,8 +186,8 @@ Production recommendation:
    - `npm start`
 4. Add all backend env vars.
 5. Confirm `GET /api/health` is healthy.
-6. Configure Stripe webhook URL to:
-   - `https://<backend-domain>/api/payments/webhook`
+6. Configure PayHere notify URL to:
+   - `https://<backend-domain>/api/payments/payhere/notify`
 
 ## 9. Frontend Deployment Steps
 
@@ -201,7 +198,7 @@ Production recommendation:
    - `npm run build`
 3. Output dir:
    - `dist`
-4. Add frontend env vars (`VITE_API_URL`, `VITE_STRIPE_PUBLIC_KEY`).
+4. Add frontend env vars (`VITE_API_URL`, `VITE_APP_ENV` if needed).
 
 ### Netlify
 
@@ -215,8 +212,8 @@ Production recommendation:
 1. Backend health endpoint returns `status: ok`.
 2. Frontend points to staging backend via `VITE_API_URL`.
 3. CORS allows staging frontend origin.
-4. Stripe test-mode keys configured.
-5. Webhook secret configured and verified.
+4. PayHere sandbox keys configured.
+5. PayHere notify URL configured and verified.
 6. SMTP configured (or explicitly approved no-email staging mode).
 7. Customer checkout + order + invoice flow tested.
 8. Admin order update + refund flow tested.
@@ -225,7 +222,7 @@ Production recommendation:
 ## 11. Production Go-Live Checklist
 
 1. Use production domains (`https` only).
-2. Use production Stripe keys and webhook secret.
+2. Use production PayHere merchant credentials and `PAYHERE_SANDBOX=false`.
 3. Confirm admin password rotation and least-privilege access.
 4. Confirm DB backups and alerting.
 5. Confirm rate limits and logs are monitored.

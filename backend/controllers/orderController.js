@@ -6,13 +6,9 @@ import {
   sendOrderConfirmationEmail,
 } from '../utils/emailService.js';
 import {
-  buildSafePaymentResult,
-  getStripeClient,
-  isStripeConfigured,
-  toStripeAmount,
+  isPayHereConfigured,
 } from '../utils/paymentService.js';
 import {
-  applySuccessfulPaymentToOrder,
   createStatusEmailKey,
   maybeSendStatusEmail,
 } from '../utils/orderPaymentLifecycle.js';
@@ -277,12 +273,13 @@ const isGuestOrderAccessor = (order, payload = {}) => {
   const email = String(payload.email || payload.guestEmail || '').trim().toLowerCase();
   const accessToken = String(payload.accessToken || payload.guestAccessToken || '').trim();
   const orderEmail = String(order?.guestCustomer?.email || order?.shippingAddress?.email || '').toLowerCase();
+  const tokenMatches = Boolean(
+    order?.guestCustomer?.accessToken && accessToken === order.guestCustomer.accessToken
+  );
 
   return Boolean(
     order?.guestCheckout &&
-      email &&
-      email === orderEmail &&
-      (!order.guestCustomer?.accessToken || accessToken === order.guestCustomer.accessToken)
+      (tokenMatches || (email && email === orderEmail && !order.guestCustomer?.accessToken))
   );
 };
 
@@ -353,12 +350,12 @@ const addOrderItems = async (req, res) => {
     }
 
     const normalizedPaymentProvider =
-      paymentProvider === 'Stripe' && isStripeConfigured() ? 'Stripe' : 'Manual';
+      paymentProvider === 'PayHere' && isPayHereConfigured() ? 'PayHere' : 'Manual';
     const normalizedPaymentMethod = String(
-      paymentMethod || (normalizedPaymentProvider === 'Stripe' ? 'Card' : 'Development Placeholder')
+      paymentMethod || (normalizedPaymentProvider === 'PayHere' ? 'PayHere' : 'Development Placeholder')
     ).trim();
     const initialPaymentStatus =
-      normalizedPaymentProvider === 'Stripe' ? 'Payment Pending' : 'Payment Pending';
+      normalizedPaymentProvider === 'PayHere' ? 'Payment Pending' : 'Payment Pending';
     const pricing = await calculateOrderPricing({
       cartItems: orderItems,
       shippingAddress: normalizedShippingAddress,
@@ -394,8 +391,8 @@ const addOrderItems = async (req, res) => {
           order: { orderStatus: 'Processing' },
           status: 'Processing',
           note:
-            normalizedPaymentProvider === 'Stripe'
-              ? 'Order created and awaiting Stripe payment confirmation.'
+            normalizedPaymentProvider === 'PayHere'
+              ? 'Order created and awaiting PayHere payment confirmation.'
               : 'Order created in development/manual payment mode.',
           user: req.user,
         }),
@@ -431,7 +428,7 @@ const addOrderItems = async (req, res) => {
       }
     }
 
-    if (normalizedPaymentProvider !== 'Stripe') {
+    if (normalizedPaymentProvider !== 'PayHere') {
       await sendOrderConfirmationEmail(populatedOrder);
     }
 
@@ -455,7 +452,8 @@ const addGuestOrderItems = async (req, res) => {
   const {
     orderItems,
     shippingAddress,
-    paymentMethod = 'Development Placeholder',
+    paymentMethod = 'PayHere',
+    paymentProvider = 'PayHere',
     couponCode = '',
     giftCardCode = '',
     shippingRateId = '',
@@ -475,6 +473,11 @@ const addGuestOrderItems = async (req, res) => {
     }
 
     const guestCustomer = buildGuestCustomer(normalizedShippingAddress);
+    const normalizedPaymentProvider =
+      paymentProvider === 'PayHere' && isPayHereConfigured() ? 'PayHere' : 'Manual';
+    const normalizedPaymentMethod = String(
+      paymentMethod || (normalizedPaymentProvider === 'PayHere' ? 'PayHere' : 'Development Placeholder')
+    ).trim();
     const pricing = await calculateOrderPricing({
       cartItems: orderItems,
       shippingAddress: normalizedShippingAddress,
@@ -491,8 +494,8 @@ const addGuestOrderItems = async (req, res) => {
       guestCheckout: true,
       guestCustomer,
       shippingAddress: normalizedShippingAddress,
-      paymentMethod,
-      paymentProvider: 'Manual',
+      paymentMethod: normalizedPaymentMethod,
+      paymentProvider: normalizedPaymentProvider,
       paymentStatus: 'Payment Pending',
       currency: pricing.currency,
       exchangeRate: pricing.exchangeRate,
@@ -511,7 +514,10 @@ const addGuestOrderItems = async (req, res) => {
         createHistoryEntry({
           order: { orderStatus: 'Processing' },
           status: 'Processing',
-          note: 'Guest order created and awaiting payment confirmation.',
+          note:
+            normalizedPaymentProvider === 'PayHere'
+              ? 'Guest order created and awaiting PayHere payment confirmation.'
+              : 'Guest order created and awaiting payment confirmation.',
           user: { name: guestCustomer.name, email: guestCustomer.email },
         }),
       ],
@@ -527,7 +533,9 @@ const addGuestOrderItems = async (req, res) => {
       await recordFraudSignal(req, createdOrder, 'checkout.tamper.detected', order.fraudRisk);
     }
     await syncVendorOrdersForOrder(createdOrder);
-    await sendOrderConfirmationEmail(createdOrder);
+    if (normalizedPaymentProvider !== 'PayHere') {
+      await sendOrderConfirmationEmail(createdOrder);
+    }
     await notifyOrderEvent(createdOrder, 'order.created');
     await emitWebhookEvent('order.created', createdOrder.toObject(), {
       resourceType: 'Order',
@@ -714,17 +722,24 @@ const getOrders = async (req, res) => {
 // @access  Private
 const getOrderById = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id).populate('user', 'name email phone');
+    const order = await Order.findById(req.params.id)
+      .select('+guestCustomer.accessToken')
+      .populate('user', 'name email phone');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (!isOrderOwnerOrAdmin(order, req.user)) {
+    if (!isOrderOwnerOrAdmin(order, req.user) && !isGuestOrderAccessor(order, req.query)) {
       return res.status(401).json({ message: 'Not authorized to view this order' });
     }
 
-    res.json(order);
+    const responseOrder = order.toObject();
+    if (responseOrder.guestCustomer) {
+      delete responseOrder.guestCustomer.accessToken;
+    }
+
+    res.json(responseOrder);
   } catch (error) {
     if (error.name === 'CastError') {
       return res.status(404).json({ message: 'Order not found' });
@@ -752,13 +767,7 @@ const getMyOrders = async (req, res) => {
 // @route   PUT /api/orders/:id/pay
 // @access  Private
 const markOrderAsPaid = async (req, res) => {
-  const { paymentIntentId = '' } = req.body;
-
   try {
-    if (!isStripeConfigured()) {
-      return res.status(400).json({ message: 'Stripe payment is not configured for this environment' });
-    }
-
     const order = await Order.findById(req.params.id);
 
     if (!order) {
@@ -774,59 +783,9 @@ const markOrderAsPaid = async (req, res) => {
       return res.json(populatedOrder);
     }
 
-    const intentId = String(paymentIntentId || order.paymentIntentId || '').trim();
-
-    if (!intentId) {
-      return res.status(400).json({ message: 'Payment intent ID is required' });
-    }
-
-    const stripe = getStripeClient();
-    const paymentIntent = await stripe.paymentIntents.retrieve(intentId, {
-      expand: ['latest_charge'],
+    return res.status(400).json({
+      message: 'PayHere payments are confirmed through the PayHere notify_url callback.',
     });
-
-    if (!paymentIntent || paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ message: 'Payment has not been completed successfully' });
-    }
-
-    if (paymentIntent.metadata?.orderId !== order._id.toString()) {
-      return res.status(400).json({ message: 'Payment intent does not match this order' });
-    }
-
-    if (Number(paymentIntent.amount || 0) !== toStripeAmount(order.totalPrice)) {
-      return res.status(400).json({ message: 'Payment amount does not match this order total' });
-    }
-
-    await applySuccessfulPaymentToOrder({
-      order,
-      paymentIntent,
-      actor: req.user,
-      source: 'confirmation',
-    });
-
-    order.paymentResult = {
-      ...order.paymentResult,
-      ...buildSafePaymentResult(paymentIntent),
-    };
-    order.paymentProvider = 'Stripe';
-    order.paymentIntentId = paymentIntent.id;
-    await deductReservedInventory({ order, actor: req.user });
-    await commitPromotionsForOrder(order);
-    await awardOrderLoyaltyPoints(order, req.user);
-
-    const updatedOrder = await order.save();
-    await syncVendorOrdersForOrder(updatedOrder);
-    const populatedOrder = await Order.findById(updatedOrder._id).populate(
-      'user',
-      'name email phone'
-    );
-    await notifyOrderEvent(populatedOrder, 'order.paid');
-    await emitWebhookEvent('order.paid', populatedOrder.toObject(), {
-      resourceType: 'Order',
-      resourceId: populatedOrder._id.toString(),
-    });
-
-    res.json(populatedOrder);
   } catch (error) {
     if (error.name === 'CastError') {
       return res.status(404).json({ message: 'Order not found' });

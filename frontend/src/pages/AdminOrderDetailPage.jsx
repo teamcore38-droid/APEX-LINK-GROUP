@@ -157,8 +157,8 @@ const AdminOrderDetailPage = () => {
   const amountPaid = Number(order?.paymentResult?.amountReceived || order?.totalPrice || 0);
   const refundedAmount = Number(order?.refundedAmount || 0);
   const refundableAmount = Math.max(amountPaid - refundedAmount, 0);
-  const stripeRefundAvailable = Boolean(order?.paymentProvider === 'Stripe' && (order?.paymentIntentId || order?.paymentResult?.chargeId));
-  const refundDisabled = !order?.isPaid || refundableAmount <= 0 || !stripeRefundAvailable || refundSaving;
+  const payHereRefundAvailable = Boolean(order?.paymentProvider === 'PayHere' && (order?.paymentIntentId || order?.paymentResult?.id));
+  const refundDisabled = !order?.isPaid || refundableAmount <= 0 || !payHereRefundAvailable || refundSaving;
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -912,9 +912,9 @@ const AdminOrderDetailPage = () => {
                     </button>
                   </div>
 
-                  {(!order.isPaid || !stripeRefundAvailable) && (
+                  {(!order.isPaid || !payHereRefundAvailable) && (
                     <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-700">
-                      Refund is available only for paid Stripe orders with a valid payment reference.
+                      Refund recording is available only for paid PayHere orders with a valid payment reference.
                     </p>
                   )}
                 </div>
@@ -949,13 +949,13 @@ const AdminOrderDetailPage = () => {
                   </div>
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">Payment Audit</p>
-                    <h2 className="font-serif text-xl font-bold text-brand-dark">Stripe and reconciliation events</h2>
+                    <h2 className="font-serif text-xl font-bold text-brand-dark">PayHere and reconciliation events</h2>
                   </div>
                 </div>
 
                 <div className="mt-5 rounded-2xl bg-brand-light p-4 text-xs text-gray-700">
                   <p>Provider: <span className="font-semibold text-brand-dark">{order.paymentProvider || 'Manual'}</span></p>
-                  <p className="mt-1 break-all">Payment Intent: <span className="font-semibold text-brand-dark">{order.paymentIntentId || 'Not available'}</span></p>
+                  <p className="mt-1 break-all">Payment Reference: <span className="font-semibold text-brand-dark">{order.paymentIntentId || 'Not available'}</span></p>
                   <p className="mt-1">Payment Status: <span className="font-semibold text-brand-dark">{getPaymentLabel(order)}</span></p>
                   <p className="mt-1">Paid Date: <span className="font-semibold text-brand-dark">{formatDateTime(order.paidAt)}</span></p>
                   <p className="mt-1">Payment Result: <span className="font-semibold text-brand-dark">{order.paymentResult?.status || 'Not available'}</span></p>

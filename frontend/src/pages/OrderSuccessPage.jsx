@@ -28,11 +28,13 @@ import {
   getPaymentLabel,
 } from '../utils/orderStatus';
 import OrderTimeline from '../components/OrderTimeline';
+import { useCart } from '../context/CartContext';
 
 const OrderSuccessPage = () => {
   const { id } = useParams();
   const { state, pathname } = useLocation();
   const { userInfo } = useAuth();
+  const { clearCart } = useCart();
   const navigate = useNavigate();
 
   const [order, setOrder] = useState(state?.order || null);
@@ -44,20 +46,28 @@ const OrderSuccessPage = () => {
       return;
     }
 
-    if (!userInfo?.token) {
+    const guestAccessToken = localStorage.getItem(`apexGuestOrder:${id}`) || '';
+
+    if (!userInfo?.token && !guestAccessToken) {
       navigate(`/login?redirect=${pathname}`);
       return;
     }
 
     const fetchOrder = async () => {
       try {
-        const { data } = await axios.get(`/api/orders/${id}`, {
+        const guestQuery = guestAccessToken
+          ? `?guestAccessToken=${encodeURIComponent(guestAccessToken)}`
+          : '';
+        const { data } = await axios.get(`/api/orders/${id}${guestQuery}`, {
           headers: {
-            Authorization: `Bearer ${userInfo.token}`,
+            ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
           },
         });
 
         setOrder(data);
+        if (data.isPaid) {
+          clearCart();
+        }
       } catch (fetchError) {
         console.error(fetchError);
         setError(fetchError.response?.data?.message || fetchError.message);
@@ -67,7 +77,7 @@ const OrderSuccessPage = () => {
     };
 
     fetchOrder();
-  }, [id, navigate, order, pathname, userInfo]);
+  }, [clearCart, id, navigate, order, pathname, userInfo]);
 
   const isConfirmation = pathname.includes('confirm');
 

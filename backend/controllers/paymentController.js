@@ -1,11 +1,12 @@
 import Order from '../models/orderModel.js';
-import StripeEvent from '../models/stripeEventModel.js';
+import PaymentEvent from '../models/paymentEventModel.js';
 import {
   applyCancelledPaymentToOrder,
   applyFailedPaymentToOrder,
   applyRefundToOrder,
   applySuccessfulPaymentToOrder,
   calculateRefundableAmount,
+  pushStatusHistoryIfMeaningful,
 } from '../utils/orderPaymentLifecycle.js';
 import { commitPromotionsForOrder } from '../utils/commerceService.js';
 import {
@@ -15,14 +16,11 @@ import {
 import { syncVendorOrdersForOrder } from '../utils/vendorService.js';
 import { awardOrderLoyaltyPoints } from '../utils/loyaltyService.js';
 import {
-  buildSafePaymentResult,
-  buildSafeRefundRecord,
-  buildWebhookEvent,
-  getStripeClient,
-  getStripeCurrency,
-  isStripeConfigured,
-  isStripeWebhookConfigured,
-  toStripeAmount,
+  buildPayHereCheckoutPayload,
+  buildPayHerePaymentResult,
+  formatPayHereAmount,
+  isPayHereConfigured,
+  verifyPayHereNotification,
 } from '../utils/paymentService.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { notifyOrderEvent } from '../utils/pushService.js';
@@ -33,11 +31,9 @@ import {
   shouldBlockPayment,
 } from '../utils/fraudService.js';
 
-const REFUND_REASON_VALUES = ['duplicate', 'fraudulent', 'requested_by_customer'];
-
-const getSafeWebhookActor = () => ({
-  name: 'Stripe Webhook',
-  email: 'stripe-webhook@system',
+const getSafePayHereActor = () => ({
+  name: 'PayHere Callback',
+  email: 'payhere-callback@system',
 });
 
 const getAdminActor = (user) => ({
@@ -46,66 +42,55 @@ const getAdminActor = (user) => ({
   email: user?.email || '',
 });
 
-const findOrderForPaymentIntent = async (paymentIntentId = '', fallbackOrderId = '') => {
-  const normalizedIntentId = String(paymentIntentId || '').trim();
-  const normalizedOrderId = String(fallbackOrderId || '').trim();
+const isOrderOwnerOrAdmin = (order, user) =>
+  Boolean(
+    user?.isAdmin ||
+      order.user?.toString?.() === user?._id?.toString?.()
+  );
 
-  if (normalizedIntentId) {
-    const byIntent = await Order.findOne({ paymentIntentId: normalizedIntentId });
+const isGuestOrderAccessor = (order, payload = {}) => {
+  const email = String(payload.email || payload.guestEmail || '').trim().toLowerCase();
+  const accessToken = String(payload.accessToken || payload.guestAccessToken || '').trim();
+  const orderEmail = String(order?.guestCustomer?.email || order?.shippingAddress?.email || '').toLowerCase();
+  const tokenMatches = Boolean(
+    order?.guestCustomer?.accessToken && accessToken === order.guestCustomer.accessToken
+  );
 
-    if (byIntent) {
-      return byIntent;
-    }
-  }
-
-  if (normalizedOrderId) {
-    try {
-      return await Order.findById(normalizedOrderId);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
+  return Boolean(
+    order?.guestCheckout &&
+      (tokenMatches || (email && email === orderEmail && !order.guestCustomer?.accessToken))
+  );
 };
 
-const findOrderForRefund = async (refund = {}) => {
-  const paymentIntentId =
-    typeof refund.payment_intent === 'string'
-      ? refund.payment_intent
-      : refund.payment_intent?.id || '';
-  const chargeId =
-    typeof refund.charge === 'string' ? refund.charge : refund.charge?.id || '';
-  const fallbackOrderId = refund.metadata?.orderId || '';
+const ensurePaymentEvent = async ({ eventId, type, orderId, paymentIntentId, payload }) => {
+  let eventRecord = await PaymentEvent.findOne({ eventId });
 
-  if (paymentIntentId) {
-    const byIntent = await Order.findOne({ paymentIntentId });
-
-    if (byIntent) {
-      return byIntent;
-    }
+  if (eventRecord) {
+    return eventRecord;
   }
 
-  if (chargeId) {
-    const byCharge = await Order.findOne({ 'paymentResult.chargeId': chargeId });
-
-    if (byCharge) {
-      return byCharge;
+  try {
+    eventRecord = await PaymentEvent.create({
+      eventId,
+      provider: 'PayHere',
+      type,
+      orderId,
+      paymentIntentId,
+      processed: false,
+      payload,
+    });
+  } catch (error) {
+    if (error.code !== 11000) {
+      throw error;
     }
+
+    eventRecord = await PaymentEvent.findOne({ eventId });
   }
 
-  if (fallbackOrderId) {
-    try {
-      return await Order.findById(fallbackOrderId);
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
+  return eventRecord;
 };
 
-const updateStripeEventRecord = async (eventRecord, updates = {}) => {
+const updatePaymentEvent = async (eventRecord, updates = {}) => {
   if (!eventRecord) {
     return;
   }
@@ -115,261 +100,31 @@ const updateStripeEventRecord = async (eventRecord, updates = {}) => {
   eventRecord.orderId = updates.orderId ?? eventRecord.orderId;
   eventRecord.processed = updates.processed ?? eventRecord.processed;
   eventRecord.processingError = updates.processingError ?? eventRecord.processingError;
+  eventRecord.payload = updates.payload ?? eventRecord.payload;
   await eventRecord.save();
 };
 
-const processPaymentIntentSucceeded = async (paymentIntent) => {
-  const order = await findOrderForPaymentIntent(
-    paymentIntent.id,
-    paymentIntent.metadata?.orderId || ''
-  );
-
-  if (!order) {
-    return { order: null, paymentIntentId: paymentIntent.id };
-  }
-
-  await applySuccessfulPaymentToOrder({
-    order,
-    paymentIntent,
-    actor: getSafeWebhookActor(),
-    source: 'webhook',
-  });
-  await deductReservedInventory({ order, actor: getSafeWebhookActor() });
-  await commitPromotionsForOrder(order);
-  await awardOrderLoyaltyPoints(order, getSafeWebhookActor());
-
-  if (!order.paymentResult?.chargeId && paymentIntent.latest_charge) {
-    order.paymentResult = {
-      ...order.paymentResult,
-      chargeId:
-        typeof paymentIntent.latest_charge === 'string'
-          ? paymentIntent.latest_charge
-          : paymentIntent.latest_charge?.id || '',
-    };
-  }
-
-  await order.save();
-  await syncVendorOrdersForOrder(order);
-  await notifyOrderEvent(order, 'order.paid');
-  await emitWebhookEvent('order.paid', order.toObject(), {
-    resourceType: 'Order',
-    resourceId: order._id.toString(),
-  });
-
-  return { order, paymentIntentId: paymentIntent.id };
-};
-
-const processPaymentIntentFailed = async (paymentIntent) => {
-  const order = await findOrderForPaymentIntent(
-    paymentIntent.id,
-    paymentIntent.metadata?.orderId || ''
-  );
-
-  if (!order) {
-    return { order: null, paymentIntentId: paymentIntent.id };
-  }
-
-  const failureMessage = paymentIntent.last_payment_error?.message
-    ? `Stripe reported payment failure: ${paymentIntent.last_payment_error.message}`
-    : '';
-
-  await applyFailedPaymentToOrder({
-    order,
-    paymentIntent,
-    actor: getSafeWebhookActor(),
-    source: 'webhook',
-    note: failureMessage,
-  });
-  await releaseReservedInventory({
-    order,
-    actor: getSafeWebhookActor(),
-    note: 'Released reservation after Stripe reported payment failure.',
-  });
-
-  await order.save();
-  await syncVendorOrdersForOrder(order);
-  await emitWebhookEvent('payment.failed', order.toObject(), {
-    resourceType: 'Order',
-    resourceId: order._id.toString(),
-  });
-
-  return { order, paymentIntentId: paymentIntent.id };
-};
-
-const processPaymentIntentCanceled = async (paymentIntent) => {
-  const order = await findOrderForPaymentIntent(
-    paymentIntent.id,
-    paymentIntent.metadata?.orderId || ''
-  );
-
-  if (!order) {
-    return { order: null, paymentIntentId: paymentIntent.id };
-  }
-
-  await applyCancelledPaymentToOrder({
-    order,
-    paymentIntent,
-    actor: getSafeWebhookActor(),
-    source: 'webhook',
-  });
-  await releaseReservedInventory({
-    order,
-    actor: getSafeWebhookActor(),
-    note: 'Released reservation after Stripe payment was cancelled.',
-  });
-
-  await order.save();
-  await syncVendorOrdersForOrder(order);
-  await emitWebhookEvent('payment.cancelled', order.toObject(), {
-    resourceType: 'Order',
-    resourceId: order._id.toString(),
-  });
-
-  return { order, paymentIntentId: paymentIntent.id };
-};
-
-const processRefundObject = async (refund, eventType = 'refund.updated') => {
-  const order = await findOrderForRefund(refund);
-
-  if (!order) {
-    return {
-      order: null,
-      paymentIntentId:
-        typeof refund.payment_intent === 'string' ? refund.payment_intent : refund.payment_intent?.id || '',
-    };
-  }
-
-  const refundRecord = buildSafeRefundRecord(refund, {
-    source: 'webhook',
-    processedByName: 'Stripe Webhook',
-  });
-
-  await applyRefundToOrder({
-    order,
-    refundRecord,
-    actor: getSafeWebhookActor(),
-    source: 'webhook',
-    note:
-      eventType === 'refund.failed'
-        ? `Stripe reported a failed refund attempt for ${refundRecord.amount.toFixed(2)} ${String(refundRecord.currency || '').toUpperCase() || getStripeCurrency().toUpperCase()}.`
-        : undefined,
-  });
-
-  await order.save();
-  await syncVendorOrdersForOrder(order);
-  await emitWebhookEvent('refund.updated', order.toObject(), {
-    resourceType: 'Order',
-    resourceId: order._id.toString(),
-  });
-
-  return {
-    order,
-    paymentIntentId:
-      typeof refund.payment_intent === 'string' ? refund.payment_intent : refund.payment_intent?.id || '',
-  };
-};
-
-const processChargeRefunded = async (charge) => {
-  const paymentIntentId =
-    typeof charge.payment_intent === 'string'
-      ? charge.payment_intent
-      : charge.payment_intent?.id || '';
-  const chargeId = charge.id || '';
-
-  let order = await findOrderForPaymentIntent(paymentIntentId, '');
-
-  if (!order && chargeId) {
-    order = await Order.findOne({ 'paymentResult.chargeId': chargeId });
-  }
-
-  if (!order) {
-    return { order: null, paymentIntentId };
-  }
-
-  if (Array.isArray(charge.refunds?.data) && charge.refunds.data.length > 0) {
-    for (const refund of charge.refunds.data) {
-      const refundRecord = buildSafeRefundRecord(refund, {
-        source: 'webhook',
-        processedByName: 'Stripe Webhook',
-      });
-
-      await applyRefundToOrder({
-        order,
-        refundRecord,
-        actor: getSafeWebhookActor(),
-        source: 'webhook',
-      });
-    }
-  } else if (Number(charge.amount_refunded || 0) > 0) {
-    const fallbackRefundRecord = buildSafeRefundRecord(null, {
-      refundId: `charge_refund_${charge.id}_${charge.amount_refunded}`,
-      amount: Number(charge.amount_refunded) / 100,
-      currency: charge.currency || getStripeCurrency(),
-      status: 'succeeded',
-      source: 'webhook',
-      processedByName: 'Stripe Webhook',
-    });
-
-    await applyRefundToOrder({
-      order,
-      refundRecord: fallbackRefundRecord,
-      actor: getSafeWebhookActor(),
-      source: 'webhook',
-    });
-  }
-
-  await order.save();
-  await syncVendorOrdersForOrder(order);
-  await emitWebhookEvent('refund.updated', order.toObject(), {
-    resourceType: 'Order',
-    resourceId: order._id.toString(),
-  });
-
-  return { order, paymentIntentId };
-};
-
-const processWebhookEvent = async (event) => {
-  const type = event.type;
-  const object = event.data?.object || {};
-
-  switch (type) {
-    case 'payment_intent.succeeded':
-      return processPaymentIntentSucceeded(object);
-    case 'payment_intent.payment_failed':
-      return processPaymentIntentFailed(object);
-    case 'payment_intent.canceled':
-      return processPaymentIntentCanceled(object);
-    case 'refund.created':
-    case 'refund.updated':
-    case 'refund.failed':
-      return processRefundObject(object, type);
-    case 'charge.refunded':
-      return processChargeRefunded(object);
-    default:
-      return {
-        ignored: true,
-        paymentIntentId:
-          object.payment_intent ||
-          (typeof object.id === 'string' && object.id.startsWith('pi_') ? object.id : ''),
-      };
-  }
-};
-
-const createPaymentIntent = async (req, res) => {
-  const { orderId = '' } = req.body;
+const createPayHerePayment = async (req, res) => {
+  const { orderId = '', guestAccessToken = '', guestEmail = '' } = req.body;
 
   try {
-    if (!isStripeConfigured()) {
-      return res.status(400).json({ message: 'Stripe payment is not configured for this environment' });
+    if (!isPayHereConfigured()) {
+      return res.status(400).json({ message: 'PayHere payment is not configured for this environment' });
     }
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId)
+      .select('+guestCustomer.accessToken')
+      .populate('user', 'name email phone');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (!req.user.isAdmin && order.user.toString() !== req.user._id.toString()) {
+    const canAccess =
+      isOrderOwnerOrAdmin(order, req.user) ||
+      isGuestOrderAccessor(order, { guestAccessToken, guestEmail });
+
+    if (!canAccess) {
       return res.status(401).json({ message: 'Not authorized to pay for this order' });
     }
 
@@ -388,7 +143,7 @@ const createPaymentIntent = async (req, res) => {
       await recordFraudSignal(req, order, 'payment.fraud.review', fraudRisk);
     }
 
-    if (shouldBlockPayment(fraudRisk) && !req.user.isAdmin) {
+    if (shouldBlockPayment(fraudRisk) && !req.user?.isAdmin) {
       await order.save();
       await recordFraudSignal(req, order, 'payment.fraud.blocked', fraudRisk);
       return res.status(403).json({
@@ -397,52 +152,229 @@ const createPaymentIntent = async (req, res) => {
       });
     }
 
-    const stripe = getStripeClient();
-    let paymentIntent = null;
-
-    if (order.paymentIntentId) {
-      try {
-        const existingIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
-
-        if (existingIntent && !['canceled', 'succeeded'].includes(existingIntent.status)) {
-          paymentIntent = existingIntent;
-        }
-      } catch (error) {
-        console.error('[paymentController:createPaymentIntent:retrieve]', error.message);
-      }
-    }
-
-    if (!paymentIntent) {
-      paymentIntent = await stripe.paymentIntents.create({
-        amount: toStripeAmount(order.totalPrice),
-        currency: String(order.currency || getStripeCurrency()).toLowerCase(),
-        metadata: {
-          orderId: order._id.toString(),
-          userId: req.user._id.toString(),
-        },
-        receipt_email: order.shippingAddress?.email || req.user.email || undefined,
-      });
-    }
-
-    order.paymentProvider = 'Stripe';
-    order.paymentIntentId = paymentIntent.id;
+    order.paymentProvider = 'PayHere';
+    order.paymentMethod = 'PayHere';
     order.paymentStatus = 'Payment Pending';
-    order.paymentResult = buildSafePaymentResult(paymentIntent);
+    order.paymentIntentId = order._id.toString();
+    order.paymentResult = {
+      ...order.paymentResult,
+      id: order.paymentResult?.id || '',
+      status: 'pending',
+      amountReceived: 0,
+      currency: order.currency,
+      paymentMethodType: 'PayHere',
+      receiptEmail: order.shippingAddress?.email || order.guestCustomer?.email || '',
+      created: order.paymentResult?.created || new Date(),
+    };
+    pushStatusHistoryIfMeaningful(order, {
+      status: order.orderStatus,
+      note: 'PayHere checkout prepared and awaiting payment confirmation.',
+      updatedAt: new Date(),
+      updatedBy: req.user?._id,
+      updatedByName: req.user?.name || req.user?.email || order.guestCustomer?.name || 'PayHere',
+    });
     await order.save();
 
-    res.json({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-    });
+    const checkout = buildPayHereCheckoutPayload(order);
+
+    res.json(checkout);
   } catch (error) {
     if (error.name === 'CastError') {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    console.error('[paymentController:createPaymentIntent]', error);
-    res.status(500).json({ message: 'Unable to prepare payment right now' });
+    console.error('[paymentController:createPayHerePayment]', error);
+    res.status(500).json({ message: error.message || 'Unable to prepare PayHere payment right now' });
+  }
+};
+
+const completeSuccessfulPayment = async (order, payload) => {
+  const actor = getSafePayHereActor();
+  const paymentResult = buildPayHerePaymentResult({
+    ...payload,
+    status: 'succeeded',
+    email: order.shippingAddress?.email || order.guestCustomer?.email || '',
+  });
+
+  await applySuccessfulPaymentToOrder({
+    order,
+    paymentIntent: paymentResult,
+    actor,
+    source: 'webhook',
+  });
+  order.paymentResult = {
+    ...order.paymentResult,
+    ...paymentResult,
+  };
+  order.paymentProvider = 'PayHere';
+  order.paymentMethod = payload.method || 'PayHere';
+  order.paymentIntentId = payload.payment_id || order.paymentIntentId || order._id.toString();
+
+  await deductReservedInventory({ order, actor });
+  await commitPromotionsForOrder(order);
+  await awardOrderLoyaltyPoints(order, actor);
+
+  const updatedOrder = await order.save();
+  await syncVendorOrdersForOrder(updatedOrder);
+  await notifyOrderEvent(updatedOrder, 'order.paid');
+  await emitWebhookEvent('order.paid', updatedOrder.toObject(), {
+    resourceType: 'Order',
+    resourceId: updatedOrder._id.toString(),
+  });
+};
+
+const completeFailedPayment = async (order, payload, statusType) => {
+  const actor = getSafePayHereActor();
+  const paymentResult = buildPayHerePaymentResult({
+    ...payload,
+    status: statusType,
+    email: order.shippingAddress?.email || order.guestCustomer?.email || '',
+  });
+
+  if (statusType === 'cancelled') {
+    await applyCancelledPaymentToOrder({
+      order,
+      paymentIntent: paymentResult,
+      actor,
+      source: 'webhook',
+    });
+  } else {
+    await applyFailedPaymentToOrder({
+      order,
+      paymentIntent: paymentResult,
+      actor,
+      source: 'webhook',
+      note: payload.status_message
+        ? `PayHere reported payment ${statusType}: ${payload.status_message}`
+        : undefined,
+    });
+  }
+
+  order.paymentResult = {
+    ...order.paymentResult,
+    ...paymentResult,
+  };
+  order.paymentProvider = 'PayHere';
+  order.paymentMethod = payload.method || 'PayHere';
+  order.paymentIntentId = payload.payment_id || order.paymentIntentId || order._id.toString();
+
+  await releaseReservedInventory({
+    order,
+    actor,
+    note: `Released reservation after PayHere reported payment ${statusType}.`,
+  });
+
+  const updatedOrder = await order.save();
+  await syncVendorOrdersForOrder(updatedOrder);
+  await emitWebhookEvent(statusType === 'cancelled' ? 'payment.cancelled' : 'payment.failed', updatedOrder.toObject(), {
+    resourceType: 'Order',
+    resourceId: updatedOrder._id.toString(),
+  });
+};
+
+const handlePayHereNotification = async (req, res) => {
+  const payload = req.body || {};
+  const orderId = String(payload.order_id || '').trim();
+  const statusCode = String(payload.status_code || '').trim();
+  const paymentId = String(payload.payment_id || '').trim();
+  const eventId = `payhere:${paymentId || orderId}:${statusCode}:${payload.md5sig || ''}`;
+  let eventRecord = null;
+
+  try {
+    eventRecord = await ensurePaymentEvent({
+      eventId,
+      type: `payhere.status.${statusCode || 'unknown'}`,
+      paymentIntentId: paymentId,
+      payload,
+    });
+
+    if (eventRecord?.processed) {
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
+    if (!verifyPayHereNotification(payload)) {
+      await updatePaymentEvent(eventRecord, {
+        processed: false,
+        processingError: 'Invalid PayHere md5sig',
+        payload,
+      });
+      return res.status(400).json({ message: 'Invalid PayHere signature' });
+    }
+
+    const order = await Order.findById(orderId).select('+guestCustomer.accessToken');
+
+    if (!order) {
+      await updatePaymentEvent(eventRecord, {
+        processed: false,
+        processingError: 'Order not found',
+        payload,
+      });
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const expectedAmount = formatPayHereAmount(order.totalPrice);
+    const amountMatches = Math.abs(Number(payload.payhere_amount || 0) - Number(expectedAmount)) <= 0.01;
+    const currencyMatches =
+      String(payload.payhere_currency || '').toUpperCase() === String(order.currency || '').toUpperCase();
+
+    if (!amountMatches || !currencyMatches) {
+      await updatePaymentEvent(eventRecord, {
+        orderId: order._id,
+        paymentIntentId: paymentId,
+        processed: false,
+        processingError: 'PayHere amount or currency did not match order',
+        payload,
+      });
+      return res.status(400).json({ message: 'Payment amount or currency mismatch' });
+    }
+
+    if (statusCode === '2') {
+      await completeSuccessfulPayment(order, payload);
+    } else if (statusCode === '0') {
+      order.paymentProvider = 'PayHere';
+      order.paymentStatus = 'Payment Pending';
+      order.paymentResult = {
+        ...order.paymentResult,
+        ...buildPayHerePaymentResult({
+          ...payload,
+          status: 'pending',
+          email: order.shippingAddress?.email || order.guestCustomer?.email || '',
+        }),
+      };
+      pushStatusHistoryIfMeaningful(order, {
+        status: order.orderStatus,
+        note: 'PayHere reported the payment as pending.',
+        updatedAt: new Date(),
+        updatedByName: 'PayHere',
+      });
+      await order.save();
+    } else if (statusCode === '-1') {
+      await completeFailedPayment(order, payload, 'cancelled');
+    } else {
+      await completeFailedPayment(order, payload, statusCode === '-3' ? 'chargedback' : 'failed');
+    }
+
+    await updatePaymentEvent(eventRecord, {
+      orderId: order._id,
+      paymentIntentId: paymentId,
+      processed: true,
+      processingError: '',
+      payload,
+    });
+
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('[paymentController:handlePayHereNotification]', error);
+
+    if (eventRecord) {
+      await updatePaymentEvent(eventRecord, {
+        processed: false,
+        processingError: error.message || 'PayHere notification processing failed',
+        payload,
+      });
+    }
+
+    return res.status(500).json({ message: 'PayHere notification processing failed' });
   }
 };
 
@@ -450,10 +382,6 @@ const createRefund = async (req, res) => {
   const { orderId = '', amount, reason = '' } = req.body;
 
   try {
-    if (!isStripeConfigured()) {
-      return res.status(400).json({ message: 'Stripe payment is not configured for this environment' });
-    }
-
     const order = await Order.findById(orderId).populate('user', 'name email phone');
 
     if (!order) {
@@ -464,22 +392,7 @@ const createRefund = async (req, res) => {
       return res.status(400).json({ message: 'Only paid orders can be refunded' });
     }
 
-    if (order.orderStatus === 'Cancelled') {
-      return res.status(400).json({ message: 'Cancelled orders cannot be refunded' });
-    }
-
-    const hasRefundReference = Boolean(order.paymentIntentId || order.paymentResult?.chargeId);
-
-    if (!hasRefundReference) {
-      return res.status(400).json({ message: 'No Stripe payment reference is available for this order' });
-    }
-
     const refundableAmount = calculateRefundableAmount(order);
-
-    if (refundableAmount <= 0) {
-      return res.status(400).json({ message: 'This order is already fully refunded' });
-    }
-
     const requestedAmount =
       amount === undefined || amount === null || amount === ''
         ? refundableAmount
@@ -493,48 +406,33 @@ const createRefund = async (req, res) => {
       return res.status(400).json({ message: 'Refund amount exceeds the refundable balance' });
     }
 
-    const normalizedReason = String(reason || '').trim();
-    const stripe = getStripeClient();
-    const refundPayload = {
-      amount: toStripeAmount(requestedAmount),
-      metadata: {
-        orderId: order._id.toString(),
-        requestedBy: req.user._id.toString(),
-      },
-    };
-
-    if (REFUND_REASON_VALUES.includes(normalizedReason)) {
-      refundPayload.reason = normalizedReason;
-    } else if (normalizedReason) {
-      refundPayload.metadata.customReason = normalizedReason;
-    }
-
-    if (order.paymentIntentId) {
-      refundPayload.payment_intent = order.paymentIntentId;
-    } else {
-      refundPayload.charge = order.paymentResult?.chargeId;
-    }
-
-    const refund = await stripe.refunds.create(refundPayload);
-    const refundRecord = buildSafeRefundRecord(refund, {
-      source: 'admin',
+    const refundRecord = {
+      refundId: `manual-payhere-${Date.now()}`,
+      amount: requestedAmount,
+      currency: order.currency || 'LKR',
+      status: 'succeeded',
+      reason: String(reason || 'PayHere refund recorded by admin').trim(),
+      receiptNumber: '',
+      createdAt: new Date(),
       processedBy: req.user._id,
       processedByName: req.user.name || req.user.email || 'Admin',
-      reason: normalizedReason || refund.reason || '',
-    });
+      source: 'admin',
+    };
 
     await applyRefundToOrder({
       order,
       refundRecord,
       actor: getAdminActor(req.user),
       source: 'admin',
+      note: 'PayHere refund recorded manually by admin.',
     });
 
     const updatedOrder = await order.save();
     await syncVendorOrdersForOrder(updatedOrder);
-    await recordAuditLog(req, 'payments.refund.create', 'Order', updatedOrder._id, {
+    await recordAuditLog(req, 'payments.refund.record', 'Order', updatedOrder._id, {
       requestedAmount,
-      reason: normalizedReason,
+      reason: refundRecord.reason,
+      provider: 'PayHere',
     });
     const populatedOrder = await Order.findById(updatedOrder._id).populate('user', 'name email phone');
     await emitWebhookEvent('refund.updated', populatedOrder.toObject(), {
@@ -549,7 +447,7 @@ const createRefund = async (req, res) => {
     }
 
     console.error('[paymentController:createRefund]', error);
-    res.status(500).json({ message: 'Unable to process refund right now' });
+    res.status(500).json({ message: 'Unable to record refund right now' });
   }
 };
 
@@ -561,7 +459,7 @@ const getOrderPaymentEvents = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    const events = await StripeEvent.find({
+    const events = await PaymentEvent.find({
       $or: [{ orderId: order._id }, ...(order.paymentIntentId ? [{ paymentIntentId: order.paymentIntentId }] : [])],
     })
       .sort({ createdAt: -1 })
@@ -579,96 +477,9 @@ const getOrderPaymentEvents = async (req, res) => {
   }
 };
 
-const handleStripeWebhook = async (req, res) => {
-  if (!isStripeWebhookConfigured()) {
-    return res.status(200).json({
-      received: true,
-      ignored: true,
-      message: 'Stripe webhook secret is not configured.',
-    });
-  }
-
-  const signature = req.headers['stripe-signature'];
-
-  if (!signature) {
-    return res.status(400).json({ message: 'Missing Stripe signature header' });
-  }
-
-  let event = null;
-
-  try {
-    event = buildWebhookEvent(req.body, signature);
-  } catch (error) {
-    console.error('[paymentController:webhook:signature]', error.message);
-    return res.status(400).json({ message: 'Webhook signature verification failed' });
-  }
-
-  try {
-    let eventRecord = await StripeEvent.findOne({ eventId: event.id });
-
-    if (eventRecord?.processed) {
-      return res.status(200).json({
-        received: true,
-        duplicate: true,
-        eventId: event.id,
-      });
-    }
-
-    if (!eventRecord) {
-      try {
-        eventRecord = await StripeEvent.create({
-          eventId: event.id,
-          type: event.type,
-          paymentIntentId: '',
-          processed: false,
-        });
-      } catch (createError) {
-        if (createError.code === 11000) {
-          eventRecord = await StripeEvent.findOne({ eventId: event.id });
-
-          if (eventRecord?.processed) {
-            return res.status(200).json({
-              received: true,
-              duplicate: true,
-              eventId: event.id,
-            });
-          }
-        } else {
-          throw createError;
-        }
-      }
-    }
-
-    const outcome = await processWebhookEvent(event);
-
-    await updateStripeEventRecord(eventRecord, {
-      type: event.type,
-      paymentIntentId: outcome?.paymentIntentId || '',
-      orderId: outcome?.order?._id || eventRecord?.orderId,
-      processed: true,
-      processingError: outcome?.ignored ? 'Ignored unsupported event type.' : '',
-    });
-
-    return res.status(200).json({
-      received: true,
-      ignored: Boolean(outcome?.ignored),
-      eventId: event.id,
-    });
-  } catch (error) {
-    console.error('[paymentController:webhook:processing]', error);
-
-    const eventRecord = await StripeEvent.findOne({ eventId: event.id });
-
-    if (eventRecord) {
-      await updateStripeEventRecord(eventRecord, {
-        type: event.type,
-        processed: false,
-        processingError: error.message || 'Webhook processing failed',
-      });
-    }
-
-    return res.status(500).json({ message: 'Webhook processing failed' });
-  }
+export {
+  createPayHerePayment,
+  createRefund,
+  getOrderPaymentEvents,
+  handlePayHereNotification,
 };
-
-export { createPaymentIntent, createRefund, handleStripeWebhook, getOrderPaymentEvents };

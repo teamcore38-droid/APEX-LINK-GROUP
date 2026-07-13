@@ -1,6 +1,6 @@
 # Apex Link Group — Global Marketplace (MERN E-Commerce)
 
-Premium multi-industry marketplace (textiles, spices & food, IT solutions, industrial equipment, home & living, health & beauty) with customer accounts, admin operations, Stripe-ready payments, refund management, invoices, packing slips, contact workflows, and production hardening.
+Premium multi-industry marketplace (textiles, spices & food, IT solutions, industrial equipment, home & living, health & beauty) with customer accounts, admin operations, PayHere payments, refund management, invoices, packing slips, contact workflows, and production hardening.
 
 ## Project Layout
 
@@ -13,7 +13,7 @@ Premium multi-industry marketplace (textiles, spices & food, IT solutions, indus
 
 - Node.js 18+
 - MongoDB (Atlas or local)
-- Stripe account (for live payment mode)
+- PayHere merchant account (sandbox for testing, live for production)
 - SMTP provider (for production email delivery)
 
 ## Local Setup
@@ -83,9 +83,11 @@ Required:
 - `JWT_SECRET`
 - `NODE_ENV`
 - `FRONTEND_URL`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_CURRENCY`
+- `PAYHERE_MERCHANT_ID`
+- `PAYHERE_MERCHANT_SECRET`
+- `PAYHERE_CURRENCY`
+- `PAYHERE_SANDBOX`
+- `PAYHERE_NOTIFY_URL` or `BACKEND_PUBLIC_URL`
 - `EMAIL_HOST`
 - `EMAIL_PORT`
 - `EMAIL_USER`
@@ -105,12 +107,11 @@ Optional:
 ### Frontend (`frontend/.env`)
 
 - `VITE_API_URL` (required when frontend/backend are on different domains)
-- `VITE_STRIPE_PUBLIC_KEY`
 - `VITE_APP_ENV` (optional)
 
 Security:
 
-- Never place Stripe secret keys in frontend env.
+- Never place PayHere merchant secrets in frontend env.
 - Never commit real secrets to the repository.
 
 ## API Health and Hardening
@@ -124,29 +125,26 @@ Security:
   - forgot/reset password
   - contact submit
   - public order tracking
-- Stripe webhook raw-body parsing preserved at:
-  - `POST /api/payments/webhook`
+- PayHere notification route:
+  - `POST /api/payments/payhere/notify`
 
-## Stripe Test Workflow (Local/Staging)
+## PayHere Test Workflow (Local/Staging)
 
 1. Set:
-   - `STRIPE_SECRET_KEY` (backend)
-   - `STRIPE_WEBHOOK_SECRET` (backend)
-   - `VITE_STRIPE_PUBLIC_KEY` (frontend)
-2. Start webhook forwarding:
+   - `PAYHERE_MERCHANT_ID` (backend)
+   - `PAYHERE_MERCHANT_SECRET` (backend)
+   - `PAYHERE_CURRENCY=LKR` (backend)
+   - `PAYHERE_SANDBOX=true` (backend)
+   - `PAYHERE_NOTIFY_URL=https://<backend-domain>/api/payments/payhere/notify` (backend)
+   - `VITE_API_URL=https://<backend-domain>` (frontend)
+2. For local callback testing, expose the backend:
 
 ```bash
-stripe listen --forward-to localhost:5000/api/payments/webhook
+ngrok http 5000
 ```
 
-3. Verify events:
-   - `payment_intent.succeeded`
-   - `payment_intent.payment_failed`
-   - `payment_intent.canceled`
-   - `charge.refunded`
-   - `refund.created`
-   - `refund.updated`
-   - `refund.failed`
+3. Use the ngrok HTTPS URL as `PAYHERE_NOTIFY_URL`.
+4. Complete checkout with PayHere sandbox cards and confirm the order becomes paid only after the callback.
 
 ## Email Behavior
 
@@ -165,6 +163,6 @@ Use [`DEPLOYMENT.md`](./DEPLOYMENT.md) for:
 
 - Render/Railway/Heroku-style backend deployment
 - Vercel/Netlify frontend deployment
-- Stripe live-path verification checklist
+- PayHere live-path verification checklist
 - Email provider setup checklist
 - Staging and production launch checklists

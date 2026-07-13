@@ -83,6 +83,21 @@ const calculateRefundableAmount = (order) =>
     0
   );
 
+const getPaymentProviderLabel = (paymentIntent, order, fallback = 'Payment gateway') =>
+  paymentIntent?.provider || order.paymentProvider || fallback;
+
+const getPaymentCreatedAt = (paymentIntent, fallback) => {
+  if (paymentIntent?.created instanceof Date) {
+    return paymentIntent.created;
+  }
+
+  if (typeof paymentIntent?.created === 'number') {
+    return new Date(paymentIntent.created * 1000);
+  }
+
+  return fallback;
+};
+
 const maybeSendOrderConfirmation = async (order) => {
   if (order.notifications?.orderConfirmationSentAt) {
     return false;
@@ -120,13 +135,13 @@ const applySuccessfulPaymentToOrder = async ({
   source = 'system',
 }) => {
   const alreadyPaid = Boolean(order.isPaid);
+  const provider = getPaymentProviderLabel(paymentIntent, order, 'PayHere');
+  const createdAt = getPaymentCreatedAt(paymentIntent, order.paidAt || new Date());
 
   order.isPaid = true;
-  order.paidAt = paymentIntent.created
-    ? new Date(paymentIntent.created * 1000)
-    : order.paidAt || new Date();
-  order.paymentProvider = 'Stripe';
-  order.paymentMethod = order.paymentMethod || 'Card';
+  order.paidAt = createdAt;
+  order.paymentProvider = provider;
+  order.paymentMethod = order.paymentMethod || provider;
   order.paymentIntentId = paymentIntent.id || order.paymentIntentId || '';
   order.paymentStatus = 'Paid';
   order.paymentResult = {
@@ -136,7 +151,7 @@ const applySuccessfulPaymentToOrder = async ({
     amountReceived:
       Number(paymentIntent.amount_received || 0) > 0
         ? Number(paymentIntent.amount_received || 0) / 100
-        : Number(order.paymentResult?.amountReceived || order.totalPrice || 0),
+        : Number(paymentIntent.amountReceived || order.paymentResult?.amountReceived || order.totalPrice || 0),
     currency: paymentIntent.currency || order.paymentResult?.currency || '',
     chargeId:
       order.paymentResult?.chargeId ||
@@ -145,25 +160,25 @@ const applySuccessfulPaymentToOrder = async ({
     paymentMethodType:
       order.paymentResult?.paymentMethodType ||
       paymentIntent.payment_method_types?.[0] ||
+      paymentIntent.paymentMethodType ||
       '',
     receiptEmail:
       paymentIntent.receipt_email ||
+      paymentIntent.receiptEmail ||
       order.paymentResult?.receiptEmail ||
       order.shippingAddress?.email ||
       '',
-    created: paymentIntent.created
-      ? new Date(paymentIntent.created * 1000)
-      : order.paymentResult?.created,
+    created: getPaymentCreatedAt(paymentIntent, order.paymentResult?.created || createdAt),
   };
 
   pushStatusHistoryIfMeaningful(order, {
     status: order.orderStatus,
     note: alreadyPaid
-      ? `Stripe payment success confirmed again via ${source}.`
-      : `Payment succeeded via Stripe ${source === 'webhook' ? 'webhook' : 'confirmation'}.`,
+      ? `${provider} payment success confirmed again via ${source}.`
+      : `Payment succeeded via ${provider} ${source === 'webhook' ? 'webhook' : 'confirmation'}.`,
     updatedAt: new Date(),
     updatedBy: actor._id,
-    updatedByName: actor.name || actor.email || 'Stripe',
+    updatedByName: actor.name || actor.email || provider,
   });
 
   await maybeSendOrderConfirmation(order);
@@ -177,9 +192,11 @@ const applyFailedPaymentToOrder = async ({
   source = 'webhook',
   note,
 }) => {
+  const provider = getPaymentProviderLabel(paymentIntent, order, 'PayHere');
+
   order.isPaid = false;
   order.paidAt = undefined;
-  order.paymentProvider = order.paymentProvider || 'Stripe';
+  order.paymentProvider = provider;
   order.paymentIntentId = paymentIntent?.id || order.paymentIntentId || '';
   order.paymentStatus = 'Payment Failed';
   order.paymentResult = {
@@ -192,25 +209,25 @@ const applyFailedPaymentToOrder = async ({
     paymentMethodType:
       order.paymentResult?.paymentMethodType ||
       paymentIntent?.payment_method_types?.[0] ||
+      paymentIntent?.paymentMethodType ||
       '',
     receiptEmail:
       paymentIntent?.receipt_email ||
+      paymentIntent?.receiptEmail ||
       order.paymentResult?.receiptEmail ||
       order.shippingAddress?.email ||
       '',
-    created: paymentIntent?.created
-      ? new Date(paymentIntent.created * 1000)
-      : order.paymentResult?.created,
+    created: getPaymentCreatedAt(paymentIntent, order.paymentResult?.created),
   };
 
   pushStatusHistoryIfMeaningful(order, {
     status: order.orderStatus,
     note:
       note ||
-      `Payment failed via Stripe ${source === 'webhook' ? 'webhook' : 'confirmation'} and the order remains unpaid.`,
+      `Payment failed via ${provider} ${source === 'webhook' ? 'webhook' : 'confirmation'} and the order remains unpaid.`,
     updatedAt: new Date(),
     updatedBy: actor._id,
-    updatedByName: actor.name || actor.email || 'Stripe',
+    updatedByName: actor.name || actor.email || provider,
   });
 };
 
@@ -220,9 +237,11 @@ const applyCancelledPaymentToOrder = async ({
   actor = {},
   source = 'webhook',
 }) => {
+  const provider = getPaymentProviderLabel(paymentIntent, order, 'PayHere');
+
   order.isPaid = false;
   order.paidAt = undefined;
-  order.paymentProvider = order.paymentProvider || 'Stripe';
+  order.paymentProvider = provider;
   order.paymentIntentId = paymentIntent?.id || order.paymentIntentId || '';
   order.paymentStatus = 'Cancelled';
   order.paymentResult = {
@@ -239,10 +258,10 @@ const applyCancelledPaymentToOrder = async ({
 
   pushStatusHistoryIfMeaningful(order, {
     status: order.orderStatus,
-    note: `Payment was cancelled via Stripe ${source}.`,
+    note: `Payment was cancelled via ${provider} ${source}.`,
     updatedAt: new Date(),
     updatedBy: actor._id,
-    updatedByName: actor.name || actor.email || 'Stripe',
+    updatedByName: actor.name || actor.email || provider,
   });
 };
 
@@ -294,7 +313,7 @@ const applyRefundToOrder = async ({
     updatedAt: refundRecord.createdAt || new Date(),
     updatedBy: actor._id || refundRecord.processedBy,
     updatedByName:
-      actor.name || actor.email || refundRecord.processedByName || 'Stripe',
+      actor.name || actor.email || refundRecord.processedByName || order.paymentProvider || 'Payment gateway',
   });
 
   if (
