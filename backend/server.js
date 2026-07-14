@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -34,9 +33,18 @@ dotenv.config();
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
-const warmDatabaseConnection = connectDB({ strict: isProduction }).catch((error) => {
-  console.error(`Initial MongoDB connection failed: ${error.message}`);
-});
+let databaseConnectionPromise = null;
+
+const getDatabaseConnection = () => {
+  if (!databaseConnectionPromise) {
+    databaseConnectionPromise = connectDB({ strict: isProduction }).catch((error) => {
+      databaseConnectionPromise = null;
+      throw error;
+    });
+  }
+
+  return databaseConnectionPromise;
+};
 
 if (isProduction) {
   app.set('trust proxy', 1);
@@ -55,6 +63,14 @@ const configuredOrigins = [
   'http://127.0.0.1:4173',
 ].map((origin) => (origin ? origin.trim().replace(/\/+$/, '') : ''));
 const allowedOrigins = [...new Set(configuredOrigins.filter(Boolean))];
+
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    service: 'ApexLink Backend',
+  });
+});
 
 const corsOptions = {
   origin(origin, callback) {
@@ -97,29 +113,9 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-app.get('/api/health', (req, res) => {
-  const stateMap = {
-    0: 'disconnected',
-    1: 'connected',
-    2: 'connecting',
-    3: 'disconnecting',
-  };
-
-  res.json({
-    status: 'ok',
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString(),
-    database: {
-      state: stateMap[mongoose.connection.readyState] || 'unknown',
-    },
-  });
-});
-
 const ensureDatabaseConnected = async (req, res, next) => {
   try {
-    await warmDatabaseConnection;
-    await connectDB({ strict: isProduction });
+    await getDatabaseConnection();
     next();
   } catch (error) {
     console.error(`Database unavailable for ${req.method} ${req.originalUrl}: ${error.message}`);
