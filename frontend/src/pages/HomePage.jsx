@@ -442,22 +442,22 @@ const HomePage = () => {
             <div className="relative md:w-1/2">
               <div className="absolute -inset-4 translate-x-4 translate-y-4 transform rounded-lg border-2 border-brand-accent"></div>
               <img
-                src="https://images.pexels.com/photos/4483610/pexels-photo-4483610.jpeg?auto=compress&cs=tinysrgb&w=1000"
-                alt="Global logistics and premium product sourcing"
+                src="https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg?auto=compress&cs=tinysrgb&w=1000"
+                alt="Curated fashion apparel and footwear collection"
                 className="relative z-10 h-[500px] w-full rounded-lg object-cover shadow-2xl"
               />
             </div>
             <div className="md:w-1/2">
-              <h2 className="mb-6 font-serif text-4xl font-bold text-brand-dark md:text-5xl">Our Promise of Quality</h2>
+              <h2 className="mb-6 font-serif text-4xl font-bold text-brand-dark md:text-5xl">Style Made for Every Moment</h2>
               <div className="mb-8 h-1 w-20 bg-brand-accent"></div>
               <p className="mb-6 text-lg leading-relaxed text-gray-700">
-                At Apex Link Group, we believe world-class commerce is built on trust. That&apos;s why every supplier on our marketplace is audited, every product is verified, and every order is backed by our enterprise-grade quality guarantee.
+                Discover fashion essentials selected for comfort, confidence, and everyday polish. From statement footwear to easy wardrobe staples, every piece is chosen to help you dress well without overthinking it.
               </p>
               <p className="mb-10 text-lg leading-relaxed text-gray-700">
-                From certified textile mills and gourmet food producers to leading technology and industrial manufacturers, we connect you with the world&apos;s finest — one platform, every industry, uncompromising standards.
+                We focus on wearable designs, dependable materials, and versatile styling, so your cart feels ready for workdays, weekends, celebrations, and everything in between.
               </p>
-              <Link to="/about" className="btn-outline inline-block border-brand-dark px-8 py-4 font-bold uppercase tracking-wider text-brand-dark hover:bg-brand-dark hover:text-white">
-                Discover Our Story
+              <Link to="/products" className="btn-outline inline-block border-brand-dark px-8 py-4 font-bold uppercase tracking-wider text-brand-dark hover:bg-brand-dark hover:text-white">
+                Explore Fashion
               </Link>
             </div>
           </div>
