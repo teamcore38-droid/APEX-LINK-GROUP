@@ -4,7 +4,6 @@ import axios from 'axios';
 import { ArrowLeft, ArrowRight, Search, SlidersHorizontal } from 'lucide-react';
 import Product from '../components/Product';
 import CustomSelect from '../components/CustomSelect';
-import { getCategoryImage } from '../utils/categoryUi';
 import {
   PRODUCT_PAGE_SIZE,
   PRODUCT_PRICE_SORT_OPTIONS,
@@ -146,22 +145,6 @@ const CategoryPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f8efe6] pb-16">
-      <div className="relative h-[420px] overflow-hidden">
-        <img src={getCategoryImage(category)} alt={category?.name} className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/85 via-brand-dark/45 to-brand-dark/25" />
-        <div className="container relative z-10 mx-auto flex h-full max-w-7xl items-end px-4 pb-12">
-          <div className="max-w-3xl text-white">
-            <Link to="/categories" className="inline-flex items-center text-sm font-semibold uppercase tracking-[0.2em] text-white/85 transition-colors duration-200 hover:text-brand-accent">
-              <ArrowLeft size={16} className="mr-2" /> All Categories
-            </Link>
-            <h1 className="mt-5 font-serif text-4xl font-bold sm:text-5xl">{category?.name}</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">
-              {category?.description || 'Explore the full collection of premium products in this category.'}
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto max-w-7xl px-4 pt-10">
         <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.06)]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
