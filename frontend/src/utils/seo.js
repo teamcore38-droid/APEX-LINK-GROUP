@@ -1,7 +1,7 @@
-const SITE_NAME = 'Apex Link Group';
+const SITE_NAME = 'Apex Fashion';
 const DEFAULT_DESCRIPTION =
-  'Premium multi-industry marketplace across textiles, food products, IT solutions, industrial equipment, and more.';
-const DEFAULT_IMAGE = '/Apex Logo.jpg';
+  'Curated modern fashion, footwear, beauty, and lifestyle essentials.';
+const DEFAULT_IMAGE = '/logo.webp';
 
 const ensureMeta = (selector, create) => {
   let element = document.head.querySelector(selector);
