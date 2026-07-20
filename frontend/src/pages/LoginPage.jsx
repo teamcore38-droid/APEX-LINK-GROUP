@@ -7,6 +7,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [twoFactorChallenge, setTwoFactorChallenge] = useState(null);
   const [twoFactorCode, setTwoFactorCode] = useState('');
@@ -23,10 +24,58 @@ const LoginPage = () => {
     }
   }, [navigate, redirect, userInfo]);
 
+  const handleEmailChange = (event) => {
+    const value = event.target.value;
+    setEmail(value);
+    if (value.trim()) {
+      setFieldErrors((prev) => ({ ...prev, email: '' }));
+    }
+  };
+
+  const handlePasswordChange = (event) => {
+    const value = event.target.value;
+    setPassword(value);
+    if (value) {
+      setFieldErrors((prev) => ({ ...prev, password: '' }));
+    }
+  };
+
+  const handleTwoFactorCodeChange = (event) => {
+    const value = event.target.value;
+    setTwoFactorCode(value);
+    if (value.trim()) {
+      setFieldErrors((prev) => ({ ...prev, twoFactorCode: '' }));
+    }
+  };
+
   const submitHandler = async (event) => {
     event.preventDefault();
-    setLoading(true);
     setError('');
+
+    const nextFieldErrors = {};
+    if (!twoFactorChallenge) {
+      if (!email.trim()) {
+        nextFieldErrors.email = 'This field is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        nextFieldErrors.email = 'Please enter a valid email address';
+      }
+
+      if (!password) {
+        nextFieldErrors.password = 'This field is required';
+      }
+    } else {
+      if (!twoFactorCode.trim()) {
+        nextFieldErrors.twoFactorCode = 'This field is required';
+      }
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return;
+    }
+
+    setFieldErrors({});
+    setLoading(true);
 
     try {
       if (twoFactorChallenge) {
@@ -49,7 +98,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="bg-[#fff7ee] py-20">
+    <div className="bg-[#fff7ee] py-6 md:py-8 pb-16">
       <div className="container mx-auto flex justify-center px-4">
         <div className="w-full max-w-md rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] border border-gray-100">
           <div className="text-center">
@@ -66,7 +115,7 @@ const LoginPage = () => {
             </div>
           )}
 
-          <form onSubmit={submitHandler} className="mt-8 space-y-5">
+          <form noValidate onSubmit={submitHandler} className="mt-8 space-y-5">
             {!twoFactorChallenge ? (
               <>
                 <div>
@@ -75,13 +124,17 @@ const LoginPage = () => {
                     <Mail size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="email"
-                      required
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                      onChange={handleEmailChange}
+                      className={`w-full rounded-xl border bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition ${
+                        fieldErrors.email ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                      }`}
                       placeholder="you@example.com"
                     />
                   </div>
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.email}</p>
+                  )}
                 </div>
 
                 <div>
@@ -98,13 +151,17 @@ const LoginPage = () => {
                     <LockKeyhole size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="password"
-                      required
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                      onChange={handlePasswordChange}
+                      className={`w-full rounded-xl border bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition ${
+                        fieldErrors.password ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                      }`}
                       placeholder="Enter your password"
                     />
                   </div>
+                  {fieldErrors.password && (
+                    <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.password}</p>
+                  )}
                 </div>
               </>
             ) : (
@@ -114,14 +171,18 @@ const LoginPage = () => {
                   <ShieldCheck size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    required
                     inputMode="numeric"
                     value={twoFactorCode}
-                    onChange={(event) => setTwoFactorCode(event.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                    onChange={handleTwoFactorCodeChange}
+                    className={`w-full rounded-xl border bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition ${
+                      fieldErrors.twoFactorCode ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                    }`}
                     placeholder="6-digit code"
                   />
                 </div>
+                {fieldErrors.twoFactorCode && (
+                  <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.twoFactorCode}</p>
+                )}
                 {twoFactorChallenge.developmentCode && (
                   <p className="mt-3 rounded-xl bg-brand-light px-4 py-3 text-xs font-semibold text-brand-dark">
                     Development code: {twoFactorChallenge.developmentCode}

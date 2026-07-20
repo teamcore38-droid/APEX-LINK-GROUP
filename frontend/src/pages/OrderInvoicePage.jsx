@@ -227,10 +227,10 @@ const OrderInvoicePage = () => {
 
               <div className="rounded-3xl bg-brand-light p-5 text-sm text-gray-600">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Business Information</p>
-                <p className="mt-3 font-semibold text-brand-dark">{invoice.business?.name || 'APEX LINK GROUP'}</p>
-                <p>{invoice.business?.address}</p>
-                <p>{invoice.business?.email}</p>
-                <p>{invoice.business?.phone}</p>
+                <p className="mt-3 font-semibold text-brand-dark">{invoice.business?.name || 'APEX SPICES'}</p>
+                <p>{invoice.business?.address || '580/12, Moque Lane, Nawala, Rajagiriya, Sri Lanka'}</p>
+                <p>{invoice.business?.email || 'info@apexspices.lk'}</p>
+                <p>{invoice.business?.phone || '+94 76 566 9961'}</p>
               </div>
             </section>
           </div>

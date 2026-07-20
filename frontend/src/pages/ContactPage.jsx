@@ -15,6 +15,7 @@ const ContactPage = () => {
   const { userInfo } = useAuth();
 
   const [formData, setFormData] = useState(() => createInitialForm(userInfo));
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -24,17 +25,17 @@ const ContactPage = () => {
       {
         icon: MapPin,
         title: 'Studio & Dispatch',
-        body: 'One Apex Plaza, Suite 400\nGlobal Trade District\nSan Francisco, CA 94110',
+        body: '580/12, Moque Lane\nNawala, Rajagiriya\nSri Lanka',
       },
       {
         icon: Phone,
         title: 'Customer Care',
-        body: '+1 (555) 123-4567\nMonday to Friday\n9:00 AM - 6:00 PM PST',
+        body: '+94 76 566 9961\nMonday to Saturday\n9:00 AM - 6:00 PM IST',
       },
       {
         icon: Mail,
         title: 'Email Support',
-        body: 'hello@apexlinkgroup.com\nwholesale@apexlinkgroup.com',
+        body: 'info@apexspices.lk',
       },
     ],
     []
@@ -49,13 +50,43 @@ const ContactPage = () => {
       ...currentForm,
       [name]: value,
     }));
+
+    if (value.trim()) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const submitHandler = async (event) => {
     event.preventDefault();
-    setLoading(true);
     setError('');
     setSuccessMessage('');
+
+    const nextErrors = {};
+    if (!formData.name.trim()) {
+      nextErrors.name = 'This field is required';
+    }
+
+    if (!formData.email.trim()) {
+      nextErrors.email = 'This field is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      nextErrors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.subject.trim()) {
+      nextErrors.subject = 'This field is required';
+    }
+
+    if (!formData.message.trim()) {
+      nextErrors.message = 'This field is required';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      return;
+    }
+
+    setFieldErrors({});
+    setLoading(true);
 
     try {
       const { data } = await axios.post('/api/contact', formData, {
@@ -139,7 +170,7 @@ const ContactPage = () => {
               </div>
             )}
 
-            <form className="mt-6 space-y-5" onSubmit={submitHandler}>
+            <form noValidate className="mt-6 space-y-5" onSubmit={submitHandler}>
               <div className="grid gap-5 md:grid-cols-2">
                 <div>
                   <label htmlFor="contact-name" className="mb-2 block text-sm font-semibold text-brand-dark">Your Name</label>
@@ -147,11 +178,15 @@ const ContactPage = () => {
                     id="contact-name"
                     name="name"
                     type="text"
-                    required
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className={`w-full rounded-xl border bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition ${
+                      fieldErrors.name ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                    }`}
                   />
+                  {fieldErrors.name && (
+                    <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.name}</p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="contact-email" className="mb-2 block text-sm font-semibold text-brand-dark">Email Address</label>
@@ -159,11 +194,15 @@ const ContactPage = () => {
                     id="contact-email"
                     name="email"
                     type="email"
-                    required
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className={`w-full rounded-xl border bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition ${
+                      fieldErrors.email ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                    }`}
                   />
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.email}</p>
+                  )}
                 </div>
               </div>
 
@@ -186,12 +225,16 @@ const ContactPage = () => {
                     id="contact-subject"
                     name="subject"
                     type="text"
-                    required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    className={`w-full rounded-xl border bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition ${
+                      fieldErrors.subject ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                    }`}
                     placeholder="Order support, wholesale, gifting, product question..."
                   />
+                  {fieldErrors.subject && (
+                    <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.subject}</p>
+                  )}
                 </div>
               </div>
 
@@ -200,13 +243,17 @@ const ContactPage = () => {
                 <textarea
                   id="contact-message"
                   name="message"
-                  required
                   rows="7"
                   value={formData.message}
                   onChange={handleChange}
-                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm leading-7 text-brand-dark outline-none transition focus:border-brand-accent"
+                  className={`w-full rounded-xl border bg-[#fff7ee] px-4 py-3 text-sm leading-7 text-brand-dark outline-none transition ${
+                    fieldErrors.message ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                  }`}
                   placeholder="Tell us about your question, order number, or what kind of help you need."
                 />
+                {fieldErrors.message && (
+                  <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.message}</p>
+                )}
               </div>
 
               <div className="rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] px-5 py-4 text-sm leading-7 text-gray-600">

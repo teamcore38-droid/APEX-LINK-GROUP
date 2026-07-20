@@ -7,15 +7,36 @@ const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldError, setFieldError] = useState('');
   const [success, setSuccess] = useState('');
   const [resetUrl, setResetUrl] = useState('');
 
+  const handleEmailChange = (event) => {
+    const value = event.target.value;
+    setEmail(value);
+    if (value.trim()) {
+      setFieldError('');
+    }
+  };
+
   const submitHandler = async (event) => {
     event.preventDefault();
-    setLoading(true);
     setError('');
     setSuccess('');
     setResetUrl('');
+
+    if (!email.trim()) {
+      setFieldError('This field is required');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setFieldError('Please enter a valid email address');
+      return;
+    }
+
+    setFieldError('');
+    setLoading(true);
 
     try {
       const { data } = await axios.post('/api/users/forgot-password', { email });
@@ -30,7 +51,7 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="bg-[#fff7ee] py-20">
+    <div className="bg-[#fff7ee] py-6 md:py-8 pb-16">
       <div className="container mx-auto flex justify-center px-4">
         <div className="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] border border-gray-100">
           <div className="text-center">
@@ -53,20 +74,24 @@ const ForgotPasswordPage = () => {
             </div>
           )}
 
-          <form onSubmit={submitHandler} className="mt-8 space-y-5">
+          <form noValidate onSubmit={submitHandler} className="mt-8 space-y-5">
             <div>
               <label className="mb-2 block text-sm font-semibold text-brand-dark">Email Address</label>
               <div className="relative">
                 <Mail size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="email"
-                  required
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
+                  onChange={handleEmailChange}
+                  className={`w-full rounded-xl border bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition ${
+                    fieldError ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
+                  }`}
                   placeholder="you@example.com"
                 />
               </div>
+              {fieldError && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldError}</p>
+              )}
             </div>
 
             <button
