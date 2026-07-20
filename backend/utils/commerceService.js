@@ -131,8 +131,8 @@ const getShippingOptions = async ({ shippingAddress = {}, subtotal = 0, currency
   const state = getStateCode(shippingAddress);
   const query = {
     isActive: true,
-    country: 'Sri Lanka',
-    ...(state ? { state } : {}),
+    country: { $regex: /^sri lanka$/i },
+    ...(state ? { state: { $regex: new RegExp(`^${state}$`, 'i') } } : {}),
   };
 
   const configuredRates = await ShippingRate.find(query).sort({ basePrice: 1, carrier: 1 }).lean();

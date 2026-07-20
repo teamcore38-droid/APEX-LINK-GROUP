@@ -34,7 +34,7 @@ const AdminShippingPage = () => {
       const { data } = await axios.get('/api/admin/commerce/shipping-rates', authHeaders);
       const map = {};
       data.forEach((r) => {
-        if (r.country === 'Sri Lanka' && r.state) {
+        if (r.country?.toLowerCase() === 'sri lanka' && r.state) {
           map[r.state] = { fee: r.basePrice, id: r._id };
         }
       });

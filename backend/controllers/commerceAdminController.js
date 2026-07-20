@@ -116,8 +116,8 @@ const listShippingRates = async (_req, res) => {
 const upsertShippingRate = async (req, res) => {
   const carrier = String(req.body.carrier || '').trim();
   const service = String(req.body.service || '').trim();
-  const country = String(req.body.country || '').trim().toUpperCase();
-  const state = String(req.body.state || '').trim().toUpperCase();
+  const country = String(req.body.country || '').trim();
+  const state = String(req.body.state || '').trim();
 
   if (!carrier || !service) {
     return res.status(400).json({ message: 'Carrier and service are required' });
