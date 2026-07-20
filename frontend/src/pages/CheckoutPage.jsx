@@ -708,6 +708,7 @@ const CheckoutInner = () => {
               )}
             </section>
 
+            {false && (
             <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
@@ -789,6 +790,7 @@ const CheckoutInner = () => {
                 Refresh Pricing
               </button>
             </section>
+            )}
 
             <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
