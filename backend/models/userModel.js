@@ -77,6 +77,10 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    googleId: {
+      type: String,
+      default: '',
+    },
     isAdmin: {
       type: Boolean,
       required: true,

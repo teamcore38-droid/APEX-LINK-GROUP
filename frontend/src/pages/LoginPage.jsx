@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+import GoogleLoginButton from '../components/GoogleLoginButton';
+
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -213,6 +215,18 @@ const LoginPage = () => {
               </button>
             )}
           </form>
+
+          {!twoFactorChallenge && (
+            <div className="mt-6">
+              <div className="relative mb-6 flex items-center justify-center">
+                <div className="w-full border-t border-gray-200" />
+                <span className="absolute bg-white px-4 text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+                  Or
+                </span>
+              </div>
+              <GoogleLoginButton onSuccess={() => navigate(redirect)} />
+            </div>
+          )}
 
           <div className="mt-8 rounded-2xl bg-brand-light px-4 py-3 text-center text-sm text-gray-600">
             New to Apex Link Group?{' '}

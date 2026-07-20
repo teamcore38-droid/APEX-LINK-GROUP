@@ -138,6 +138,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async (credential) => {
+    try {
+      const config = { headers: { 'Content-Type': 'application/json' } };
+      const { data } = await axios.post('/api/users/google', { credential }, config);
+      setUserInfo(data);
+      return data;
+    } catch (error) {
+      throw error.response?.data?.message || error.message;
+    }
+  };
+
   const logout = async () => {
     try {
       if (userInfo?.token) {
@@ -158,7 +169,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ userInfo, login, verifyTwoFactorLogin, register, refreshSession, syncUserInfo, logout }}>
+    <AuthContext.Provider
+      value={{
+        userInfo,
+        login,
+        googleLogin,
+        verifyTwoFactorLogin,
+        register,
+        refreshSession,
+        syncUserInfo,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

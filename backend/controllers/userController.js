@@ -620,8 +620,76 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// @desc    Authenticate user with Google OAuth token
+// @route   POST /api/users/google
+// @access  Public
+const googleLogin = async (req, res) => {
+  const { idToken, credential } = req.body;
+  const token = idToken || credential;
+
+  if (!token) {
+    return res.status(400).json({ message: 'Google ID token is required' });
+  }
+
+  try {
+    const googleVerifyRes = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(token)}`
+    );
+
+    if (!googleVerifyRes.ok) {
+      return res.status(401).json({ message: 'Invalid or expired Google token' });
+    }
+
+    const payload = await googleVerifyRes.json();
+
+    const { email, email_verified, name, picture, sub: googleId } = payload;
+
+    if (!email || (email_verified !== true && email_verified !== 'true')) {
+      return res.status(401).json({ message: 'Google account email is not verified' });
+    }
+
+    if (process.env.GOOGLE_CLIENT_ID && payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+      return res.status(401).json({ message: 'Google Client ID mismatch' });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+    let user = await User.findOne({
+      $or: [{ googleId }, { email: normalizedEmail }],
+    });
+
+    if (user) {
+      if (!user.googleId) {
+        user.googleId = googleId;
+        await user.save();
+      }
+    } else {
+      const randomPassword = crypto.randomBytes(16).toString('hex') + 'A1!';
+      user = await User.create({
+        name: name || normalizedEmail.split('@')[0],
+        email: normalizedEmail,
+        googleId,
+        password: randomPassword,
+      });
+      await recordSecurityEvent(req, 'account.registered_via_google', user);
+    }
+
+    if (isAccountLocked(user)) {
+      return res.status(423).json({
+        message: 'Your account is temporarily locked due to security policy.',
+      });
+    }
+
+    await recordSecurityEvent(req, 'account.login_via_google', user);
+    await issueLoginResponse(req, res, user);
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ message: 'Google authentication failed' });
+  }
+};
+
 export {
   authUser,
+  googleLogin,
   verifyAdminTwoFactorLogin,
   refreshAccessToken,
   logoutUser,

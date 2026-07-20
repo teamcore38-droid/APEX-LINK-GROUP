@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   authUser,
+  googleLogin,
   verifyAdminTwoFactorLogin,
   refreshAccessToken,
   logoutUser,
@@ -30,6 +31,7 @@ const router = express.Router();
 
 router.route('/').post(authRegisterLimiter, registerUser);
 router.post('/login', authLoginLimiter, authUser);
+router.post('/google', authLoginLimiter, googleLogin);
 router.post('/login/2fa', authLoginLimiter, verifyAdminTwoFactorLogin);
 router.post('/refresh', refreshAccessToken);
 router.post('/logout', protect, logoutUser);
