@@ -283,7 +283,7 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {[
-              { icon: Truck, title: 'Global Logistics', subtitle: 'Free shipping over $50' },
+              { icon: Truck, title: 'Sri Lanka Wide Delivery', subtitle: 'All 25 Districts' },
               { icon: Globe, title: 'Verified Suppliers', subtitle: 'Audited worldwide network' },
               { icon: ShieldCheck, title: 'Quality Promise', subtitle: '30-day return policy' },
               { icon: Award, title: 'Enterprise Grade', subtitle: 'Trusted by businesses' },
