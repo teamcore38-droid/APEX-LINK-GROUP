@@ -43,13 +43,6 @@ const createInitialCheckoutForm = (shippingAddress = {}, userInfo = null) => {
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
 
-const SL_DISTRICTS = [
-  'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
-  'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
-  'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
-  'Matale', 'Matara', 'Moneragala', 'Mullaitivu', 'Nuwara Eliya',
-  'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya',
-];
 
 const validateCheckoutForm = (form) => {
   const requiredFields = [
@@ -94,14 +87,22 @@ const submitPayHereForm = ({ checkoutUrl, fields }) => {
 };
 
 const CheckoutInner = () => {
-  const { cartItems, shippingAddress, saveShippingAddress, clearCart } = useCart();
+  const { cartItems, shippingAddress, saveShippingAddress, clearCart, selectedDistrict, districtShippingFee } = useCart();
   const { userInfo } = useAuth();
   const navigate = useNavigate();
 
   const [addresses, setAddresses] = useState([]);
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState('');
-  const [form, setForm] = useState(() => createInitialCheckoutForm(shippingAddress, userInfo));
+  const [form, setForm] = useState(() => {
+    const base = createInitialCheckoutForm(shippingAddress, userInfo);
+    // Pre-fill district from cart context (selected in district modal)
+    if (selectedDistrict && !base.state) {
+      base.state = selectedDistrict;
+    }
+    if (!base.country) base.country = 'Sri Lanka';
+    return base;
+  });
   const [saveAddressToBook, setSaveAddressToBook] = useState(false);
   const [setDefaultAddress, setSetDefaultAddress] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -116,6 +117,15 @@ const CheckoutInner = () => {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [payhereExpanded, setPayhereExpanded] = useState(false);
   const guestCheckoutEnabled = true;
+
+  // Auto-trigger quote on mount if district was pre-selected via cart modal
+  useEffect(() => {
+    if (cartItems.length > 0 && (form.state || selectedDistrict)) {
+      const addr = { ...form, state: form.state || selectedDistrict, country: 'Sri Lanka' };
+      requestQuote(addr);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -186,8 +196,9 @@ const CheckoutInner = () => {
     () => cartItems.reduce((accumulator, item) => accumulator + item.price * item.qty, 0),
     [cartItems]
   );
-  const shippingPrice = quote?.shippingPrice ?? 0;
-  const totalPrice = quote?.totalPrice ?? itemsPrice;
+  // Use quote values if available, otherwise fall back to district fee from cart
+  const shippingPrice = quote?.shippingPrice ?? districtShippingFee ?? 0;
+  const totalPrice = quote?.totalPrice ?? (itemsPrice + shippingPrice);
   const displayItemsPrice = quote?.itemsPrice ?? itemsPrice;
   const displayShippingPrice = shippingPrice;
   const displayDiscountPrice = quote?.discountPrice ?? 0;
@@ -868,50 +879,17 @@ const CheckoutInner = () => {
                     className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
-                <div>
-                  <label htmlFor="checkout-district" className="mb-2 block text-sm font-semibold text-brand-dark">District <span className="text-red-500">*</span></label>
-                  <select
-                    id="checkout-district"
-                    name="state"
-                    required
-                    value={form.state}
-                    onChange={(e) => {
-                      const district = e.target.value;
-                      setForm((prev) => ({ ...prev, state: district, country: 'Sri Lanka' }));
-                      setQuote(null);
-                      if (district && cartItems.length > 0) {
-                        requestQuote({ ...form, state: district, country: 'Sri Lanka' });
-                      }
-                    }}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                  >
-                    <option value="">— Select District —</option>
-                    {SL_DISTRICTS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="checkout-postal-code" className="mb-2 block text-sm font-semibold text-brand-dark">Postal Code</label>
-                  <input
-                    id="checkout-postal-code"
-                    name="postalCode"
-                    type="text"
-                    value={form.postalCode}
-                    onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="checkout-country" className="mb-2 block text-sm font-semibold text-brand-dark">Country</label>
-                  <input
-                    id="checkout-country"
-                    name="country"
-                    type="text"
-                    value="Sri Lanka"
-                    readOnly
-                    className="w-full rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-500 outline-none cursor-not-allowed"
-                  />
+                {/* District & Country — read-only info strip (pre-filled from cart modal) */}
+                <div className="md:col-span-2">
+                  <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-brand-accent/25 bg-[#fbf3ea] px-4 py-3">
+                    <MapPin size={15} className="text-brand-accent shrink-0" />
+                    <div className="text-sm">
+                      <span className="font-semibold text-brand-dark">{form.state || selectedDistrict || '—'}</span>
+                      <span className="mx-1.5 text-gray-400">/</span>
+                      <span className="text-gray-600">Sri Lanka</span>
+                    </div>
+                    <span className="ml-auto text-xs italic text-gray-400">Set at cart · <button type="button" onClick={() => navigate('/cart')} className="underline text-brand-primary">Change</button></span>
+                  </div>
                 </div>
               </div>
 

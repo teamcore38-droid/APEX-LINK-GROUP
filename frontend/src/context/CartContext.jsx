@@ -18,6 +18,15 @@ export const CartProvider = ({ children }) => {
     return localData ? JSON.parse(localData) : {};
   });
 
+  const [selectedDistrict, setSelectedDistrict] = useState(() => {
+    return localStorage.getItem('selectedDistrict') || '';
+  });
+
+  const [districtShippingFee, setDistrictShippingFee] = useState(() => {
+    const saved = localStorage.getItem('districtShippingFee');
+    return saved ? Number(saved) : 0;
+  });
+
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
 
@@ -49,6 +58,14 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('shippingAddress', JSON.stringify(shippingAddress));
   }, [shippingAddress]);
+
+  useEffect(() => {
+    localStorage.setItem('selectedDistrict', selectedDistrict);
+  }, [selectedDistrict]);
+
+  useEffect(() => {
+    localStorage.setItem('districtShippingFee', String(districtShippingFee));
+  }, [districtShippingFee]);
 
   const addToCart = (product, qty) => {
     trackEvent('add_to_cart', {
@@ -109,8 +126,23 @@ export const CartProvider = ({ children }) => {
     setShippingAddress(data);
   };
 
+  const saveDistrict = (district, fee) => {
+    setSelectedDistrict(district);
+    setDistrictShippingFee(fee);
+  };
+
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, clearCart, shippingAddress, saveShippingAddress }}>
+    <CartContext.Provider value={{
+      cartItems,
+      addToCart,
+      removeFromCart,
+      clearCart,
+      shippingAddress,
+      saveShippingAddress,
+      selectedDistrict,
+      districtShippingFee,
+      saveDistrict,
+    }}>
       {children}
     </CartContext.Provider>
   );
