@@ -110,6 +110,29 @@ const AdminCategoriesPage = () => {
     [form.name, form.slug]
   );
 
+  const categoryPathMap = useMemo(() => {
+    const map = new Map();
+    const categoriesMap = new Map(categories.map((c) => [c._id, c]));
+
+    const getPath = (catId, visited = new Set()) => {
+      const cat = categoriesMap.get(catId);
+      if (!cat || visited.has(catId)) return '';
+      visited.add(catId);
+      const parentId = typeof cat.parentCategory === 'object' ? cat.parentCategory?._id : cat.parentCategory;
+      if (parentId) {
+        const pPath = getPath(parentId, visited);
+        return pPath ? `${pPath} > ${cat.name}` : cat.name;
+      }
+      return cat.name;
+    };
+
+    categories.forEach((c) => {
+      map.set(c._id, getPath(c._id));
+    });
+
+    return map;
+  }, [categories]);
+
   const resetForm = () => {
     setEditingId('');
     setForm(INITIAL_FORM);
@@ -379,10 +402,10 @@ const AdminCategoriesPage = () => {
                 >
                   <option value="">None (Top Level Category)</option>
                   {categories
-                    .filter((c) => c._id !== editingId && !c.parentCategory)
+                    .filter((c) => c._id !== editingId)
                     .map((c) => (
                       <option key={c._id} value={c._id}>
-                        {c.name}
+                        {categoryPathMap.get(c._id) || c.name}
                       </option>
                     ))}
                 </select>
@@ -519,7 +542,7 @@ const AdminCategoriesPage = () => {
                             <h3 className="font-serif text-2xl font-bold text-brand-dark">{category.name}</h3>
                             {category.parentCategory && (
                               <span className="inline-flex rounded-full bg-brand-primary/10 px-3 py-1 text-[11px] font-bold text-brand-primary">
-                                Subcategory of {typeof category.parentCategory === 'object' ? category.parentCategory.name : 'Parent'}
+                                Subcategory of {categoryPathMap.get(typeof category.parentCategory === 'object' ? category.parentCategory?._id : category.parentCategory) || 'Parent'}
                               </span>
                             )}
                             <span

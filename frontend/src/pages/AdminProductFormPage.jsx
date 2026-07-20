@@ -170,6 +170,29 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     initializeForm();
   }, [canManageCatalog, id, isEditMode, userInfo]);
 
+  const categoryPathMap = useMemo(() => {
+    const map = new Map();
+    const categoriesMap = new Map(categories.map((c) => [c._id, c]));
+
+    const getPath = (catId, visited = new Set()) => {
+      const cat = categoriesMap.get(catId);
+      if (!cat || visited.has(catId)) return '';
+      visited.add(catId);
+      const parentId = typeof cat.parentCategory === 'object' ? cat.parentCategory?._id : cat.parentCategory;
+      if (parentId) {
+        const pPath = getPath(parentId, visited);
+        return pPath ? `${pPath} > ${cat.name}` : cat.name;
+      }
+      return cat.name;
+    };
+
+    categories.forEach((c) => {
+      map.set(c._id, getPath(c._id));
+    });
+
+    return map;
+  }, [categories]);
+
   const previewProduct = useMemo(() => {
     try {
       const payload = buildProductPayloadFromForm(form);
@@ -739,11 +762,10 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     options={[
                       { value: '', label: 'Select a category' },
                       ...categories.map((category) => {
-                        const parentName = typeof category.parentCategory === 'object' ? category.parentCategory?.name : null;
-                        const labelText = parentName ? `${parentName} > ${category.name}` : category.name;
+                        const fullPath = categoryPathMap.get(category._id) || category.name;
                         return {
                           value: category.name,
-                          label: `${labelText}${category.isActive ? '' : ' (Inactive)'}`,
+                          label: `${fullPath}${category.isActive ? '' : ' (Inactive)'}`,
                         };
                       }),
                     ]}

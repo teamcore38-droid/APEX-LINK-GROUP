@@ -270,6 +270,20 @@ const findProductByIdWithVisibility = async (productId, reqUser) => {
   return Product.findOne(filter);
 };
 
+const getAllDescendantCategoryNames = async (rootCategoryDoc) => {
+  const names = [rootCategoryDoc.name];
+  const queue = [rootCategoryDoc._id];
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    const children = await Category.find({ parentCategory: currentId, isActive: true });
+    for (const child of children) {
+      names.push(child.name);
+      queue.push(child._id);
+    }
+  }
+  return names;
+};
+
 const buildCategoryFilter = async (categoryValue) => {
   const trimmedCategory = String(categoryValue || '').trim();
 
@@ -286,8 +300,7 @@ const buildCategoryFilter = async (categoryValue) => {
     };
   }
 
-  const childCategories = await Category.find({ parentCategory: categoryDoc._id, isActive: true });
-  const categoryNames = [categoryDoc.name, ...childCategories.map((c) => c.name)];
+  const categoryNames = await getAllDescendantCategoryNames(categoryDoc);
   const regexPattern = categoryNames.map((name) => `^${escapeRegex(name)}$`).join('|');
 
   return {

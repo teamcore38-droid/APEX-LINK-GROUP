@@ -124,18 +124,36 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
             </button>
           </div>
 
-          <div className="space-y-1">
-            {children.map((child) => (
-              <button
-                key={child._id}
-                type="button"
-                onClick={() => handleCategoryClick(child.name)}
-                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium text-[#fff7ee]/90 transition-colors hover:bg-brand-accent/20 hover:text-brand-accent"
-              >
-                <span>{child.name}</span>
-                <span className="text-[10px] text-brand-accent/70">›</span>
-              </button>
-            ))}
+          <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+            {children.map((child) => {
+              const subChildren = getChildrenForParent(child._id);
+              return (
+                <div key={child._id} className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryClick(child.name)}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-xs font-semibold text-[#fff7ee] transition-colors hover:bg-brand-accent/20 hover:text-brand-accent"
+                  >
+                    <span>{child.name}</span>
+                    <span className="text-[10px] text-brand-accent/70">›</span>
+                  </button>
+                  {subChildren.length > 0 && (
+                    <div className="ml-3 space-y-0.5 border-l border-brand-accent/30 pl-2">
+                      {subChildren.map((subChild) => (
+                        <button
+                          key={subChild._id}
+                          type="button"
+                          onClick={() => handleCategoryClick(subChild.name)}
+                          className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-[11px] text-[#fff7ee]/75 transition-colors hover:bg-brand-accent/15 hover:text-brand-accent"
+                        >
+                          <span>{subChild.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
