@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronDown, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
-const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
+const NavItem = ({ parent, children, getChildrenForParent, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
   const buttonRef = useRef(null);
   const leaveTimeoutRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState(null);
@@ -320,6 +320,7 @@ const CategoryNavBar = () => {
                   key={parent._id}
                   parent={parent}
                   children={children}
+                  getChildrenForParent={getChildrenForParent}
                   handleCategoryClick={handleCategoryClick}
                   activeDropdown={activeDropdown}
                   setActiveDropdown={setActiveDropdown}
