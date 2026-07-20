@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import CurrencySelector from './CurrencySelector';
 
 const PRIMARY_NAV_LINKS = [
   ['HOME', '/'],
@@ -52,12 +53,12 @@ const Header = () => {
           </span>
         </Link>
 
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-4 text-xs font-semibold uppercase tracking-[0.15em] xl:flex 2xl:gap-7 2xl:text-sm 2xl:tracking-[0.2em]">
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-4 text-xs font-semibold uppercase tracking-[0.15em] font-['Times_New_Roman',_Times,_Georgia,_serif] xl:flex 2xl:gap-7 2xl:text-sm 2xl:tracking-[0.2em]">
           {PRIMARY_NAV_LINKS.map(([label, path]) => (
             <Link
               key={path}
               to={path}
-              className={`whitespace-nowrap border-b-2 pb-1 transition-colors ${
+              className={`whitespace-nowrap border-b-2 pb-1 font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
                 isActiveLink(path)
                   ? 'border-brand-accent text-brand-accent'
                   : 'border-transparent hover:text-brand-accent'
@@ -69,7 +70,7 @@ const Header = () => {
           {canAccessAdmin && (
             <Link
               to="/admin"
-              className={`border-b-2 pb-1 transition-colors ${
+              className={`border-b-2 pb-1 font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
                 isActiveLink('/admin')
                   ? 'border-brand-accent text-brand-accent'
                   : 'border-transparent hover:text-brand-accent'
@@ -81,6 +82,10 @@ const Header = () => {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
+          <div className="hidden sm:block">
+            <CurrencySelector />
+          </div>
+
           <Link to="/cart" className="relative inline-flex items-center transition-colors hover:text-brand-accent">
             <div className="relative">
               <ShoppingBag size={22} className="text-brand-accent" />
@@ -90,7 +95,7 @@ const Header = () => {
                 </span>
               )}
             </div>
-            <span className="ml-2 hidden text-sm font-semibold uppercase tracking-wider xl:inline">Cart</span>
+            <span className="ml-2 hidden text-sm font-semibold uppercase tracking-wider font-['Times_New_Roman',_Times,_Georgia,_serif] xl:inline">Cart</span>
           </Link>
 
           {userInfo ? (
@@ -260,15 +265,20 @@ const Header = () => {
       </div>
 
       {accountMenuOpen && (
-        <div className="border-t border-white/10 bg-[#1f0f0a] px-4 py-4 xl:hidden">
+        <div className="border-t border-white/10 bg-[#1f0f0a] px-4 py-4 xl:hidden font-['Times_New_Roman',_Times,_Georgia,_serif]">
           <div className="container mx-auto space-y-3">
+            <div className="mb-3 sm:hidden">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">Currency Preference</p>
+              <CurrencySelector isMobile={true} />
+            </div>
+
             <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
               {PRIMARY_NAV_LINKS.map(([label, path]) => (
                 <Link
                   key={`mobile-nav-${path}`}
                   to={path}
                   onClick={() => setAccountMenuOpen(false)}
-                  className={`block rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] transition-colors ${
+                  className={`block rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
                     isActiveLink(path) ? 'bg-brand-accent/20 text-brand-accent' : 'hover:bg-white/10'
                   }`}
                 >

@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import axios from 'axios'
 import { CartProvider } from './context/CartContext'
 import { AuthProvider } from './context/AuthContext'
+import { CurrencyProvider } from './context/CurrencyContext'
 import App from './App.jsx'
 import { installFrontendErrorMonitoring } from './utils/errorMonitoring'
 import { installAdTracking } from './utils/analytics'
@@ -21,9 +22,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <CartProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <CurrencyProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </CurrencyProvider>
       </CartProvider>
     </AuthProvider>
   </React.StrictMode>,
