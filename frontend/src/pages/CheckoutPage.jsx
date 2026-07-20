@@ -615,8 +615,8 @@ const CheckoutInner = () => {
           </div>
         )}
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-          <form onSubmit={placeOrderHandler} className="space-y-8">
+        <form onSubmit={placeOrderHandler} className="mt-8 flex flex-col gap-8 lg:grid lg:grid-cols-[1.3fr_0.7fr] lg:items-start">
+          <div className="order-1 flex flex-col gap-8 lg:col-start-1 lg:row-start-1">
             <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
@@ -924,51 +924,10 @@ const CheckoutInner = () => {
                 </label>
               </div>
             </section>
+          </div>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
-                  <CreditCard size={20} />
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Payment Method</p>
-                  <h2 className="font-serif text-2xl font-bold text-brand-dark">
-                    Pay securely with PayHere
-                  </h2>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
-                  PayHere checkout
-                </p>
-                <p className="mt-3 text-sm leading-7 text-gray-600">
-                  After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Link Group never stores raw card details.
-                </p>
-                <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
-                  <input type="radio" checked readOnly className="mr-2" />
-                  PayHere
-                </label>
-              </div>
-            </section>
-
-            <section className="rounded-[28px] border border-brand-accent/20 bg-[#fbf3ea] p-6 shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
-                  <ShieldCheck size={20} />
-                </div>
-                <div>
-                  <h2 className="font-serif text-2xl font-bold text-brand-dark">Trust & Security</h2>
-                  <p className="mt-3 text-sm leading-7 text-gray-600">
-                    We use your checkout details to fulfill your order, support delivery, and connect updates to your account history. Payment is confirmed only after PayHere sends a verified callback.
-                  </p>
-                </div>
-              </div>
-            </section>
-          </form>
-
-          <aside className="space-y-6">
-            <div className="sticky top-24 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
+          <aside className="order-2 space-y-6 lg:order-none lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:sticky lg:top-24">
+            <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <h2 className="border-b border-gray-100 pb-4 font-serif text-2xl font-bold text-brand-dark">
                 Order Summary
               </h2>
@@ -1030,8 +989,7 @@ const CheckoutInner = () => {
               </div>
 
               <button
-                type="button"
-                onClick={placeOrderHandler}
+                type="submit"
                 disabled={loading}
                 className={`mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-primary px-5 py-4 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors duration-200 hover:bg-brand-dark ${
                   loading
@@ -1050,7 +1008,48 @@ const CheckoutInner = () => {
               </button>
             </div>
           </aside>
-        </div>
+
+          <section className="order-3 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8 lg:order-none lg:col-start-1 lg:row-start-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
+                <CreditCard size={20} />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Payment Method</p>
+                <h2 className="font-serif text-2xl font-bold text-brand-dark">
+                  Pay securely with PayHere
+                </h2>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
+                PayHere checkout
+              </p>
+              <p className="mt-3 text-sm leading-7 text-gray-600">
+                After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Link Group never stores raw card details.
+              </p>
+              <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
+                <input type="radio" checked readOnly className="mr-2" />
+                PayHere
+              </label>
+            </div>
+          </section>
+
+          <section className="order-4 rounded-[28px] border border-brand-accent/20 bg-[#fbf3ea] p-6 shadow-sm lg:order-none lg:col-start-1 lg:row-start-3">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-brand-dark">Trust & Security</h2>
+                <p className="mt-3 text-sm leading-7 text-gray-600">
+                  We use your checkout details to fulfill your order, support delivery, and connect updates to your account history. Payment is confirmed only after PayHere sends a verified callback.
+                </p>
+              </div>
+            </div>
+          </section>
+        </form>
       </div>
     </div>
   );
