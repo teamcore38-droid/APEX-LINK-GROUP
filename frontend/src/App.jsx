@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header'
+import CategoryNavBar from './components/CategoryNavBar'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
 import ProductsPage from './pages/ProductsPage'
@@ -75,6 +76,7 @@ function App() {
       <SitePreloader />
       <ScrollToTop />
       <Header />
+      <CategoryNavBar />
       <main className="flex-grow">
         <Suspense fallback={<RouteLoadingScreen />}>
           <Routes>

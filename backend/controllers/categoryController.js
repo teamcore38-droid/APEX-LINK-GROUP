@@ -82,7 +82,9 @@ const getCategories = async (req, res) => {
 
     const filter = isAdminRequest ? {} : { isActive: true };
 
-    const categories = await Category.find(filter).sort({ displayOrder: 1, name: 1 });
+    const categories = await Category.find(filter)
+      .populate('parentCategory', 'name slug')
+      .sort({ displayOrder: 1, name: 1 });
 
     res.json(categories);
   } catch (error) {
@@ -122,6 +124,7 @@ const createCategory = async (req, res) => {
       image = '',
       isActive = true,
       displayOrder = 0,
+      parentCategory = null,
       seo = {},
     } = req.body;
 
@@ -153,6 +156,7 @@ const createCategory = async (req, res) => {
       image: image.trim(),
       isActive: normalizeBoolean(isActive, true),
       displayOrder: Number(displayOrder) || 0,
+      parentCategory: parentCategory || null,
       seo: normalizeSeoPayload(seo, {
         title: trimmedName,
         description: description.trim(),
@@ -189,6 +193,7 @@ const updateCategory = async (req, res) => {
       image = category.image,
       isActive = category.isActive,
       displayOrder = category.displayOrder,
+      parentCategory = category.parentCategory,
       seo = category.seo || {},
     } = req.body;
 
@@ -214,12 +219,17 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ message: 'Category name or slug already exists' });
     }
 
+    if (parentCategory && String(parentCategory) === String(category._id)) {
+      return res.status(400).json({ message: 'A category cannot be set as its own parent' });
+    }
+
     category.name = trimmedName;
     category.slug = normalizedSlug;
     category.description = String(description).trim();
     category.image = String(image).trim();
     category.isActive = normalizeBoolean(isActive, category.isActive);
     category.displayOrder = Number(displayOrder) || 0;
+    category.parentCategory = parentCategory || null;
     category.seo = normalizeSeoPayload(seo, {
       title: trimmedName,
       description: String(description).trim(),
@@ -250,6 +260,14 @@ const deleteCategory = async (req, res) => {
 
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
+    }
+
+    const childCategories = await Category.countDocuments({ parentCategory: category._id });
+
+    if (childCategories > 0) {
+      return res.status(400).json({
+        message: 'This category has child subcategories. Reassign or remove its subcategories before deleting.',
+      });
     }
 
     const assignedProducts = await Product.countDocuments({

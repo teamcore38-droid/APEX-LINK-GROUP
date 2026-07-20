@@ -21,6 +21,7 @@ const INITIAL_FORM = {
   image: '',
   isActive: true,
   displayOrder: 0,
+  parentCategory: '',
 };
 
 const AdminCategoriesPage = () => {
@@ -141,6 +142,7 @@ const AdminCategoriesPage = () => {
       image: category.image || '',
       isActive: Boolean(category.isActive),
       displayOrder: category.displayOrder ?? 0,
+      parentCategory: category.parentCategory?._id || category.parentCategory || '',
     });
   };
 
@@ -157,6 +159,7 @@ const AdminCategoriesPage = () => {
 
     const payload = {
       ...form,
+      parentCategory: form.parentCategory || null,
       displayOrder: Number(form.displayOrder) || 0,
       slug: form.slug.trim(),
     };
@@ -364,6 +367,31 @@ const AdminCategoriesPage = () => {
               </div>
 
               <div>
+                <label htmlFor="parentCategory" className="mb-2 block text-sm font-semibold text-brand-dark">
+                  Parent Category (Optional)
+                </label>
+                <select
+                  id="parentCategory"
+                  name="parentCategory"
+                  value={form.parentCategory}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                >
+                  <option value="">None (Top Level Category)</option>
+                  {categories
+                    .filter((c) => c._id !== editingId && !c.parentCategory)
+                    .map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Assign a parent to make this a subcategory (e.g., Women → Shoes).
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="description" className="mb-2 block text-sm font-semibold text-brand-dark">
                   Description
                 </label>
@@ -489,6 +517,11 @@ const AdminCategoriesPage = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-serif text-2xl font-bold text-brand-dark">{category.name}</h3>
+                            {category.parentCategory && (
+                              <span className="inline-flex rounded-full bg-brand-primary/10 px-3 py-1 text-[11px] font-bold text-brand-primary">
+                                Subcategory of {typeof category.parentCategory === 'object' ? category.parentCategory.name : 'Parent'}
+                              </span>
+                            )}
                             <span
                               className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] ${
                                 category.isActive

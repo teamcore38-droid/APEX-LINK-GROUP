@@ -277,11 +277,22 @@ const buildCategoryFilter = async (categoryValue) => {
     return null;
   }
 
-  const resolvedCategoryName = await resolveCategoryName(trimmedCategory);
+  const categoryDoc = await findCategoryByValue(trimmedCategory);
+  if (!categoryDoc) {
+    return {
+      category: {
+        $regex: new RegExp(`^${escapeRegex(trimmedCategory)}$`, 'i'),
+      },
+    };
+  }
+
+  const childCategories = await Category.find({ parentCategory: categoryDoc._id, isActive: true });
+  const categoryNames = [categoryDoc.name, ...childCategories.map((c) => c.name)];
+  const regexPattern = categoryNames.map((name) => `^${escapeRegex(name)}$`).join('|');
 
   return {
     category: {
-      $regex: new RegExp(`^${escapeRegex(resolvedCategoryName)}$`, 'i'),
+      $regex: new RegExp(regexPattern, 'i'),
     },
   };
 };

@@ -32,6 +32,11 @@ const categorySchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    parentCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      default: null,
+    },
     seo: {
       title: { type: String, default: '', trim: true },
       description: { type: String, default: '', trim: true },

@@ -738,10 +738,14 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     }}
                     options={[
                       { value: '', label: 'Select a category' },
-                      ...categories.map((category) => ({
-                        value: category.name,
-                        label: `${category.name}${category.isActive ? '' : ' (Inactive)'}`,
-                      })),
+                      ...categories.map((category) => {
+                        const parentName = typeof category.parentCategory === 'object' ? category.parentCategory?.name : null;
+                        const labelText = parentName ? `${parentName} > ${category.name}` : category.name;
+                        return {
+                          value: category.name,
+                          label: `${labelText}${category.isActive ? '' : ' (Inactive)'}`,
+                        };
+                      }),
                     ]}
                   />
                 </div>
