@@ -117,16 +117,21 @@ const upsertShippingRate = async (req, res) => {
   const carrier = String(req.body.carrier || '').trim();
   const service = String(req.body.service || '').trim();
   const country = String(req.body.country || '').trim();
-  const state = String(req.body.state || '').trim();
+  const state   = String(req.body.state   || '').trim();
+  const basePrice = Number(req.body.basePrice ?? 0);
 
   if (!carrier || !service) {
     return res.status(400).json({ message: 'Carrier and service are required' });
   }
 
+  // Use country + state as the unique identity (case-insensitive match)
   const rate = await ShippingRate.findOneAndUpdate(
-    { carrier, service, country, state },
-    { ...req.body, carrier, service, country, state },
-    { new: true, upsert: true, runValidators: true }
+    {
+      country: { $regex: new RegExp(`^${country}$`, 'i') },
+      state:   { $regex: new RegExp(`^${state}$`,   'i') },
+    },
+    { carrier, service, country, state, basePrice, isActive: true },
+    { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
   );
 
   res.status(201).json(rate);

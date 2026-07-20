@@ -13,49 +13,46 @@ const SL_DISTRICTS = [
 
 const AdminShippingPage = () => {
   const { userInfo } = useAuth();
-  const [rates, setRates] = useState({});
+  const [rates, setRates] = useState({});   // keyed by canonical district name
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
-  const [seeding, setSeeding] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const authHeaders = {
-    headers: { Authorization: `Bearer ${userInfo?.token}` },
-  };
+  const authHeaders = { headers: { Authorization: `Bearer ${userInfo?.token}` } };
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   };
 
   const fetchRates = async () => {
     setLoading(true);
     try {
       const { data } = await axios.get('/api/admin/commerce/shipping-rates', authHeaders);
-      const map = {};
+
+      // Build a lookup: canonical district name → { fee, id }
+      // Normalise stored state names to lower-case for matching
+      const byStateLower = {};
       data.forEach((r) => {
         if (r.country?.toLowerCase() === 'sri lanka' && r.state) {
-          map[r.state] = { fee: r.basePrice, id: r._id };
+          byStateLower[r.state.toLowerCase()] = { fee: r.basePrice, id: r._id };
         }
       });
+
+      // Map to our canonical SL_DISTRICTS list
+      const map = {};
+      SL_DISTRICTS.forEach((d) => {
+        const match = byStateLower[d.toLowerCase()];
+        if (match !== undefined) {
+          map[d] = match;
+        }
+      });
+
       setRates(map);
-    } catch (err) {
+    } catch {
       showToast('Failed to load rates', 'error');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const seedDistricts = async () => {
-    setSeeding(true);
-    try {
-      await axios.post('/api/admin/commerce/shipping-rates/seed-districts', {}, authHeaders);
-      showToast('Districts seeded with default rates!');
-      await fetchRates();
-    } catch (err) {
-      showToast('Seeding failed', 'error');
-    } finally {
-      setSeeding(false);
     }
   };
 
@@ -67,9 +64,9 @@ const AdminShippingPage = () => {
   };
 
   const saveRate = async (district) => {
-    const fee = parseFloat(rates[district]?.fee ?? 0);
+    const fee = parseFloat(rates[district]?.fee ?? '');
     if (isNaN(fee) || fee < 0) {
-      showToast('Invalid fee amount', 'error');
+      showToast('Please enter a valid fee (≥ 0)', 'error');
       return;
     }
     setSaving((prev) => ({ ...prev, [district]: true }));
@@ -86,8 +83,8 @@ const AdminShippingPage = () => {
         },
         authHeaders
       );
-      showToast(`${district} rate saved!`);
-    } catch (err) {
+      showToast(`${district}: LKR ${fee} saved ✓`);
+    } catch {
       showToast(`Failed to save ${district}`, 'error');
     } finally {
       setSaving((prev) => ({ ...prev, [district]: false }));
@@ -101,15 +98,14 @@ const AdminShippingPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+
       {/* Toast */}
       {toast && (
-        <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-4 text-sm font-semibold shadow-xl transition-all ${
-            toast.type === 'error'
-              ? 'bg-red-50 text-red-700 border border-red-200'
-              : 'bg-green-50 text-green-700 border border-green-200'
-          }`}
-        >
+        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-4 text-sm font-semibold shadow-xl border transition-all ${
+          toast.type === 'error'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-green-50 text-green-700 border-green-200'
+        }`}>
           {toast.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
           {toast.msg}
         </div>
@@ -123,27 +119,23 @@ const AdminShippingPage = () => {
           Shipping Management
         </h1>
         <p className="mt-2 text-sm text-white/70">
-          Set per-district delivery fees for Sri Lanka. These fees are fetched live at checkout.
+          Set per-district delivery fees for Sri Lanka. Each fee is saved permanently until you change it manually.
         </p>
       </div>
 
-      {/* Seed + Refresh bar */}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <button
-          onClick={seedDistricts}
-          disabled={seeding}
-          className="flex items-center gap-2 rounded-xl border border-brand-accent/30 bg-white px-5 py-2.5 text-sm font-semibold text-brand-dark shadow-sm hover:bg-brand-light transition disabled:opacity-60"
-        >
-          {seeding ? <RefreshCw size={15} className="animate-spin" /> : <Truck size={15} />}
-          {seeding ? 'Seeding…' : 'Seed All 25 Districts (default LKR 500)'}
-        </button>
+      {/* Refresh bar */}
+      <div className="mb-6 flex items-center gap-3">
         <button
           onClick={fetchRates}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-50 transition"
+          disabled={loading}
+          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-gray-600 shadow-sm hover:bg-gray-50 transition disabled:opacity-60"
         >
-          <RefreshCw size={15} />
+          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           Refresh
         </button>
+        <span className="text-xs text-gray-400">
+          {Object.keys(rates).length} / {SL_DISTRICTS.length} districts have a saved fee
+        </span>
       </div>
 
       {/* District table */}
@@ -154,6 +146,7 @@ const AdminShippingPage = () => {
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          {/* Table header */}
           <div className="grid grid-cols-3 border-b border-gray-100 bg-brand-dark/5 px-6 py-3 text-xs font-bold uppercase tracking-wider text-brand-dark">
             <span>District</span>
             <span className="text-center">Shipping Fee (LKR)</span>
@@ -161,8 +154,11 @@ const AdminShippingPage = () => {
           </div>
 
           {SL_DISTRICTS.map((district, idx) => {
-            const currentFee = rates[district]?.fee ?? '';
+            const saved   = rates[district];
+            const display = saved?.fee ?? '';
             const isSaving = saving[district];
+            const hasSaved = saved !== undefined;
+
             return (
               <div
                 key={district}
@@ -170,18 +166,27 @@ const AdminShippingPage = () => {
                   idx !== SL_DISTRICTS.length - 1 ? 'border-b border-gray-100' : ''
                 }`}
               >
-                <span className="font-semibold text-brand-dark">{district}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-brand-dark">{district}</span>
+                  {!hasSaved && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                      Not set
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex justify-center">
                   <input
                     type="number"
                     min="0"
                     step="50"
-                    value={currentFee}
+                    value={display}
                     onChange={(e) => handleFeeChange(district, e.target.value)}
                     placeholder="e.g. 500"
                     className="w-36 rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-2 text-sm text-center text-brand-dark outline-none transition focus:border-brand-accent"
                   />
                 </div>
+
                 <div className="flex justify-end">
                   <button
                     onClick={() => saveRate(district)}
