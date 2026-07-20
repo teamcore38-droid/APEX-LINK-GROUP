@@ -53,8 +53,9 @@ const DistrictModal = ({ onClose, onConfirm, initialDistrict, cartItems }) => {
         currency: 'LKR',
       })
       .then(({ data }) => {
-        const rate = data?.shippingOptions?.[0];
-        setFee(rate ? Number(rate.price) : 0);
+        // The API returns an array directly, not an object with shippingOptions
+        const rate = Array.isArray(data) ? data[0] : data?.shippingOptions?.[0];
+        setFee(rate ? Number(rate.basePrice || rate.price) : 0);
       })
       .catch(() => {
         setFeeError('Could not fetch shipping fee. Please try again.');
