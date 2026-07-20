@@ -5,6 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
 const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
   const buttonRef = useRef(null);
+  const leaveTimeoutRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState(null);
   const hasChildren = children.length > 0;
   const isOpen = activeDropdown === parent._id;
@@ -21,11 +22,21 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
     }
   };
 
-  const handleOpen = () => {
+  const handleMouseEnter = () => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
     if (hasChildren) {
       updatePosition();
       setActiveDropdown(parent._id);
     }
+  };
+
+  const handleMouseLeave = () => {
+    leaveTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown((current) => (current === parent._id ? null : current));
+    }, 200);
   };
 
   const handleToggle = (e) => {
@@ -34,7 +45,7 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
       if (isOpen) {
         setActiveDropdown(null);
       } else {
-        handleOpen();
+        handleMouseEnter();
       }
     } else {
       handleCategoryClick(parent.name);
@@ -54,11 +65,19 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (leaveTimeoutRef.current) {
+        clearTimeout(leaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
       className="shrink-0"
-      onMouseEnter={handleOpen}
-      // Note: No onMouseLeave handler so the dropdown remains open until explicitly closed
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <button
         ref={buttonRef}
@@ -90,6 +109,8 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
             left: `${dropdownPos.left}px`,
             zIndex: 99999,
           }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
           className="category-mega-menu w-64 rounded-2xl border border-brand-accent/30 bg-[#25120c] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
         >
           <div className="mb-2 border-b border-white/10 pb-2">
