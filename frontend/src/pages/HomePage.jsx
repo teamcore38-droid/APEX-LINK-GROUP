@@ -273,7 +273,7 @@ const HomePage = () => {
               Explore Marketplace
             </Link>
             <Link to="/categories" className="w-full border-2 border-brand-accent/70 px-6 py-3.5 text-base font-bold uppercase tracking-wider text-brand-accent transition-all hover:bg-brand-accent hover:text-brand-dark sm:w-auto sm:px-8 sm:py-4 sm:text-lg">
-              Browse Industries
+              Browse Categories
             </Link>
           </div>
         </div>
@@ -302,69 +302,6 @@ const HomePage = () => {
                 <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">{item.subtitle}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
-
-      <div ref={categoriesRef} className="bg-gray-50 py-12 md:py-14">
-        <div className="container mx-auto px-4">
-          <div
-            className={`mb-10 text-center md:mb-14 reveal-fade-up ${categoriesVisible ? 'is-visible' : ''}`}
-            style={{ transitionDelay: '0ms' }}
-          >
-            <h2 className="mb-4 font-serif text-3xl font-bold text-brand-dark md:text-5xl">Shop by Industry</h2>
-            <div className="mx-auto h-1 w-24 bg-brand-accent"></div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {categories.slice(0, 3).map((category, index) => (
-              <Link
-                key={category._id}
-                to={`/category/${category.slug}`}
-                className={`group relative h-80 cursor-pointer overflow-hidden rounded-lg shadow-lg reveal-fade-up ${
-                  categoriesVisible ? 'is-visible' : ''
-                }`}
-                style={{ transitionDelay: `${(index + 1) * 100}ms` }}
-              >
-                {isCategoryImageFailed(category) ? (
-                  <div className="h-full w-full bg-gradient-to-br from-[#5a2a1a] via-[#78341f] to-[#2a140e]" />
-                ) : (
-                  <img
-                    src={getCategoryCardImage(category)}
-                    alt={category.name}
-                    onError={() => onCategoryImageError(category)}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                )}
-                <div
-                  className={`absolute inset-0 transition-all duration-300 ${
-                    isCategoryImageFailed(category)
-                      ? 'bg-black/25 group-hover:bg-black/20'
-                      : 'bg-black/40 group-hover:bg-black/30'
-                  }`}
-                ></div>
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-white">
-                  <h3 className="mb-2 font-serif text-3xl font-bold drop-shadow-md">{category.name}</h3>
-                  <p className="max-w-xs text-sm text-white/85">{category.description}</p>
-                  <span className="mt-4 translate-y-4 border-b-2 border-brand-accent pb-1 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                    Shop Now
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
-          {!loading && categories.length === 0 && (
-            <div className="rounded-xl border border-brand-accent/30 bg-white/70 px-6 py-8 text-center text-brand-primary">
-              Categories will appear here once they are active in the admin dashboard.
-            </div>
-          )}
-          <div
-            className={`mt-6 text-center reveal-fade-up ${categoriesVisible ? 'is-visible' : ''}`}
-            style={{ transitionDelay: '400ms' }}
-          >
-            <Link to="/categories" className="inline-flex items-center rounded-md border-2 border-brand-primary px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white">
-              Browse All Industries <ChevronRight size={16} className="ml-2" />
-            </Link>
           </div>
         </div>
       </div>

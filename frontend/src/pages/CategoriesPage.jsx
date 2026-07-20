@@ -51,7 +51,7 @@ const CategoriesPage = () => {
           </div>
         </div>
 
-        <div className="mt-14">
+        <div className="mt-6 sm:mt-8">
           {loading ? (
             <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
               {[...Array(6)].map((_, index) => (
