@@ -118,17 +118,14 @@ const TrackOrderPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-6xl px-4">
-        <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Track Order</p>
-          <h1 className="mt-4 font-serif text-4xl font-bold sm:text-5xl">Follow your shipment with confidence</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
-            Check order progress, payment status, delivery updates, and tracking details from one polished screen.
-          </p>
+    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-6xl px-3 sm:px-4">
+        <div className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Track Order</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Follow your shipment</h1>
         </div>
 
-        <div className="mt-8 grid gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <div className="mt-4 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
           <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Tracking Lookup</p>
             <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Find your order</h2>

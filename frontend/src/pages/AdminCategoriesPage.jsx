@@ -286,12 +286,9 @@ const AdminCategoriesPage = () => {
           </Link>
         </div>
 
-        <div className="mb-10 rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Admin Category Management</p>
-          <h1 className="mt-4 font-serif text-4xl font-bold sm:text-5xl">Shape the storefront by category</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
-            Curate category names, slug structure, activation states, imagery, and display order without touching the rest of the catalog.
-          </p>
+        <div className="mb-6 rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Category Management</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Shape the storefront by category</h1>
         </div>
 
         <div className="grid gap-8 xl:grid-cols-[420px_minmax(0,1fr)]">

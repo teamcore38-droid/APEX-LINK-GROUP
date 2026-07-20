@@ -9,7 +9,6 @@ const PRIMARY_NAV_LINKS = [
   ['HOME', '/'],
   ['SHOP', '/products'],
   ['CATEGORIES', '/categories'],
-  ['EXPERIENCE', '/customer-experience'],
   ['TRACK ORDER', '/track-order'],
   ['CONTACT', '/contact'],
 ];

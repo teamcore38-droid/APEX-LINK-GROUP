@@ -593,18 +593,15 @@ const CheckoutInner = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-7xl px-4">
-        <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Checkout</p>
-          <h1 className="mt-4 font-serif text-4xl font-bold sm:text-5xl">Complete your premium order</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
-            Confirm your contact details, choose the right delivery address, and complete payment with a secure, polished flow.
-          </p>
+    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-7xl px-3 sm:px-4">
+        <div className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Checkout</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Complete your order</h1>
         </div>
 
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
             {error}
           </div>
         )}
@@ -615,7 +612,7 @@ const CheckoutInner = () => {
           </div>
         )}
 
-        <form onSubmit={placeOrderHandler} className="mt-8 flex flex-col gap-8 lg:grid lg:grid-cols-[1.3fr_0.7fr] lg:items-start">
+        <form onSubmit={placeOrderHandler} className="mt-4 flex flex-col gap-8 lg:grid lg:grid-cols-[1.3fr_0.7fr] lg:items-start">
           <div className="order-1 flex flex-col gap-8 lg:col-start-1 lg:row-start-1">
             <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">

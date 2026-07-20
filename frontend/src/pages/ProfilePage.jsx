@@ -523,19 +523,16 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-7xl px-4">
-        <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-7xl px-3 sm:px-4">
+        <div className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Customer Account</p>
-              <h1 className="mt-4 font-serif text-4xl font-bold sm:text-5xl">Welcome back, {profile.name}</h1>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
-                Manage profile details, delivery addresses, orders, and password settings from one polished dashboard.
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Customer Account</p>
+              <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Welcome back, {profile.name}</h1>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-5 backdrop-blur">
+            <div className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 backdrop-blur">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Account Summary</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div>

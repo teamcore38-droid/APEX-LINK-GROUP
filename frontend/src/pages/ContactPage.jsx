@@ -111,17 +111,14 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-6xl px-4">
-        <section className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Contact Apex Link Group</p>
-          <h1 className="mt-4 font-serif text-4xl font-bold sm:text-5xl">Let’s make your next order effortless</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
-            Reach out for order support, wholesale inquiries, gifting help, or product questions. We aim to respond with the same care we bring to every product on our marketplace.
-          </p>
+    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-6xl px-3 sm:px-4">
+        <section className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Contact Us</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Let’s make your next order effortless</h1>
         </section>
 
-        <div className="mt-8 grid gap-8 xl:grid-cols-[0.85fr_1.15fr]">
+        <div className="mt-4 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
           <aside className="space-y-6">
             <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Customer Care</p>

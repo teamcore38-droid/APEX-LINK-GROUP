@@ -156,15 +156,15 @@ const AdminCommercePage = () => {
         <Link to="/admin" className="inline-flex items-center text-sm font-semibold text-brand-primary">
           <ArrowLeft size={16} className="mr-2" /> Back to Admin
         </Link>
-        <div className="mt-6 rounded-[32px] bg-brand-dark px-6 py-10 text-white">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand-accent">Commerce Operations</p>
-          <h1 className="mt-3 font-serif text-4xl font-bold">Promotions, Inventory, Reviews, Returns</h1>
+        <div className="mt-4 rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Commerce Operations</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Promotions, Inventory, Reviews, Returns</h1>
         </div>
 
-        {error && <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-        {success && <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{success}</div>}
+        {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+        {success && <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{success}</div>}
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
           <section className="rounded-[28px] bg-white p-6 shadow-sm">
             <h2 className="font-serif text-2xl font-bold text-brand-dark">Low Stock Alerts</h2>
             <div className="mt-4 space-y-3">

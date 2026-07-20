@@ -11,20 +11,19 @@ const PolicyPageLayout = ({
   cta,
 }) => {
   return (
-    <div className="bg-[#fff7ee] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-6xl px-4">
-        <section className="overflow-hidden rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">{eyebrow}</p>
-          <h1 className="mt-4 max-w-4xl font-serif text-4xl font-bold sm:text-5xl">{title}</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">{intro}</p>
+    <div className="bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-6xl px-3 sm:px-4">
+        <section className="overflow-hidden rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">{eyebrow}</p>
+          <h1 className="mt-1 max-w-4xl font-serif text-2xl font-bold sm:text-3xl">{title}</h1>
 
           {relatedLinks.length > 0 && (
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-3 flex flex-wrap gap-2">
               {relatedLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white transition-colors duration-200 hover:bg-white hover:text-brand-dark"
+                  className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-white hover:text-brand-dark"
                 >
                   {link.label}
                 </Link>

@@ -26,31 +26,26 @@ const CategoriesPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8efe6] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-7xl px-4">
-        <div className="relative overflow-hidden rounded-[32px] bg-brand-dark px-6 py-16 text-white shadow-2xl sm:px-10">
-          <div className="absolute -right-16 top-0 h-48 w-48 rounded-full bg-brand-accent/20 blur-3xl" />
-          <div className="absolute bottom-0 left-0 h-52 w-52 rounded-full bg-brand-primary/40 blur-3xl" />
-          <div className="relative z-10 max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Browse by Collection</p>
-            <h1 className="mt-4 font-serif text-4xl font-bold leading-tight sm:text-5xl">
-              Find the right industry for every sourcing need
-            </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">
-              Explore curated collections spanning textiles, food products, technology, industrial equipment, and more — all verified for premium quality.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+    <div className="min-h-screen bg-[#f8efe6] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-7xl px-3 sm:px-4">
+        <div className="relative overflow-hidden rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <div className="absolute -right-16 top-0 h-32 w-32 rounded-full bg-brand-accent/20 blur-2xl" />
+          <div className="relative z-10 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Browse by Collection</p>
+              <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">
+                Find the right industry for every sourcing need
+              </h1>
+              <p className="mt-1 hidden text-xs leading-5 text-white/80 sm:block sm:text-sm">
+                Explore curated collections verified for premium quality.
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2.5">
               <Link
                 to="/products"
-                className="inline-flex items-center rounded-md bg-brand-accent px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-brand-dark transition-transform duration-200 hover:-translate-y-0.5"
+                className="inline-flex items-center rounded-xl bg-brand-accent px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-dark transition-colors duration-200 hover:bg-white"
               >
-                Shop All Products <ArrowRight size={16} className="ml-2" />
-              </Link>
-              <Link
-                to="/"
-                className="inline-flex items-center rounded-md border border-white/25 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition-colors duration-200 hover:bg-white/10"
-              >
-                Back Home
+                Shop Products <ArrowRight size={14} className="ml-1.5" />
               </Link>
             </div>
           </div>

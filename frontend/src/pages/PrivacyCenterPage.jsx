@@ -112,17 +112,16 @@ const PrivacyCenterPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
-      <div className="container mx-auto max-w-5xl px-4">
-        <Link to="/privacy" className="text-sm font-semibold text-brand-primary">Privacy Policy</Link>
-        <section className="mt-5 rounded-lg bg-brand-dark p-8 text-white">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand-accent">Privacy Center</p>
-          <h1 className="mt-3 font-serif text-4xl font-bold">Data Access & Deletion</h1>
-          <p className="mt-3 text-sm leading-7 text-white/70">Request a data export, review privacy history, or start account deletion.</p>
+    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      <div className="container mx-auto max-w-5xl px-3 sm:px-4">
+        <Link to="/privacy" className="text-xs font-semibold text-brand-primary">Privacy Policy</Link>
+        <section className="mt-2 rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Privacy Center</p>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Data Access & Deletion</h1>
         </section>
 
-        {error && <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
-        {message && <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>}
+        {error && <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+        {message && <div className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <section className="rounded-lg bg-white p-6 shadow-sm">

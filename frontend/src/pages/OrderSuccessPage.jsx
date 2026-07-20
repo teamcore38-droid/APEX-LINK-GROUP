@@ -134,24 +134,19 @@ const OrderSuccessPage = () => {
           </div>
         )}
 
-        <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">
                 {isConfirmation ? 'Order Confirmed' : 'Order Details'}
               </p>
-              <h1 className="mt-4 font-serif text-4xl font-bold sm:text-5xl">
-                {isConfirmation ? 'Your premium order is confirmed' : 'Track your order details'}
+              <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">
+                {isConfirmation ? 'Your order is confirmed' : 'Track your order details'}
               </h1>
-              <p className="mt-4 max-w-3xl text-sm leading-7 text-white/80 sm:text-base">
-                {isConfirmation
-                  ? `Thank you for your purchase, ${customerContact.fullName}. Your order is now moving into careful fulfillment.`
-                  : 'Review fulfillment progress, payment details, delivery notes, and your complete order summary from one place.'}
-              </p>
             </div>
 
-            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/10">
-              {isConfirmation ? <CheckCircle2 size={40} /> : <Package size={40} />}
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/10 shrink-0">
+              {isConfirmation ? <CheckCircle2 size={24} /> : <Package size={24} />}
             </div>
           </div>
         </div>
