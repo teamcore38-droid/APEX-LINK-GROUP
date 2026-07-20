@@ -413,28 +413,91 @@ const ProductPage = () => {
     }
   };
 
+  const renderVariantSelection = (containerClass = '') => {
+    if (!product?.variants?.length) return null;
+    const activeVariants = product.variants.filter((variant) => variant.isActive !== false);
+    if (!activeVariants.length) return null;
+
+    return (
+      <div className={`rounded-[28px] border border-[#ecd9ca] bg-white p-5 shadow-sm ${containerClass}`}>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Variant</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {activeVariants.map((variant) => {
+            const variantImages = getVariantImageUrls(variant);
+            const variantImage = variantImages[0];
+
+            return (
+              <button
+                key={variant._id}
+                type="button"
+                onClick={() => {
+                  setSelectedVariantId(variant._id ? String(variant._id) : '');
+                  if (variantImages.length > 0) {
+                    setSelectedImage(variantImages[0]);
+                  } else {
+                    const fallbackImages = getProductImages(product || {});
+                    setSelectedImage(fallbackImages[0] || product.image);
+                  }
+                  setQty(1);
+                }}
+                className={`flex min-h-[82px] items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition ${
+                  String(selectedVariantId) === String(variant._id)
+                    ? 'border-brand-primary bg-brand-light text-brand-dark'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/40'
+                }`}
+              >
+                {variantImage && (
+                  <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#ead6c6] bg-[#f8efe6]">
+                    <img
+                      src={getProductThumbnailUrl(variantImage)}
+                      alt={`${variant.label} option`}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{variant.label}</span>
+                  <span className="mt-1 block truncate text-xs text-gray-500">
+                    {[variant.size, variant.color, variant.weight, variant.packaging].filter(Boolean).join(' | ') || 'Standard option'}
+                  </span>
+                  {variant.priceAdjustment !== 0 && (
+                    <span className="mt-1 block text-xs font-semibold text-brand-primary">
+                      {variant.priceAdjustment > 0 ? '+' : ''}{formatCurrency(variant.priceAdjustment)}
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="bg-[#fff7ee] pb-20">
-      <div className="container mx-auto max-w-7xl px-4 pb-10 pt-3 sm:pt-4">
+    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-16">
+      <div className="container mx-auto max-w-7xl px-4">
         <Link
           to="/products"
-          className="inline-flex items-center text-sm font-semibold text-gray-600 transition-colors duration-200 hover:text-brand-primary"
+          className="inline-flex items-center text-sm font-semibold text-brand-dark transition hover:text-brand-primary"
         >
           <ArrowLeft size={16} className="mr-2" /> Back to Shop
         </Link>
 
-        <div className="mt-5 grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-          <section className="space-y-5">
+        <div className="mt-6 grid gap-8 lg:grid-cols-2">
+          <section className="space-y-4 lg:sticky lg:top-24 h-fit">
             <button
               type="button"
               onClick={() => {
                 setIsLightboxOpen(true);
                 setIsLightboxZoomed(false);
               }}
-              className="group relative block w-full overflow-hidden rounded-[28px] bg-white text-left shadow-[0_24px_70px_rgba(53,26,17,0.10)] focus:outline-none focus:ring-4 focus:ring-brand-accent/30 sm:rounded-[32px]"
-              aria-label={`Open ${product.name} image gallery`}
+              className="group relative block w-full overflow-hidden rounded-[32px] border border-[#ead6c6] bg-white p-2 text-left shadow-[0_24px_70px_rgba(53, 26, 17,0.10)]"
+              aria-label={`Open full size view for ${product.name}`}
             >
-              <div className="relative aspect-square bg-[#f4e7db] sm:aspect-[5/4] lg:aspect-[4/3] xl:aspect-[1.08/1]">
+              <div className="relative aspect-square w-full overflow-hidden rounded-[26px] bg-[#f8efe6]">
                 <img
                   src={getProductDetailImageUrl(currentGalleryImage || product.image)}
                   alt={product.name}
@@ -476,6 +539,8 @@ const ProductPage = () => {
                 ))}
               </div>
             )}
+
+            {renderVariantSelection('hidden lg:block mt-6')}
           </section>
 
           <section className="rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.10)] sm:p-8">
@@ -592,62 +657,7 @@ const ProductPage = () => {
             </div>
 
             <div className="mt-8 rounded-[28px] border border-[#ecd9ca] p-5">
-              {product.variants?.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Variant</p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {product.variants.filter((variant) => variant.isActive !== false).map((variant) => {
-                      const variantImages = getVariantImageUrls(variant);
-                      const variantImage = variantImages[0];
-
-                      return (
-                        <button
-                          key={variant._id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedVariantId(variant._id ? String(variant._id) : '');
-                            if (variantImages.length > 0) {
-                              setSelectedImage(variantImages[0]);
-                            } else {
-                              const fallbackImages = getProductImages(product || {});
-                              setSelectedImage(fallbackImages[0] || product.image);
-                            }
-                            setQty(1);
-                          }}
-                          className={`flex min-h-[82px] items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition ${
-                            String(selectedVariantId) === String(variant._id)
-                              ? 'border-brand-primary bg-brand-light text-brand-dark'
-                              : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/40'
-                          }`}
-                        >
-                          {variantImage && (
-                            <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-[#ead6c6] bg-[#f8efe6]">
-                              <img
-                                src={getProductThumbnailUrl(variantImage)}
-                                alt={`${variant.label} option`}
-                                loading="lazy"
-                                decoding="async"
-                                className="h-full w-full object-cover"
-                              />
-                            </span>
-                          )}
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate font-semibold">{variant.label}</span>
-                            <span className="mt-1 block truncate text-xs">
-                              {[variant.size, variant.color, variant.weight, variant.packaging].filter(Boolean).join(' | ') || 'Standard option'}
-                            </span>
-                            {variant.priceAdjustment !== 0 && (
-                              <span className="mt-1 block text-xs font-semibold text-brand-primary">
-                                {variant.priceAdjustment > 0 ? '+' : ''}{formatCurrency(variant.priceAdjustment)}
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              {renderVariantSelection('lg:hidden mb-6')}
 
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
