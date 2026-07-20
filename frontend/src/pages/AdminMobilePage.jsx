@@ -91,7 +91,7 @@ const AdminMobilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5e9dd] py-5 sm:py-8">
+    <div className="min-h-screen bg-[#f5e9dd] pt-3 sm:pt-4 pb-12">
       <div className="mx-auto max-w-3xl px-3 sm:px-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link

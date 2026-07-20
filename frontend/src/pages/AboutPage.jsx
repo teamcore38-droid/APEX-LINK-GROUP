@@ -1,7 +1,7 @@
 const AboutPage = () => {
   return (
     <div>
-      <div className="bg-brand-dark text-white py-20 text-center">
+      <div className="bg-brand-dark text-white py-8 md:py-12 text-center">
         <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Our Story</h1>
         <p className="text-xl max-w-2xl mx-auto text-gray-300">Connecting the world's finest manufacturers with customers everywhere.</p>
       </div>

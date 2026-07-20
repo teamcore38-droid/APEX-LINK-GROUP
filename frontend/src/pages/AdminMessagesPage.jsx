@@ -141,7 +141,7 @@ const AdminMessagesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] py-10">
+    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <Link

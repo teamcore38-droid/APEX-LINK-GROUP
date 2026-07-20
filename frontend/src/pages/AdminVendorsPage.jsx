@@ -174,7 +174,7 @@ const AdminVendorsPage = () => {
   const eligibleOrders = vendorOrders.filter((order) => order.payoutStatus === 'Eligible');
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-4 md:pt-6 pb-16">
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Admin</p>

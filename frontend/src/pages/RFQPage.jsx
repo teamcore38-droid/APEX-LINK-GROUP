@@ -139,7 +139,7 @@ const RFQPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-4 md:pt-6 pb-16">
       <div className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">B2B Buying</p>
         <h1 className="mt-2 flex items-center text-3xl font-serif font-bold text-brand-dark">

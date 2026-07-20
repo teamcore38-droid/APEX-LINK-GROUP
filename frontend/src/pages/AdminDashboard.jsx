@@ -538,7 +538,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-4 md:pt-6 pb-16">
       <h1 className="mb-8 text-3xl font-serif font-bold text-brand-dark">Admin Dashboard</h1>
 
       <div className="flex flex-col gap-8 md:flex-row">

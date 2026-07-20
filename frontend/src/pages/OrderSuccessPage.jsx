@@ -121,7 +121,7 @@ const OrderSuccessPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#fff7ee] px-4 pt-4 md:pt-6 pb-16 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl">
         {!isConfirmation && (
           <div className="mb-6">

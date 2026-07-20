@@ -112,7 +112,7 @@ const PrivacyCenterPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] py-10">
+    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-5xl px-4">
         <Link to="/privacy" className="text-sm font-semibold text-brand-primary">Privacy Policy</Link>
         <section className="mt-5 rounded-lg bg-brand-dark p-8 text-white">

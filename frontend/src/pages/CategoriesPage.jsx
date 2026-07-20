@@ -26,7 +26,7 @@ const CategoriesPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8efe6] py-16">
+    <div className="min-h-screen bg-[#f8efe6] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="relative overflow-hidden rounded-[32px] bg-brand-dark px-6 py-16 text-white shadow-2xl sm:px-10">
           <div className="absolute -right-16 top-0 h-48 w-48 rounded-full bg-brand-accent/20 blur-3xl" />

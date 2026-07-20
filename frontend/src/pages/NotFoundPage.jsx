@@ -3,7 +3,7 @@ import { AlertCircle } from 'lucide-react';
 
 const NotFoundPage = () => {
   return (
-    <div className="container mx-auto px-4 py-32 flex flex-col items-center justify-center text-center">
+    <div className="container mx-auto px-4 py-10 md:py-16 flex flex-col items-center justify-center text-center">
       <AlertCircle size={80} className="text-brand-accent mb-6" />
       <h1 className="text-5xl font-serif font-bold text-brand-dark mb-4">404</h1>
       <h2 className="text-2xl font-bold mb-6">Page Not Found</h2>

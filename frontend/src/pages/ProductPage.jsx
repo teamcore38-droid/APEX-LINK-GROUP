@@ -412,7 +412,7 @@ const ProductPage = () => {
 
   return (
     <div className="bg-[#fff7ee] pb-20">
-      <div className="container mx-auto max-w-7xl px-4 pb-10 pt-5 sm:pt-6">
+      <div className="container mx-auto max-w-7xl px-4 pb-10 pt-3 sm:pt-4">
         <Link
           to="/products"
           className="inline-flex items-center text-sm font-semibold text-gray-600 transition-colors duration-200 hover:text-brand-primary"

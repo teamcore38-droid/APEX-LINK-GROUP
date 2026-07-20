@@ -377,7 +377,7 @@ const AdminOrderDetailPage = () => {
   }
 
   return (
-    <div className="bg-brand-light py-10">
+    <div className="bg-brand-light pt-4 md:pt-6 pb-16">
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <div className="flex flex-wrap items-center justify-between gap-3">

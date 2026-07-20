@@ -268,7 +268,7 @@ const AdminCategoriesPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] py-12">
+    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <Link

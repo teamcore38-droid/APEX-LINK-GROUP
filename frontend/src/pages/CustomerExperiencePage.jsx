@@ -218,7 +218,7 @@ const CustomerExperiencePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] py-10">
+    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="rounded-lg bg-brand-dark px-6 py-10 text-white">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand-accent">Customer Experience</p>

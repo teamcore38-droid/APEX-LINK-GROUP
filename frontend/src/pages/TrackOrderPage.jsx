@@ -118,7 +118,7 @@ const TrackOrderPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] py-16">
+    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-6xl px-4">
         <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Track Order</p>

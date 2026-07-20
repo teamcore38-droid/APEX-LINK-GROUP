@@ -523,7 +523,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] py-12">
+    <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-7xl px-4">
         <div className="rounded-[32px] bg-brand-dark px-6 py-12 text-white shadow-2xl sm:px-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
