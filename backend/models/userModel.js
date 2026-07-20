@@ -36,7 +36,7 @@ const addressSchema = mongoose.Schema(
     },
     postalCode: {
       type: String,
-      required: true,
+      default: '',
       trim: true,
     },
     country: {

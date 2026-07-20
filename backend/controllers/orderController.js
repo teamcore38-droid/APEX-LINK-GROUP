@@ -134,7 +134,7 @@ const validateShippingAddress = (address) => {
     return 'Shipping state is required';
   }
 
-  if (!address.postalCode) {
+  if (!address.postalCode && address.country?.toUpperCase() !== 'SRI LANKA') {
     return 'Shipping postal code is required';
   }
 

@@ -32,7 +32,7 @@ const validateAddressPayload = (address) => {
     return 'State is required';
   }
 
-  if (!address.postalCode) {
+  if (!address.postalCode && address.country?.toUpperCase() !== 'SRI LANKA') {
     return 'Postal code is required';
   }
 
