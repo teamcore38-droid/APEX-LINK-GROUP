@@ -629,7 +629,11 @@ const CheckoutInner = () => {
 
         <form onSubmit={placeOrderHandler} className="mt-4 flex flex-col gap-8 lg:grid lg:grid-cols-[1.3fr_0.7fr] lg:items-start">
           <div className="order-1 flex flex-col gap-8 lg:col-start-1 lg:row-start-1">
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
+            <section className={`rounded-[28px] bg-white shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] ${
+              !addressesLoading && addresses.length === 0
+                ? 'px-6 py-4 sm:px-8 sm:py-4'
+                : 'p-6 sm:p-8'
+            }`}>
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
                   <MapPin size={20} />
@@ -645,8 +649,8 @@ const CheckoutInner = () => {
                   <Loader2 size={16} className="mr-2 animate-spin" /> Loading your saved addresses...
                 </div>
               ) : addresses.length === 0 ? (
-                <p className="mt-6 text-sm leading-7 text-gray-600">
-                  You don&apos;t have a saved delivery address yet. Fill in the form below and save it to your address book if you&apos;d like.
+                <p className="mt-2 text-sm text-gray-600">
+                  Note: You don&apos;t have any saved delivery addresses yet. Fill in the form below to save one.
                 </p>
               ) : (
                 <div className="mt-6 space-y-4">
