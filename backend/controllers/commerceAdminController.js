@@ -132,6 +132,31 @@ const upsertShippingRate = async (req, res) => {
   res.status(201).json(rate);
 };
 
+const seedSriLankaDistricts = async (_req, res) => {
+  const districts = [
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 'Galle', 'Gampaha', 'Hambantota',
+    'Jaffna', 'Kalutara', 'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar', 'Matale', 'Matara',
+    'Moneragala', 'Mullaitivu', 'Nuwara Eliya', 'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+  ];
+
+  for (const district of districts) {
+    await ShippingRate.findOneAndUpdate(
+      { country: 'Sri Lanka', state: district },
+      {
+        carrier: 'Apex Logistics',
+        service: 'District Delivery',
+        country: 'Sri Lanka',
+        state: district,
+        basePrice: 500, // default placeholder
+        isActive: true,
+      },
+      { upsert: true, setDefaultsOnInsert: true }
+    );
+  }
+
+  res.json({ message: 'Seeded 25 districts successfully' });
+};
+
 export {
   getInventoryEvents,
   getLowStockProducts,
@@ -143,4 +168,5 @@ export {
   upsertTaxRule,
   listShippingRates,
   upsertShippingRate,
+  seedSriLankaDistricts,
 };

@@ -67,6 +67,7 @@ const OrderSuccessPage = lazyWithReload(() => import('./pages/OrderSuccessPage')
 const OrderInvoicePage = lazyWithReload(() => import('./pages/OrderInvoicePage'))
 const AdminOrderDetailPage = lazyWithReload(() => import('./pages/AdminOrderDetailPage'))
 const AdminPackingSlipPage = lazyWithReload(() => import('./pages/AdminPackingSlipPage'))
+const AdminShippingPage = lazyWithReload(() => import('./pages/AdminShippingPage'))
 
 function App() {
   return (
@@ -108,6 +109,7 @@ function App() {
             <Route path="/admin/categories" element={<AdminCategoriesPage />} />
             <Route path="/admin/messages" element={<AdminMessagesPage />} />
             <Route path="/admin/commerce" element={<AdminCommercePage />} />
+            <Route path="/admin/shipping" element={<AdminShippingPage />} />
             <Route path="/admin/vendors" element={<AdminVendorsPage />} />
             <Route path="/admin/professional" element={<AdminProfessionalPage />} />
             <Route path="/admin/mobile" element={<AdminMobilePage />} />

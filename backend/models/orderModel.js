@@ -183,11 +183,6 @@ const orderSchema = mongoose.Schema(
       required: true,
       default: 0.0,
     },
-    taxPrice: {
-      type: Number,
-      required: true,
-      default: 0.0,
-    },
     shippingPrice: {
       type: Number,
       required: true,
@@ -211,13 +206,6 @@ const orderSchema = mongoose.Schema(
       required: true,
       default: 0.0,
     },
-    taxBreakdown: [
-      {
-        label: { type: String, default: 'Sales Tax' },
-        rate: { type: Number, default: 0 },
-        amount: { type: Number, default: 0 },
-      },
-    ],
     shippingRate: {
       carrier: { type: String, default: '' },
       service: { type: String, default: '' },

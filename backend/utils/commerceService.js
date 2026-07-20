@@ -131,11 +131,8 @@ const getShippingOptions = async ({ shippingAddress = {}, subtotal = 0, currency
   const state = getStateCode(shippingAddress);
   const query = {
     isActive: true,
-    $or: [
-      { country: country || '' },
-      { country: '' },
-      ...(state ? [{ country, state }] : []),
-    ],
+    country: 'Sri Lanka',
+    ...(state ? { state } : {}),
   };
 
   const configuredRates = await ShippingRate.find(query).sort({ basePrice: 1, carrier: 1 }).lean();
@@ -171,26 +168,7 @@ const getShippingOptions = async ({ shippingAddress = {}, subtotal = 0, currency
   });
 };
 
-const calculateTax = async ({ shippingAddress = {}, taxableAmount = 0, exchangeRate = 1 }) => {
-  const country = getCountryCode(shippingAddress);
-  const state = getStateCode(shippingAddress);
-  const rule =
-    (await TaxRule.findOne({ country, state, isActive: true }).lean()) ||
-    (await TaxRule.findOne({ country, state: '', isActive: true }).lean());
-  const rate = Number(rule?.rate ?? FALLBACK_TAX_RATE);
-  const baseAmount = roundMoney(taxableAmount * rate);
 
-  return {
-    taxPrice: toDisplayMoney(baseAmount, exchangeRate),
-    taxBreakdown: [
-      {
-        label: rule?.label || 'Sales Tax',
-        rate,
-        amount: toDisplayMoney(baseAmount, exchangeRate),
-      },
-    ],
-  };
-};
 
 const calculateCouponDiscount = async ({ couponCode = '', subtotal = 0, exchangeRate = 1 }) => {
   const normalizedCode = normalizeCode(couponCode);
@@ -276,13 +254,7 @@ const calculateOrderPricing = async ({
     exchangeRate,
   });
   const discountPrice = couponResult.discountPrice;
-  const taxableAmount = Math.max(displayItemsPrice - discountPrice, 0);
-  const taxResult = await calculateTax({
-    shippingAddress,
-    taxableAmount: Math.max(baseItemsPrice - discountPrice / exchangeRate, 0),
-    exchangeRate,
-  });
-  const preGiftTotal = roundMoney(taxableAmount + Number(selectedShipping?.price || 0) + taxResult.taxPrice);
+  const preGiftTotal = roundMoney(Math.max(displayItemsPrice - discountPrice, 0) + Number(selectedShipping?.price || 0));
   const giftCardResult = await calculateGiftCardAmount({
     giftCardCode,
     balanceDue: preGiftTotal,
@@ -299,7 +271,6 @@ const calculateOrderPricing = async ({
     })),
     itemsPrice: displayItemsPrice,
     shippingPrice: Number(selectedShipping?.price || 0),
-    taxPrice: taxResult.taxPrice,
     discountPrice,
     giftCardAmount: giftCardResult.giftCardAmount,
     totalPrice,
@@ -315,7 +286,6 @@ const calculateOrderPricing = async ({
           estimatedDaysMax: selectedShipping.estimatedDaysMax,
         }
       : {},
-    taxBreakdown: taxResult.taxBreakdown,
     shippingOptions,
     appliedPromotions: {
       coupon: couponResult.coupon

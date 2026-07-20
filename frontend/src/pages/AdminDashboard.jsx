@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   Star,
   Trash2,
+  Truck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
@@ -577,6 +578,12 @@ const AdminDashboard = () => {
               className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
             >
               <ShoppingBag size={20} className="mr-3" /> Commerce Ops
+            </button>
+            <button
+              onClick={() => navigate('/admin/shipping')}
+              className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
+            >
+              <Truck size={20} className="mr-3" /> Shipping Management
             </button>
             <button
               onClick={() => navigate('/admin/vendors')}

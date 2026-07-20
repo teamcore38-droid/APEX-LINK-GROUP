@@ -37,11 +37,19 @@ const createInitialCheckoutForm = (shippingAddress = {}, userInfo = null) => {
     city: normalized.city,
     state: normalized.state,
     postalCode: normalized.postalCode,
-    country: normalized.country,
+    country: normalized.country || 'Sri Lanka',
   };
 };
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+
+const SL_DISTRICTS = [
+  'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
+  'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara',
+  'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar',
+  'Matale', 'Matara', 'Moneragala', 'Mullaitivu', 'Nuwara Eliya',
+  'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya',
+];
 
 const validateCheckoutForm = (form) => {
   const requiredFields = [
@@ -49,9 +57,8 @@ const validateCheckoutForm = (form) => {
     ['phone', 'Phone number'],
     ['email', 'Email address'],
     ['addressLine1', 'Address line 1'],
-    ['city', 'City'],
-    ['state', 'State / Province'],
-    ['postalCode', 'Postal code'],
+    ['city', 'City / Town'],
+    ['state', 'District'],
     ['country', 'Country'],
   ];
 
@@ -179,15 +186,13 @@ const CheckoutInner = () => {
     () => cartItems.reduce((accumulator, item) => accumulator + item.price * item.qty, 0),
     [cartItems]
   );
-  const shippingPrice = itemsPrice > 50 ? 0 : 10;
-  const taxPrice = Number((itemsPrice * 0.15).toFixed(2));
-  const totalPrice = itemsPrice + shippingPrice + taxPrice;
+  const shippingPrice = quote?.shippingPrice ?? 0;
+  const totalPrice = quote?.totalPrice ?? itemsPrice;
   const displayItemsPrice = quote?.itemsPrice ?? itemsPrice;
-  const displayShippingPrice = quote?.shippingPrice ?? shippingPrice;
-  const displayTaxPrice = quote?.taxPrice ?? taxPrice;
+  const displayShippingPrice = shippingPrice;
   const displayDiscountPrice = quote?.discountPrice ?? 0;
   const displayGiftCardAmount = quote?.giftCardAmount ?? 0;
-  const displayTotalPrice = quote?.totalPrice ?? totalPrice;
+  const displayTotalPrice = totalPrice;
   const displayCurrency = quote?.currency || currency;
 
   const requestQuote = async (nextShippingAddress = form) => {
@@ -561,10 +566,7 @@ const CheckoutInner = () => {
                   <span>Shipping</span>
                   <span className="font-semibold text-brand-dark">{formatCurrency(displayShippingPrice, displayCurrency)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(displayTaxPrice, displayCurrency)}</span>
-                </div>
+
                 {displayDiscountPrice > 0 && (
                   <div className="flex justify-between text-green-700">
                     <span>Coupon discount</span>
@@ -867,15 +869,27 @@ const CheckoutInner = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="checkout-state" className="mb-2 block text-sm font-semibold text-brand-dark">State / Province</label>
-                  <input
-                    id="checkout-state"
+                  <label htmlFor="checkout-district" className="mb-2 block text-sm font-semibold text-brand-dark">District <span className="text-red-500">*</span></label>
+                  <select
+                    id="checkout-district"
                     name="state"
-                    type="text"
+                    required
                     value={form.state}
-                    onChange={handleFieldChange}
+                    onChange={(e) => {
+                      const district = e.target.value;
+                      setForm((prev) => ({ ...prev, state: district, country: 'Sri Lanka' }));
+                      setQuote(null);
+                      if (district && cartItems.length > 0) {
+                        requestQuote({ ...form, state: district, country: 'Sri Lanka' });
+                      }
+                    }}
                     className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                  />
+                  >
+                    <option value="">— Select District —</option>
+                    {SL_DISTRICTS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label htmlFor="checkout-postal-code" className="mb-2 block text-sm font-semibold text-brand-dark">Postal Code</label>
@@ -894,9 +908,9 @@ const CheckoutInner = () => {
                     id="checkout-country"
                     name="country"
                     type="text"
-                    value={form.country}
-                    onChange={handleFieldChange}
-                    className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
+                    value="Sri Lanka"
+                    readOnly
+                    className="w-full rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 text-sm text-gray-500 outline-none cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -960,10 +974,7 @@ const CheckoutInner = () => {
                   <span>Shipping</span>
                   <span className="font-semibold text-brand-dark">{formatCurrency(displayShippingPrice, displayCurrency)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Tax</span>
-                  <span className="font-semibold text-brand-dark">{formatCurrency(displayTaxPrice, displayCurrency)}</span>
-                </div>
+
                 {displayDiscountPrice > 0 && (
                   <div className="flex justify-between text-green-700">
                     <span>Coupon discount</span>
