@@ -1,13 +1,17 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronDown, Grid, Layers } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
 const CategoryNavBar = () => {
   const [categories, setCategories] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
   const dropdownRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -58,15 +62,74 @@ const CategoryNavBar = () => {
     navigate(`/products?category=${encodeURIComponent(categoryName)}`);
   };
 
+  // Scroll checking logic
+  const checkScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+    setCanScrollLeft(scrollLeft > 5);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+    }
+    return () => {
+      if (container) container.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [categories, loading]);
+
+  const scroll = (direction) => {
+    if (!scrollContainerRef.current) return;
+    const scrollAmount = direction === 'left' ? -240 : 240;
+    scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  };
+
   if (loading || parentCategories.length === 0) {
     return null;
   }
 
   return (
     <div className="relative z-40 border-b border-white/10 bg-[#1c0d09] text-[#fff7ee] shadow-sm">
-      <div className="container mx-auto px-4 sm:px-6" ref={dropdownRef}>
-        <div className="flex items-center justify-between gap-4 py-2.5 overflow-x-auto no-scrollbar">
-          
+      <div className="container mx-auto relative px-2 sm:px-6" ref={dropdownRef}>
+        
+        {/* Soft Left Fade + Arrow */}
+        {canScrollLeft && (
+          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-r from-[#1c0d09] via-[#1c0d09]/85 to-transparent pl-2 pr-6 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => scroll('left')}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-accent/25 text-brand-accent shadow-md transition-all hover:bg-brand-accent hover:text-[#1c0d09]"
+              aria-label="Scroll categories left"
+            >
+              <ChevronLeft size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Soft Right Fade + Arrow */}
+        {canScrollRight && (
+          <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-l from-[#1c0d09] via-[#1c0d09]/85 to-transparent pr-2 pl-6 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => scroll('right')}
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-accent/25 text-brand-accent shadow-md transition-all hover:bg-brand-accent hover:text-[#1c0d09]"
+              aria-label="Scroll categories right"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
+
+        {/* Scrollable Container (Scrollbar Hidden) */}
+        <div
+          ref={scrollContainerRef}
+          className="flex items-center gap-3 py-2.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
           {/* Main All Categories badge */}
           <Link
             to="/categories"
@@ -77,7 +140,7 @@ const CategoryNavBar = () => {
           </Link>
 
           {/* Category Navigation Items */}
-          <div className="flex items-center gap-1 sm:gap-2 lg:gap-6">
+          <div className="flex items-center gap-1 sm:gap-2 lg:gap-5 shrink-0">
             {parentCategories.map((parent) => {
               const children = getChildrenForParent(parent._id);
               const hasChildren = children.length > 0;
@@ -86,7 +149,7 @@ const CategoryNavBar = () => {
               return (
                 <div
                   key={parent._id}
-                  className="relative"
+                  className="relative shrink-0"
                   onMouseEnter={() => hasChildren && setActiveDropdown(parent._id)}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
