@@ -16,7 +16,7 @@ const SL_DISTRICTS = [
 ];
 
 /* ── District Modal ─────────────────────────────────────────────────── */
-const DistrictModal = ({ onClose, onConfirm, initialDistrict }) => {
+const DistrictModal = ({ onClose, onConfirm, initialDistrict, cartItems }) => {
   const [query, setQuery] = useState('');
   const [district, setDistrict] = useState(initialDistrict || '');
   const [open, setOpen] = useState(false);
@@ -49,7 +49,7 @@ const DistrictModal = ({ onClose, onConfirm, initialDistrict }) => {
     axios
       .post('/api/orders/shipping-rates', {
         shippingAddress: { state: district, country: 'Sri Lanka' },
-        orderItems: [],
+        orderItems: cartItems,
         currency: 'LKR',
       })
       .then(({ data }) => {
@@ -238,6 +238,7 @@ const CartPage = () => {
           onClose={() => setShowModal(false)}
           onConfirm={handleModalConfirm}
           initialDistrict={selectedDistrict}
+          cartItems={cartItems}
         />
       )}
 
