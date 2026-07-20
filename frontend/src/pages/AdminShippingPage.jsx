@@ -31,7 +31,7 @@ const AdminShippingPage = () => {
   const fetchRates = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get('/api/commerce-admin/shipping-rates', authHeaders);
+      const { data } = await axios.get('/api/admin/commerce/shipping-rates', authHeaders);
       const map = {};
       data.forEach((r) => {
         if (r.country === 'Sri Lanka' && r.state) {
@@ -49,7 +49,7 @@ const AdminShippingPage = () => {
   const seedDistricts = async () => {
     setSeeding(true);
     try {
-      await axios.post('/api/commerce-admin/shipping-rates/seed-districts', {}, authHeaders);
+      await axios.post('/api/admin/commerce/shipping-rates/seed-districts', {}, authHeaders);
       showToast('Districts seeded with default rates!');
       await fetchRates();
     } catch (err) {
@@ -75,7 +75,7 @@ const AdminShippingPage = () => {
     setSaving((prev) => ({ ...prev, [district]: true }));
     try {
       await axios.post(
-        '/api/commerce-admin/shipping-rates',
+        '/api/admin/commerce/shipping-rates',
         {
           carrier: 'Apex Logistics',
           service: 'District Delivery',
