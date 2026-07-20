@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowRight,
+  ChevronDown,
   Heart,
   Home,
   Loader2,
@@ -15,6 +16,7 @@ import {
   Star,
   Trash2,
   User,
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/productUi';
@@ -176,6 +178,7 @@ const ProfilePage = () => {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
 
   const activeTab = useMemo(() => {
     const nextTab = searchParams.get('tab') || 'overview';
@@ -593,37 +596,66 @@ const ProfilePage = () => {
               </button>
             </section>
 
-            <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Quick Actions</p>
-              <div className="mt-5 grid gap-3">
-                {[
-                  ['Edit Profile', 'profile', Pencil],
-                  ['Manage Addresses', 'addresses', MapPin],
-                  ['View Orders', 'orders', Package],
-                  ['Change Password', 'password', LockKeyhole],
-                ].map(([label, tabId, Icon]) => (
-                  <button
-                    key={tabId}
-                    type="button"
-                    onClick={() => updateTab(tabId)}
-                    className="inline-flex items-center justify-between rounded-2xl border border-gray-100 bg-brand-light px-4 py-4 text-left transition-colors duration-200 hover:bg-[#f0e1d4]"
+            <section className="overflow-hidden rounded-[24px] bg-white shadow-[0_18px_40px_rgba(53,26,17,0.08)] transition-all duration-200">
+              <button
+                type="button"
+                onClick={() => setQuickActionsOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors duration-200 hover:bg-[#fff7ee]"
+                aria-expanded={quickActionsOpen}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-light text-brand-accent">
+                    <Zap size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent">Quick Actions</p>
+                    <span className="font-serif text-base font-bold text-brand-dark">Shortcuts</span>
+                  </div>
+                </div>
+                <ChevronDown
+                  size={18}
+                  className={`text-brand-accent transition-transform duration-300 ${
+                    quickActionsOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {quickActionsOpen && (
+                <div className="border-t border-gray-100 bg-[#fff7ee]/50 p-4 space-y-2.5 animate-in fade-in slide-in-from-top-1">
+                  {[
+                    ['Edit Profile', 'profile', Pencil],
+                    ['Manage Addresses', 'addresses', MapPin],
+                    ['View Orders', 'orders', Package],
+                    ['Change Password', 'password', LockKeyhole],
+                  ].map(([label, tabId, Icon]) => (
+                    <button
+                      key={tabId}
+                      type="button"
+                      onClick={() => {
+                        updateTab(tabId);
+                        setQuickActionsOpen(false);
+                      }}
+                      className="flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3.5 text-left transition-colors duration-200 hover:border-brand-accent/40 hover:bg-brand-light"
+                    >
+                      <span className="inline-flex items-center text-sm font-semibold text-brand-dark">
+                        <Icon size={16} className="mr-3 text-brand-accent" /> {label}
+                      </span>
+                      <ArrowRight size={14} className="text-gray-400" />
+                    </button>
+                  ))}
+
+                  <Link
+                    to="/products"
+                    onClick={() => setQuickActionsOpen(false)}
+                    className="flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3.5 text-left transition-colors duration-200 hover:border-brand-accent/40 hover:bg-brand-light"
                   >
                     <span className="inline-flex items-center text-sm font-semibold text-brand-dark">
-                      <Icon size={16} className="mr-3 text-brand-accent" /> {label}
+                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Continue Shopping
                     </span>
-                    <ArrowRight size={16} className="text-gray-400" />
-                  </button>
-                ))}
-                <Link
-                  to="/products"
-                  className="inline-flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-4 text-sm font-semibold text-brand-dark transition-colors duration-200 hover:bg-brand-light"
-                >
-                  <span className="inline-flex items-center">
-                    <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Continue Shopping
-                  </span>
-                  <ArrowRight size={16} className="text-gray-400" />
-                </Link>
-              </div>
+                    <ArrowRight size={14} className="text-gray-400" />
+                  </Link>
+                </div>
+              )}
             </section>
           </aside>
 

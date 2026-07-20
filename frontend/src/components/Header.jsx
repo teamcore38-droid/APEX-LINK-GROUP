@@ -125,6 +125,7 @@ const Header = () => {
                   >
                     <ShoppingBag size={16} className="mr-3 text-brand-accent" /> My Orders
                   </Link>
+                  {/* Temporarily hidden: Vendor Onboarding & Customer Experience
                   <Link
                     to="/vendor/onboarding"
                     onClick={() => setAccountMenuOpen(false)}
@@ -132,6 +133,7 @@ const Header = () => {
                   >
                     <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Vendor Onboarding
                   </Link>
+                  */}
                   {(userInfo.isVendor || userInfo.isAdmin) && (
                     <Link
                       to="/vendor/dashboard"
@@ -141,6 +143,7 @@ const Header = () => {
                       <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Vendor Dashboard
                     </Link>
                   )}
+                  {/* Temporarily hidden: Customer Experience
                   <Link
                     to="/customer-experience"
                     onClick={() => setAccountMenuOpen(false)}
@@ -148,6 +151,7 @@ const Header = () => {
                   >
                     <User size={16} className="mr-3 text-brand-accent" /> Customer Experience
                   </Link>
+                  */}
                   <Link
                     to="/privacy-center"
                     onClick={() => setAccountMenuOpen(false)}
@@ -297,15 +301,19 @@ const Header = () => {
                 <Link to="/track-order" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                   Track Order
                 </Link>
+                {/* Temporarily hidden: Customer Experience & Vendor Onboarding
                 <Link to="/customer-experience" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                   Customer Experience
                 </Link>
+                */}
                 <Link to="/privacy-center" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                   Privacy Center
                 </Link>
+                {/* Temporarily hidden: Vendor Onboarding
                 <Link to="/vendor/onboarding" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                   Vendor Onboarding
                 </Link>
+                */}
                 {(userInfo.isVendor || userInfo.isAdmin) && (
                   <Link to="/vendor/dashboard" onClick={() => setAccountMenuOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
                     Vendor Dashboard
