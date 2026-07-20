@@ -3,6 +3,122 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronDown, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 
+const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
+  const buttonRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState(null);
+  const hasChildren = children.length > 0;
+  const isOpen = activeDropdown === parent._id;
+
+  const updatePosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const maxLeft = Math.max(8, window.innerWidth - 272);
+      const left = Math.min(Math.max(8, rect.left), maxLeft);
+      setDropdownPos({
+        top: rect.bottom + 6,
+        left,
+      });
+    }
+  };
+
+  const handleOpen = () => {
+    if (hasChildren) {
+      updatePosition();
+      setActiveDropdown(parent._id);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+      const handleScrollOrResize = () => updatePosition();
+      window.addEventListener('scroll', handleScrollOrResize, true);
+      window.addEventListener('resize', handleScrollOrResize);
+      return () => {
+        window.removeEventListener('scroll', handleScrollOrResize, true);
+        window.removeEventListener('resize', handleScrollOrResize);
+      };
+    }
+  }, [isOpen]);
+
+  return (
+    <div
+      className="shrink-0"
+      onMouseEnter={handleOpen}
+      onMouseLeave={() => setActiveDropdown(null)}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => {
+          if (hasChildren) {
+            if (isOpen) {
+              setActiveDropdown(null);
+            } else {
+              handleOpen();
+            }
+          } else {
+            handleCategoryClick(parent.name);
+          }
+        }}
+        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-200 ${
+          isOpen
+            ? 'bg-brand-accent/20 text-brand-accent'
+            : 'text-[#fff7ee]/90 hover:bg-white/5 hover:text-brand-accent'
+        }`}
+      >
+        <span>{parent.name}</span>
+        {hasChildren && (
+          <ChevronDown
+            size={12}
+            className={`transition-transform duration-200 text-brand-accent ${
+              isOpen ? 'rotate-180' : ''
+            }`}
+          />
+        )}
+      </button>
+
+      {/* Mega Menu / Dropdown with Fixed Positioning to break out of overflow clipping */}
+      {hasChildren && isOpen && dropdownPos && (
+        <div
+          style={{
+            position: 'fixed',
+            top: `${dropdownPos.top}px`,
+            left: `${dropdownPos.left}px`,
+            zIndex: 99999,
+          }}
+          className="w-64 rounded-2xl border border-brand-accent/30 bg-[#25120c] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
+        >
+          <div className="mb-2 border-b border-white/10 pb-2">
+            <button
+              type="button"
+              onClick={() => handleCategoryClick(parent.name)}
+              className="flex w-full items-center justify-between font-serif text-sm font-bold text-brand-accent hover:underline"
+            >
+              <span>All {parent.name}</span>
+              <span className="text-[10px] uppercase tracking-wider text-[#fff7ee]/60">Browse All →</span>
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            {children.map((child) => (
+              <button
+                key={child._id}
+                type="button"
+                onClick={() => handleCategoryClick(child.name)}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium text-[#fff7ee]/90 transition-colors hover:bg-brand-accent/20 hover:text-brand-accent"
+              >
+                <span>{child.name}</span>
+                <span className="text-[10px] text-brand-accent/70">›</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const CategoryNavBar = () => {
   const [categories, setCategories] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -143,72 +259,15 @@ const CategoryNavBar = () => {
           <div className="flex items-center gap-1 sm:gap-2 lg:gap-5 shrink-0">
             {parentCategories.map((parent) => {
               const children = getChildrenForParent(parent._id);
-              const hasChildren = children.length > 0;
-              const isOpen = activeDropdown === parent._id;
-
               return (
-                <div
+                <NavItem
                   key={parent._id}
-                  className="relative shrink-0"
-                  onMouseEnter={() => hasChildren && setActiveDropdown(parent._id)}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (hasChildren && !isOpen) {
-                        setActiveDropdown(parent._id);
-                      } else {
-                        handleCategoryClick(parent.name);
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-200 ${
-                      isOpen
-                        ? 'bg-brand-accent/20 text-brand-accent'
-                        : 'text-[#fff7ee]/90 hover:bg-white/5 hover:text-brand-accent'
-                    }`}
-                  >
-                    <span>{parent.name}</span>
-                    {hasChildren && (
-                      <ChevronDown
-                        size={12}
-                        className={`transition-transform duration-200 text-brand-accent ${
-                          isOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    )}
-                  </button>
-
-                  {/* Mega Menu / Dropdown */}
-                  {hasChildren && isOpen && (
-                    <div className="absolute left-0 top-full mt-1 w-64 rounded-2xl border border-brand-accent/25 bg-[#25120c] p-3 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 z-50">
-                      <div className="mb-2 border-b border-white/10 pb-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCategoryClick(parent.name)}
-                          className="flex w-full items-center justify-between font-serif text-sm font-bold text-brand-accent hover:underline"
-                        >
-                          <span>All {parent.name}</span>
-                          <span className="text-[10px] uppercase tracking-wider text-[#fff7ee]/60">Browse All →</span>
-                        </button>
-                      </div>
-
-                      <div className="space-y-1">
-                        {children.map((child) => (
-                          <button
-                            key={child._id}
-                            type="button"
-                            onClick={() => handleCategoryClick(child.name)}
-                            className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-xs font-medium text-[#fff7ee]/90 transition-colors hover:bg-brand-accent/15 hover:text-brand-accent"
-                          >
-                            <span>{child.name}</span>
-                            <span className="text-[10px] text-brand-accent/70">›</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  parent={parent}
+                  children={children}
+                  handleCategoryClick={handleCategoryClick}
+                  activeDropdown={activeDropdown}
+                  setActiveDropdown={setActiveDropdown}
+                />
               );
             })}
           </div>
