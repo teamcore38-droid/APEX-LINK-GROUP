@@ -14,6 +14,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
 import CookieConsentBanner from './components/CookieConsentBanner'
 import ScrollToTop from './components/ScrollToTop'
+import SitePreloader from './components/SitePreloader'
 
 const CHUNK_RELOAD_KEY = 'apex-link-chunk-reload'
 
@@ -70,6 +71,7 @@ const AdminPackingSlipPage = lazyWithReload(() => import('./pages/AdminPackingSl
 function App() {
   return (
     <div className="flex flex-col min-h-screen">
+      <SitePreloader />
       <ScrollToTop />
       <Header />
       <main className="flex-grow">

@@ -111,6 +111,34 @@
     }
   }
 
+  @keyframes preloader-pulse {
+    0%, 100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 10px rgba(217, 154, 50, 0.4));
+    }
+    50% {
+      transform: scale(1.06);
+      filter: drop-shadow(0 0 20px rgba(217, 154, 50, 0.75));
+    }
+  }
+
+  @keyframes preloader-shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-preloader-pulse {
+    animation: preloader-pulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-preloader-shimmer {
+    animation: preloader-shimmer 1.5s ease-in-out infinite;
+  }
+
   .hero-bg-pan {
     animation: hero-bg-pan 24s ease-in-out infinite alternate;
     will-change: transform;
