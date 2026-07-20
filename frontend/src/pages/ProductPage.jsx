@@ -4,9 +4,11 @@ import axios from 'axios';
 import {
   ArrowLeft,
   BadgeCheck,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Heart,
+  Info,
   Loader2,
   Maximize2,
   MessageSquare,
@@ -90,6 +92,7 @@ const ProductPage = () => {
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
   const [wishlistSaving, setWishlistSaving] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -540,19 +543,52 @@ const ProductPage = () => {
               )}
             </div>
 
-            <p className="mt-6 text-base leading-8 text-gray-700">
-              {product.description}
-            </p>
+            <div className="mt-6 overflow-hidden rounded-2xl border border-[#ecd9ca] bg-white transition-all duration-200">
+              <button
+                type="button"
+                onClick={() => setDetailsExpanded((prev) => !prev)}
+                className="flex w-full items-center justify-between bg-[#fbf3ea] px-5 py-4 text-left transition-colors duration-200 hover:bg-[#f5e9dd]"
+                aria-expanded={detailsExpanded}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
+                    <Info size={18} />
+                  </div>
+                  <span className="font-serif text-base font-bold text-brand-dark sm:text-lg">
+                    Product Details & Specifications
+                  </span>
+                </div>
+                <ChevronDown
+                  size={18}
+                  className={`text-brand-primary transition-transform duration-300 shrink-0 ${
+                    detailsExpanded ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-            <div className="mt-8 grid gap-4 rounded-[28px] bg-[#f8efe6] p-5 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Origin</p>
-                <p className="mt-2 text-sm leading-7 text-gray-700">{product.origin || 'Premium source details coming soon.'}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Contents & Specifications</p>
-                <p className="mt-2 text-sm leading-7 text-gray-700">{product.ingredients || 'Premium product with verified sourcing.'}</p>
-              </div>
+              {detailsExpanded && (
+                <div className="p-5 space-y-5 border-t border-[#ecd9ca] bg-white animate-in fade-in slide-in-from-top-1">
+                  {product.description && (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Description</p>
+                      <p className="mt-2 text-sm leading-7 text-gray-700 whitespace-pre-line">
+                        {product.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid gap-4 rounded-2xl bg-[#f8efe6] p-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Origin</p>
+                      <p className="mt-1.5 text-sm leading-6 text-gray-700">{product.origin || 'India'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Contents & Specifications</p>
+                      <p className="mt-1.5 text-sm leading-6 text-gray-700">{product.ingredients || 'Premium product with verified sourcing.'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-8 rounded-[28px] border border-[#ecd9ca] p-5">

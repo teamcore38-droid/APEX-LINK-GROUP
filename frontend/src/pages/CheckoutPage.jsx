@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   CheckCircle2,
+  ChevronDown,
   CreditCard,
   Home,
   Loader2,
@@ -106,6 +107,7 @@ const CheckoutInner = () => {
   const [shippingRateId, setShippingRateId] = useState('');
   const [quote, setQuote] = useState(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const [payhereExpanded, setPayhereExpanded] = useState(false);
   const guestCheckoutEnabled = true;
 
   useEffect(() => {
@@ -1006,31 +1008,46 @@ const CheckoutInner = () => {
             </div>
           </aside>
 
-          <section className="order-3 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8 lg:order-none lg:col-start-1 lg:row-start-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
-                <CreditCard size={20} />
+          <section className="order-3 rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53,26,17,0.08)] sm:p-8 lg:order-none lg:col-start-1 lg:row-start-2 transition-all duration-200">
+            <button
+              type="button"
+              onClick={() => setPayhereExpanded((prev) => !prev)}
+              className="flex w-full items-center justify-between text-left transition-colors duration-200"
+              aria-expanded={payhereExpanded}
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary shrink-0">
+                  <CreditCard size={20} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Payment Method</p>
+                  <h2 className="font-serif text-xl sm:text-2xl font-bold text-brand-dark">
+                    Secure PayHere Checkout
+                  </h2>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-accent">Payment Method</p>
-                <h2 className="font-serif text-2xl font-bold text-brand-dark">
-                  Pay securely with PayHere
-                </h2>
-              </div>
-            </div>
+              <ChevronDown
+                size={22}
+                className={`text-brand-accent transition-transform duration-300 shrink-0 ${
+                  payhereExpanded ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
 
-            <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
-                PayHere checkout
-              </p>
-              <p className="mt-3 text-sm leading-7 text-gray-600">
-                After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Link Group never stores raw card details.
-              </p>
-              <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
-                <input type="radio" checked readOnly className="mr-2" />
-                PayHere
-              </label>
-            </div>
+            {payhereExpanded && (
+              <div className="mt-6 rounded-[24px] border border-brand-accent/15 bg-[#fbf3ea] p-5 animate-in fade-in slide-in-from-top-1">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand-accent">
+                  PayHere checkout
+                </p>
+                <p className="mt-3 text-sm leading-7 text-gray-600">
+                  After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Link Group never stores raw card details.
+                </p>
+                <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
+                  <input type="radio" checked readOnly className="mr-2" />
+                  PayHere
+                </label>
+              </div>
+            )}
           </section>
 
           <section className="order-4 rounded-[28px] border border-brand-accent/20 bg-[#fbf3ea] p-6 shadow-sm lg:order-none lg:col-start-1 lg:row-start-3">
