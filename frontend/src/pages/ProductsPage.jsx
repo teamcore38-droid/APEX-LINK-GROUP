@@ -560,13 +560,13 @@ const ProductsPage = () => {
               {error}
             </div>
           ) : loading ? (
-            <div className="product-grid mt-10">
+            <div className="product-grid mt-0 md:mt-10">
               {[...Array(PRODUCT_PAGE_SIZE)].map((_, index) => (
                 <div key={index} className="min-h-[330px] animate-pulse rounded-2xl bg-[#f8efe6] sm:min-h-[430px]" />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="mt-10 rounded-3xl border border-dashed border-brand-accent/30 bg-[#f8efe6] px-6 py-12 text-center">
+            <div className="mt-0 md:mt-10 rounded-3xl border border-dashed border-brand-accent/30 bg-[#f8efe6] px-6 py-12 text-center">
               <p className="font-serif text-3xl font-bold text-brand-dark">No products match your filters</p>
               <p className="mt-3 text-sm text-gray-500">
                 Try widening your price range, changing categories, or resetting the shop controls.
@@ -589,7 +589,7 @@ const ProductsPage = () => {
             </div>
           ) : (
             <>
-              <div ref={productGridRef} className="product-grid mt-10">
+              <div ref={productGridRef} className="product-grid mt-0 md:mt-10">
                 {products.map((product, index) => (
                   <div
                     key={product._id}
