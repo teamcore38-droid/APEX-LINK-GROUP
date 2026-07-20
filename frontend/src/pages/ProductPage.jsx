@@ -656,64 +656,71 @@ const ProductPage = () => {
               )}
             </div>
 
-            <div className="mt-8 rounded-[28px] border border-[#ecd9ca] p-5">
-              {renderVariantSelection('lg:hidden mb-6')}
+            <div className="mt-6 rounded-[28px] border border-[#ecd9ca] bg-white p-4 sm:p-5 shadow-xs">
+              {renderVariantSelection('lg:hidden mb-5')}
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Quantity</p>
-                  <div className="mt-3 inline-flex items-center rounded-full border border-gray-200 bg-[#fff7ee] p-1">
-                    <button
-                      type="button"
-                      onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
-                      className="rounded-full p-3 text-brand-dark transition-colors duration-200 hover:bg-brand-light"
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span className="min-w-[54px] text-center text-lg font-semibold text-brand-dark">{qty}</span>
-                    <button
-                      type="button"
-                      disabled={qty >= effectiveStock}
-                      onClick={() => setQty((currentQty) => Math.min(effectiveStock, currentQty + 1))}
-                      className="rounded-full p-3 text-brand-dark transition-colors duration-200 hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Plus size={16} />
-                    </button>
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-start">
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 sm:hidden">Quantity</span>
+                    <div className="inline-flex h-12 items-center rounded-full border border-gray-200 bg-[#fff7ee] px-1 shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => setQty((currentQty) => Math.max(1, currentQty - 1))}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-brand-dark transition-colors duration-200 hover:bg-brand-light"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={15} />
+                      </button>
+                      <span className="min-w-[44px] text-center text-base font-bold text-brand-dark">{qty}</span>
+                      <button
+                        type="button"
+                        disabled={qty >= effectiveStock}
+                        onClick={() => setQty((currentQty) => Math.min(effectiveStock, currentQty + 1))}
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-brand-dark transition-colors duration-200 hover:bg-brand-light disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={15} />
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-1 flex-col gap-3 sm:items-end">
-                  <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-stretch sm:justify-end">
+                  <div className="flex flex-1 items-center gap-3">
                     <button
                       type="button"
                       onClick={handleAddToCart}
                       disabled={effectiveStock === 0}
-                      className={`inline-flex min-h-14 w-full items-center justify-center rounded-xl px-6 py-4 text-sm font-bold uppercase tracking-[0.2em] transition-colors duration-200 sm:w-auto sm:min-w-[190px] ${
+                      className={`inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 py-3 text-xs sm:text-sm font-bold uppercase tracking-[0.18em] transition-all duration-200 ${
                         effectiveStock === 0
                           ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                          : 'bg-brand-primary text-white hover:bg-brand-dark'
+                          : 'bg-brand-primary text-white shadow-sm hover:bg-brand-dark hover:shadow-md'
                       }`}
                     >
-                      {effectiveStock === 0 ? 'Currently Out of Stock' : 'Add to Cart'}
+                      {effectiveStock === 0 ? 'Out of Stock' : 'Add to Cart'}
                     </button>
+
                     <button
                       type="button"
                       onClick={addToWishlist}
                       disabled={wishlistSaving}
-                      className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-brand-primary/20 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:min-w-[132px]"
+                      className="inline-flex h-12 shrink-0 items-center justify-center rounded-xl border border-brand-primary/20 px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-[0.16em] text-brand-primary transition-all duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {wishlistSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Heart size={16} className="mr-2" />}
+                      {wishlistSaving ? (
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                      ) : (
+                        <Heart size={16} className="mr-1.5 text-brand-accent" />
+                      )}
                       Save
                     </button>
                   </div>
-
-                  <Link
-                    to="/products"
-                    className="inline-flex min-h-14 w-full items-center justify-center rounded-xl border border-brand-primary/20 px-6 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white sm:w-auto"
-                  >
-                    Continue Shopping
-                  </Link>
                 </div>
+
+                <Link
+                  to="/products"
+                  className="flex h-12 w-full items-center justify-center rounded-xl border border-brand-primary/20 bg-white px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-all duration-200 hover:border-brand-primary hover:bg-brand-light hover:text-brand-dark"
+                >
+                  Continue Shopping
+                </Link>
               </div>
 
               {effectiveStock === 0 && (
