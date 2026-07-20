@@ -28,6 +28,19 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
     }
   };
 
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (hasChildren) {
+      if (isOpen) {
+        setActiveDropdown(null);
+      } else {
+        handleOpen();
+      }
+    } else {
+      handleCategoryClick(parent.name);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       updatePosition();
@@ -45,22 +58,12 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
     <div
       className="shrink-0"
       onMouseEnter={handleOpen}
-      onMouseLeave={() => setActiveDropdown(null)}
+      // Note: No onMouseLeave handler so the dropdown remains open until explicitly closed
     >
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => {
-          if (hasChildren) {
-            if (isOpen) {
-              setActiveDropdown(null);
-            } else {
-              handleOpen();
-            }
-          } else {
-            handleCategoryClick(parent.name);
-          }
-        }}
+        onClick={handleToggle}
         className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-200 ${
           isOpen
             ? 'bg-brand-accent/20 text-brand-accent'
@@ -78,7 +81,7 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
         )}
       </button>
 
-      {/* Mega Menu / Dropdown with Fixed Positioning to break out of overflow clipping */}
+      {/* Mega Menu / Dropdown with Fixed Positioning */}
       {hasChildren && isOpen && dropdownPos && (
         <div
           style={{
@@ -87,7 +90,7 @@ const NavItem = ({ parent, children, handleCategoryClick, activeDropdown, setAct
             left: `${dropdownPos.left}px`,
             zIndex: 99999,
           }}
-          className="w-64 rounded-2xl border border-brand-accent/30 bg-[#25120c] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
+          className="category-mega-menu w-64 rounded-2xl border border-brand-accent/30 bg-[#25120c] p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
         >
           <div className="mb-2 border-b border-white/10 pb-2">
             <button
@@ -145,19 +148,33 @@ const CategoryNavBar = () => {
     fetchCategories();
   }, []);
 
-  // Close dropdown on outside click or route change
+  // Close dropdown on route change
   useEffect(() => {
     setActiveDropdown(null);
   }, [location.pathname, location.search]);
 
+  // Handle explicit closing (outside click or Escape key)
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      const isInsideNav = dropdownRef.current && dropdownRef.current.contains(e.target);
+      const isInsideMegaMenu = Boolean(e.target.closest && e.target.closest('.category-mega-menu'));
+      if (!isInsideNav && !isInsideMegaMenu) {
         setActiveDropdown(null);
       }
     };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setActiveDropdown(null);
+      }
+    };
+
     document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Separate parent and child categories
