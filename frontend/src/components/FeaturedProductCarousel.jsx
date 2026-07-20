@@ -24,7 +24,7 @@ const chunkProducts = (products, size) => {
   return pages;
 };
 
-const FeaturedProductCarousel = ({ products = [] }) => {
+const FeaturedProductCarousel = ({ products = [], isVisible = true }) => {
   const [itemsPerView, setItemsPerView] = useState(() => getItemsPerView(window.innerWidth));
   const [activePage, setActivePage] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -176,8 +176,12 @@ const FeaturedProductCarousel = ({ products = [] }) => {
                       : 'grid-cols-3'
                 }`}
               >
-                {pageProducts.map((product) => (
-                  <div key={product._id} className="h-full">
+                {pageProducts.map((product, productIndex) => (
+                  <div
+                    key={product._id}
+                    className={`h-full reveal-fade-up ${isVisible ? 'is-visible' : ''}`}
+                    style={{ transitionDelay: isVisible ? `${(productIndex + 1) * 100}ms` : '0ms' }}
+                  >
                     <Product product={product} />
                   </div>
                 ))}

@@ -19,6 +19,7 @@ import {
   normalizeProductPayload,
 } from '../utils/productUi';
 import { applySeo } from '../utils/seo';
+import useScrollReveal from '../hooks/useScrollReveal';
 
 const INITIAL_FILTERS = {
   keyword: '',
@@ -68,6 +69,8 @@ const ProductsPage = () => {
     hasPrevPage: false,
   });
   const [facets, setFacets] = useState({ categories: [], brands: [], origins: [], availability: [], priceRange: {} });
+  const [productGridRef, productsVisible] = useScrollReveal();
+  const [featuresRef, featuresVisible] = useScrollReveal();
   const loaderRef = useRef(null);
   const queryVersionRef = useRef(0);
   const loadingMoreRef = useRef(false);
@@ -586,9 +589,15 @@ const ProductsPage = () => {
             </div>
           ) : (
             <>
-              <div className="product-grid mt-10">
-                {products.map((product) => (
-                  <Product key={product._id} product={product} />
+              <div ref={productGridRef} className="product-grid mt-10">
+                {products.map((product, index) => (
+                  <div
+                    key={product._id}
+                    className={`h-full reveal-fade-up ${productsVisible ? 'is-visible' : ''}`}
+                    style={{ transitionDelay: `${(index % 8 + 1) * 75}ms` }}
+                  >
+                    <Product product={product} />
+                  </div>
                 ))}
                 {loadingMore
                   ? [...Array(4)].map((_, index) => (
@@ -626,15 +635,21 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      <div className="container mx-auto mt-20 max-w-6xl px-4">
+      <div ref={featuresRef} className="container mx-auto mt-20 max-w-6xl px-4">
         <div className="grid gap-6 border-t border-gray-300/50 pt-10 sm:grid-cols-2 xl:grid-cols-4">
           {[
             ['100% Pure & Natural', 'No fillers, no compromise.'],
             ['Ethically Sourced', 'Relationships built directly with growers.'],
             ['Securely Packed', 'Protective, category-appropriate packaging on every order.'],
             ['Fast Delivery', 'Premium products shipped with care worldwide.'],
-          ].map(([title, subtitle]) => (
-            <div key={title} className="flex items-start gap-4 rounded-[24px] bg-white/70 p-5 shadow-sm">
+          ].map(([title, subtitle], idx) => (
+            <div
+              key={title}
+              className={`flex items-start gap-4 rounded-[24px] bg-white/70 p-5 shadow-sm reveal-fade-up ${
+                featuresVisible ? 'is-visible' : ''
+              }`}
+              style={{ transitionDelay: `${idx * 80}ms` }}
+            >
               <div className="flex h-12 w-12 items-center justify-center rounded-full border border-brand-accent/30 bg-[#f5e7da]">
                 <BadgeCheck className="text-brand-primary" size={20} />
               </div>

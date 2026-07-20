@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { Truck, ShieldCheck, Globe, Award, ChevronRight, ChevronLeft } from 'lucide-react';
 import { getCategoryImageCandidates } from '../utils/categoryUi';
 import { normalizeProductPayload } from '../utils/productUi';
+import useScrollReveal from '../hooks/useScrollReveal';
 
 const fallbackCategories = [
   {
@@ -48,6 +49,13 @@ const HomePage = () => {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [isReviewPaused, setIsReviewPaused] = useState(false);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
+
+  const [trustBadgesRef, trustBadgesVisible] = useScrollReveal();
+  const [categoriesRef, categoriesVisible] = useScrollReveal();
+  const [featuredRef, featuredVisible] = useScrollReveal();
+  const [bestSellersRef, bestSellersVisible] = useScrollReveal();
+  const [fashionBannerRef, fashionBannerVisible] = useScrollReveal();
+  const [testimonialsRef, testimonialsVisible] = useScrollReveal();
 
   const testimonials = [
     {
@@ -271,51 +279,53 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="border-y border-brand-accent/45 bg-gradient-to-r from-[#4a2317] via-[#8c3b2a] to-[#31160f] py-6 text-white md:py-8">
+      <div ref={trustBadgesRef} className="border-y border-brand-accent/45 bg-gradient-to-r from-[#4a2317] via-[#8c3b2a] to-[#31160f] py-6 text-white md:py-8">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
-                <Truck size={19} />
+            {[
+              { icon: Truck, title: 'Global Logistics', subtitle: 'Free shipping over $50' },
+              { icon: Globe, title: 'Verified Suppliers', subtitle: 'Audited worldwide network' },
+              { icon: ShieldCheck, title: 'Quality Promise', subtitle: '30-day return policy' },
+              { icon: Award, title: 'Enterprise Grade', subtitle: 'Trusted by businesses' },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className={`group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5 reveal-fade-up ${
+                  trustBadgesVisible ? 'is-visible' : ''
+                }`}
+                style={{ transitionDelay: `${idx * 80}ms` }}
+              >
+                <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
+                  <item.icon size={19} />
+                </div>
+                <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">{item.title}</h4>
+                <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">{item.subtitle}</p>
               </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Global Logistics</h4>
-              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">Free shipping over $50</p>
-            </div>
-            <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
-                <Globe size={19} />
-              </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Verified Suppliers</h4>
-              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">Audited worldwide network</p>
-            </div>
-            <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
-                <ShieldCheck size={19} />
-              </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Quality Promise</h4>
-              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">30-day return policy</p>
-            </div>
-            <div className="group rounded-2xl border border-white/14 bg-white/[0.06] px-3 py-4 text-center shadow-[0_10px_28px_rgba(0,0,0,0.14)] backdrop-blur-[1.5px] transition hover:bg-white/[0.1] md:px-4 md:py-5">
-              <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
-                <Award size={19} />
-              </div>
-              <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">Enterprise Grade</h4>
-              <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">Trusted by businesses</p>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-gray-50 py-12 md:py-14">
+      <div ref={categoriesRef} className="bg-gray-50 py-12 md:py-14">
         <div className="container mx-auto px-4">
-          <div className="mb-10 text-center md:mb-14">
+          <div
+            className={`mb-10 text-center md:mb-14 reveal-fade-up ${categoriesVisible ? 'is-visible' : ''}`}
+            style={{ transitionDelay: '0ms' }}
+          >
             <h2 className="mb-4 font-serif text-3xl font-bold text-brand-dark md:text-5xl">Shop by Industry</h2>
             <div className="mx-auto h-1 w-24 bg-brand-accent"></div>
           </div>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {categories.slice(0, 3).map((category) => (
-              <Link key={category._id} to={`/category/${category.slug}`} className="group relative h-80 cursor-pointer overflow-hidden rounded-lg shadow-lg">
+            {categories.slice(0, 3).map((category, index) => (
+              <Link
+                key={category._id}
+                to={`/category/${category.slug}`}
+                className={`group relative h-80 cursor-pointer overflow-hidden rounded-lg shadow-lg reveal-fade-up ${
+                  categoriesVisible ? 'is-visible' : ''
+                }`}
+                style={{ transitionDelay: `${(index + 1) * 100}ms` }}
+              >
                 {isCategoryImageFailed(category) ? (
                   <div className="h-full w-full bg-gradient-to-br from-[#5a2a1a] via-[#78341f] to-[#2a140e]" />
                 ) : (
@@ -348,7 +358,10 @@ const HomePage = () => {
               Categories will appear here once they are active in the admin dashboard.
             </div>
           )}
-          <div className="mt-6 text-center">
+          <div
+            className={`mt-6 text-center reveal-fade-up ${categoriesVisible ? 'is-visible' : ''}`}
+            style={{ transitionDelay: '400ms' }}
+          >
             <Link to="/categories" className="inline-flex items-center rounded-md border-2 border-brand-primary px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white">
               Browse All Industries <ChevronRight size={16} className="ml-2" />
             </Link>
@@ -356,9 +369,12 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-10 md:py-12">
+      <div ref={featuredRef} className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-10 md:py-12">
         <div className="container mx-auto px-4">
-          <div className="mb-10 text-center md:mb-12">
+          <div
+            className={`mb-10 text-center md:mb-12 reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
+            style={{ transitionDelay: '0ms' }}
+          >
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Curated Signature Picks</p>
             <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Featured Collection</h2>
             <div className="mx-auto mt-5 h-px w-28 bg-gradient-to-r from-transparent via-brand-accent to-transparent"></div>
@@ -395,11 +411,14 @@ const HomePage = () => {
               </Link>
             </div>
           ) : (
-            <FeaturedProductCarousel products={featuredProducts} />
+            <FeaturedProductCarousel products={featuredProducts} isVisible={featuredVisible} />
           )}
 
           {!loading && !error && featuredProducts.length > 0 && (
-            <div className="mt-10 text-center">
+            <div
+              className={`mt-10 text-center reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
+              style={{ transitionDelay: '450ms' }}
+            >
               <Link
                 to="/products"
                 className="inline-flex items-center rounded-md border border-brand-primary px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
@@ -412,9 +431,12 @@ const HomePage = () => {
       </div>
 
       {!loading && bestSellers.length > 0 && (
-        <div className="bg-[#f5e7da] py-20">
+        <div ref={bestSellersRef} className="bg-[#f5e7da] py-20">
           <div className="container mx-auto px-4">
-            <div className="mb-12 flex flex-wrap items-end justify-between gap-4">
+            <div
+              className={`mb-12 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
+              style={{ transitionDelay: '0ms' }}
+            >
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Customer Favorites</p>
                 <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Best Sellers</h2>
@@ -428,18 +450,27 @@ const HomePage = () => {
             </div>
 
             <div className="product-grid">
-              {bestSellers.map((product) => (
-                <Product key={product._id} product={product} />
+              {bestSellers.map((product, index) => (
+                <div
+                  key={product._id}
+                  className={`h-full reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
+                  style={{ transitionDelay: `${(index + 1) * 100}ms` }}
+                >
+                  <Product product={product} />
+                </div>
               ))}
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-[#f6eadf] py-24">
+      <div ref={fashionBannerRef} className="bg-[#f6eadf] py-24">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-16 md:flex-row">
-            <div className="relative md:w-1/2">
+            <div
+              className={`relative md:w-1/2 reveal-fade-up ${fashionBannerVisible ? 'is-visible' : ''}`}
+              style={{ transitionDelay: '0ms' }}
+            >
               <div className="absolute -inset-4 translate-x-4 translate-y-4 transform rounded-lg border-2 border-brand-accent"></div>
               <img
                 src="https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg?auto=compress&cs=tinysrgb&w=1000"
@@ -447,7 +478,10 @@ const HomePage = () => {
                 className="relative z-10 h-[500px] w-full rounded-lg object-cover shadow-2xl"
               />
             </div>
-            <div className="md:w-1/2">
+            <div
+              className={`md:w-1/2 reveal-fade-up ${fashionBannerVisible ? 'is-visible' : ''}`}
+              style={{ transitionDelay: '150ms' }}
+            >
               <h2 className="mb-6 font-serif text-4xl font-bold text-brand-dark md:text-5xl">Style Made for Every Moment</h2>
               <div className="mb-8 h-1 w-20 bg-brand-accent"></div>
               <p className="mb-6 text-lg leading-relaxed text-gray-700">
@@ -465,8 +499,10 @@ const HomePage = () => {
       </div>
 
       <section
-        className="relative overflow-hidden py-6 text-white md:py-8"
+        ref={testimonialsRef}
+        className={`relative overflow-hidden py-6 text-white md:py-8 reveal-fade-up ${testimonialsVisible ? 'is-visible' : ''}`}
         style={{
+          transitionDelay: '0ms',
           backgroundImage:
             'radial-gradient(ellipse at 15% 10%, rgba(217, 154, 50,0.16), transparent 50%), linear-gradient(150deg, #1f0f0a 0%, #351a11 55%, #4a2317 100%)',
           backgroundSize: 'cover',
