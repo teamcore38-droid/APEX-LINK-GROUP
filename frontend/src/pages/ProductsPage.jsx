@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowUpDown,
@@ -50,6 +50,7 @@ const RATING_OPTIONS = [
 ];
 
 const ProductsPage = () => {
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +58,15 @@ const ProductsPage = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [filters, setFilters] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      ...INITIAL_FILTERS,
+      category: params.get('category') || '',
+      keyword: params.get('keyword') || '',
+      brand: params.get('brand') || '',
+    };
+  });
   const [mobilePanel, setMobilePanel] = useState(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [filterDraft, setFilterDraft] = useState(INITIAL_FILTERS);
@@ -74,6 +83,33 @@ const ProductsPage = () => {
   const loaderRef = useRef(null);
   const queryVersionRef = useRef(0);
   const loadingMoreRef = useRef(false);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const categoryParam = searchParams.get('category') || '';
+    const keywordParam = searchParams.get('keyword') || '';
+    const brandParam = searchParams.get('brand') || '';
+
+    setFilters((prev) => {
+      if (
+        prev.category === categoryParam &&
+        prev.keyword === keywordParam &&
+        prev.brand === brandParam
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        category: categoryParam,
+        keyword: keywordParam,
+        brand: brandParam,
+      };
+    });
+
+    if (keywordParam) {
+      setSearchInput(keywordParam);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
