@@ -23,6 +23,10 @@ const NavItem = ({ parent, children, getChildrenForParent, handleCategoryClick, 
   };
 
   const handleMouseEnter = () => {
+    // Only open on mouse hover if device has a fine pointer (desktop) to allow fluid touch scrolling on mobile
+    if (typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(pointer: fine)').matches) {
+      return;
+    }
     if (leaveTimeoutRef.current) {
       clearTimeout(leaveTimeoutRef.current);
       leaveTimeoutRef.current = null;
@@ -34,6 +38,9 @@ const NavItem = ({ parent, children, getChildrenForParent, handleCategoryClick, 
   };
 
   const handleMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(pointer: fine)').matches) {
+      return;
+    }
     leaveTimeoutRef.current = setTimeout(() => {
       setActiveDropdown((current) => (current === parent._id ? null : current));
     }, 200);
@@ -45,7 +52,8 @@ const NavItem = ({ parent, children, getChildrenForParent, handleCategoryClick, 
       if (isOpen) {
         setActiveDropdown(null);
       } else {
-        handleMouseEnter();
+        updatePosition();
+        setActiveDropdown(parent._id);
       }
     } else {
       handleCategoryClick(parent.name);
@@ -246,7 +254,7 @@ const CategoryNavBar = () => {
     checkScroll();
     const container = scrollContainerRef.current;
     if (container) {
-      container.addEventListener('scroll', checkScroll);
+      container.addEventListener('scroll', checkScroll, { passive: true });
       window.addEventListener('resize', checkScroll);
     }
     return () => {
@@ -271,11 +279,11 @@ const CategoryNavBar = () => {
         
         {/* Soft Left Fade + Arrow */}
         {canScrollLeft && (
-          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-r from-[#1c0d09] via-[#1c0d09]/85 to-transparent pl-2 pr-6 pointer-events-auto">
+          <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-r from-[#1c0d09] via-[#1c0d09]/85 to-transparent pl-2 pr-6 pointer-events-none">
             <button
               type="button"
               onClick={() => scroll('left')}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-accent/25 text-brand-accent shadow-md transition-all hover:bg-brand-accent hover:text-[#1c0d09]"
+              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-brand-accent/25 text-brand-accent shadow-md transition-all hover:bg-brand-accent hover:text-[#1c0d09]"
               aria-label="Scroll categories left"
             >
               <ChevronLeft size={16} />
@@ -285,11 +293,11 @@ const CategoryNavBar = () => {
 
         {/* Soft Right Fade + Arrow */}
         {canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-l from-[#1c0d09] via-[#1c0d09]/85 to-transparent pr-2 pl-6 pointer-events-auto">
+          <div className="absolute right-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-l from-[#1c0d09] via-[#1c0d09]/85 to-transparent pr-2 pl-6 pointer-events-none">
             <button
               type="button"
               onClick={() => scroll('right')}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-accent/25 text-brand-accent shadow-md transition-all hover:bg-brand-accent hover:text-[#1c0d09]"
+              className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full bg-brand-accent/25 text-brand-accent shadow-md transition-all hover:bg-brand-accent hover:text-[#1c0d09]"
               aria-label="Scroll categories right"
             >
               <ChevronRight size={16} />
@@ -297,10 +305,10 @@ const CategoryNavBar = () => {
           </div>
         )}
 
-        {/* Scrollable Container (Scrollbar Hidden) */}
+        {/* Scrollable Container (Finger Scrollable & Momentum Scroll Enabled) */}
         <div
           ref={scrollContainerRef}
-          className="flex items-center gap-3 py-2.5 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          className="flex items-center gap-3 py-2.5 overflow-x-auto touch-pan-x [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {/* Main All Categories badge */}
           <Link
