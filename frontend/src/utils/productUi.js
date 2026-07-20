@@ -138,15 +138,16 @@ export const normalizeProductPayload = (data) => {
   };
 };
 
-export const formatCurrency = (value = 0, currency = 'LKR') => {
+export const formatCurrency = (value = 0) => {
   const parsedValue = Number(value) || 0;
   try {
     return new Intl.NumberFormat('en-LK', {
       style: 'currency',
-      currency,
+      currency: 'LKR',
+      maximumFractionDigits: 2,
     }).format(parsedValue);
   } catch {
-    return `${currency} ${parsedValue.toFixed(2)}`;
+    return `LKR ${parsedValue.toFixed(2)}`;
   }
 };
 

@@ -730,10 +730,7 @@ const CheckoutInner = () => {
                       setQuote(null);
                     }}
                     options={[
-                      { value: 'LKR', label: 'LKR' },
-                      { value: 'USD', label: 'USD' },
-                      { value: 'EUR', label: 'EUR' },
-                      { value: 'GBP', label: 'GBP' },
+                      { value: 'LKR', label: 'LKR (Sri Lankan Rupee)' },
                     ]}
                   />
                 </div>

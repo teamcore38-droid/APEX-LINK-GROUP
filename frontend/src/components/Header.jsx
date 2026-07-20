@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import CurrencySelector from './CurrencySelector';
+
 
 const PRIMARY_NAV_LINKS = [
   ['HOME', '/'],
@@ -126,9 +126,7 @@ const Header = () => {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
-          <div className="hidden sm:block">
-            <CurrencySelector />
-          </div>
+
 
           <Link to="/cart" className="relative inline-flex items-center transition-colors hover:text-brand-accent">
             <div className="relative">
@@ -328,10 +326,7 @@ const Header = () => {
             {mobileNavOpen && (
               <div className="fixed inset-x-0 top-[65px] border-t border-white/10 bg-[#1f0f0a] px-4 py-4 font-['Times_New_Roman',_Times,_Georgia,_serif] shadow-2xl animate-in fade-in slide-in-from-top-1 z-50">
                 <div className="container mx-auto space-y-3">
-                  <div className="mb-3 sm:hidden">
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent/80">Currency Preference</p>
-                    <CurrencySelector isMobile={true} />
-                  </div>
+
 
                   <div className="grid gap-2 rounded-2xl border border-white/10 bg-white/5 p-2">
                     {PRIMARY_NAV_LINKS.map(([label, path]) => (
