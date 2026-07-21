@@ -2,6 +2,7 @@ import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
 import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
+import { destroyProductImage } from '../utils/cloudinaryService.js';
 
 const slugify = (value = '') =>
   value
@@ -122,6 +123,7 @@ const createCategory = async (req, res) => {
       slug: rawSlug = '',
       description = '',
       image = '',
+      imagePublicId = '',
       isActive = true,
       displayOrder = 0,
       parentCategory = null,
@@ -154,6 +156,7 @@ const createCategory = async (req, res) => {
       slug: normalizedSlug,
       description: description.trim(),
       image: image.trim(),
+      imagePublicId: imagePublicId.trim(),
       isActive: normalizeBoolean(isActive, true),
       displayOrder: Number(displayOrder) || 0,
       parentCategory: parentCategory || null,
@@ -191,6 +194,7 @@ const updateCategory = async (req, res) => {
       slug: rawSlug = category.slug,
       description = category.description,
       image = category.image,
+      imagePublicId = category.imagePublicId,
       isActive = category.isActive,
       displayOrder = category.displayOrder,
       parentCategory = category.parentCategory,
@@ -223,10 +227,22 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ message: 'A category cannot be set as its own parent' });
     }
 
+    // Clean up old Cloudinary image if it was replaced or cleared
+    const oldPublicId = category.imagePublicId;
+    const newPublicId = String(imagePublicId).trim();
+    if (oldPublicId && oldPublicId !== newPublicId) {
+      try {
+        await destroyProductImage(oldPublicId);
+      } catch (destroyErr) {
+        console.error('[categoryController:updateCategory] Failed to cleanup old image:', destroyErr);
+      }
+    }
+
     category.name = trimmedName;
     category.slug = normalizedSlug;
     category.description = String(description).trim();
     category.image = String(image).trim();
+    category.imagePublicId = newPublicId;
     category.isActive = normalizeBoolean(isActive, category.isActive);
     category.displayOrder = Number(displayOrder) || 0;
     category.parentCategory = parentCategory || null;
@@ -278,6 +294,15 @@ const deleteCategory = async (req, res) => {
       return res.status(400).json({
         message: 'This category has products assigned to it. Reassign those products before deleting the category.',
       });
+    }
+
+    // Delete associated Cloudinary image if present
+    if (category.imagePublicId) {
+      try {
+        await destroyProductImage(category.imagePublicId);
+      } catch (destroyErr) {
+        console.error('[categoryController:deleteCategory] Failed to delete Cloudinary image:', destroyErr);
+      }
     }
 
     await Category.deleteOne({ _id: category._id });
