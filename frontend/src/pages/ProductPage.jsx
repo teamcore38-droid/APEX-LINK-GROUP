@@ -797,23 +797,25 @@ const ProductPage = () => {
           </div>
         </section>
 
-        <section className="mt-16 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-8">
-          <div className="mb-8">
+        <section className="mt-12 rounded-[28px] bg-white p-5 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-6">
+          <div className="mb-5">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Trust & Quality</p>
-            <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Why customers choose Apex Link Group</h2>
+            <h2 className="mt-1 font-serif text-2xl font-bold text-brand-dark sm:text-3xl">Why customers choose Apex Link Group</h2>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {TRUST_POINTS.map(([title, subtitle], index) => {
               const Icon = [BadgeCheck, Sparkles, ShieldCheck, Truck][index];
 
               return (
-                <div key={title} className="rounded-[24px] bg-[#f8efe6] p-5">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
-                    <Icon size={20} />
+                <div key={title} className="flex items-start gap-3.5 rounded-[20px] bg-[#f8efe6] p-3.5 sm:p-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
+                    <Icon size={18} />
                   </div>
-                  <h3 className="mt-4 text-lg font-bold text-brand-dark">{title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-gray-600">{subtitle}</p>
+                  <div>
+                    <h3 className="text-base font-bold text-brand-dark leading-tight">{title}</h3>
+                    <p className="mt-1 text-xs leading-relaxed text-gray-600">{subtitle}</p>
+                  </div>
                 </div>
               );
             })}
