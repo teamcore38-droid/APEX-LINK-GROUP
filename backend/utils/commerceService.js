@@ -52,7 +52,14 @@ const getVariant = (product, variantId) => {
   return product.variants?.find((variant) => variant._id.toString() === String(variantId)) || null;
 };
 
-const getAvailableStock = (product, variant = null) => {
+const getAvailableStock = (product, variant = null, itemSize = '') => {
+  if (product?.hasSizes && itemSize && Array.isArray(product.sizes)) {
+    const sizeObj = product.sizes.find((s) => s.size === itemSize);
+    if (sizeObj) {
+      return Math.max(Number(sizeObj.countInStock || 0) - Number(sizeObj.reservedStock || 0), 0);
+    }
+  }
+
   const stockHolder = variant || product;
   return Math.max(Number(stockHolder.countInStock || 0) - Number(stockHolder.reservedStock || 0), 0);
 };
@@ -93,7 +100,7 @@ const normalizeCartItems = async (cartItems = []) => {
       throw new Error(`${product.name} quantity must be greater than zero`);
     }
 
-    const availableStock = getAvailableStock(product, variant);
+    const availableStock = getAvailableStock(product, variant, item.size);
 
     if (qty > availableStock) {
       throw new Error(`${product.name} has only ${availableStock} available`);
@@ -114,6 +121,7 @@ const normalizeCartItems = async (cartItems = []) => {
       vendorName: vendor?.businessName || '',
       variantId: variant?._id || null,
       variantLabel: variant?.label || '',
+      size: String(item.size || '').trim(),
       sku: variant?.sku || product.sku || '',
       commissionRate,
       commissionAmount,

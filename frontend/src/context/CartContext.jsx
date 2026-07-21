@@ -81,10 +81,11 @@ export const CartProvider = ({ children }) => {
     setCartItems(prev => {
       const productId = product._id || product.product;
       const variantId = product.variantId || '';
-      const existItem = prev.find(x => x.product === productId && (x.variantId || '') === variantId);
+      const size = product.size || '';
+      const existItem = prev.find(x => x.product === productId && (x.variantId || '') === variantId && (x.size || '') === size);
       if (existItem) {
         return prev.map(x => 
-          x.product === existItem.product && (x.variantId || '') === variantId
+          x.product === existItem.product && (x.variantId || '') === variantId && (x.size || '') === size
             ? { ...x, qty } // Replace old qty with new qty
             : x
         );
@@ -96,6 +97,7 @@ export const CartProvider = ({ children }) => {
           price: product.price,
           variantId,
           variantLabel: product.variantLabel || '',
+          size,
           sku: product.sku || '',
           countInStock: product.countInStock,
           qty

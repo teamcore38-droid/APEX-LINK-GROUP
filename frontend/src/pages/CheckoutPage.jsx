@@ -558,7 +558,15 @@ const CheckoutInner = () => {
                       <img src={item.image} alt={item.name} className="h-14 w-14 rounded-2xl object-cover" />
                       <div>
                         <h4 className="text-sm font-bold text-brand-dark">{item.name}</h4>
-                        <p className="text-xs text-gray-500">Qty: {item.qty}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                          <span>Qty: {item.qty}</span>
+                          {item.variantLabel && <span>• {item.variantLabel}</span>}
+                          {item.size && (
+                            <span className="rounded bg-[#f5e9dd] px-1.5 py-0.2 text-[10px] font-bold text-[#744126]">
+                              Size: {item.size}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <span className="text-sm font-semibold text-brand-dark">

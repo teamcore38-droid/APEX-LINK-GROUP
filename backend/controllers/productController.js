@@ -407,6 +407,14 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       countInStock: Number.isNaN(countInStock) ? 0 : countInStock,
       lowStockThreshold: Number.isNaN(lowStockThreshold) ? 10 : lowStockThreshold,
       variants,
+      hasSizes: Boolean(payload.hasSizes),
+      sizes: Array.isArray(payload.sizes)
+        ? payload.sizes.map((s) => ({
+            size: String(s.size || '').trim(),
+            countInStock: Math.max(0, Number(s.countInStock || 0)),
+            reservedStock: Math.max(0, Number(s.reservedStock || 0)),
+          })).filter((s) => Boolean(s.size))
+        : [],
       image: String(payload.image || '').trim(),
       imagePublicId: String(payload.imagePublicId || '').trim(),
       images: normalizeImageList(payload.images, payload.image, payload.imagePublicId),

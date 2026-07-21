@@ -1040,6 +1040,155 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                 </div>
               </div>
 
+              {/* Product Sizes Management Section */}
+              <div className="rounded-[24px] border border-[#ead6c6] bg-[#fffaf4] p-4 sm:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-serif text-base font-bold text-brand-dark">Product Sizes & Stock</h3>
+                    <p className="mt-1 text-xs leading-6 text-gray-500">
+                      Enable size selection (e.g. S, M, L, XL or UK/IND 36-45) with independent stock levels per size.
+                    </p>
+                  </div>
+
+                  <label className="inline-flex shrink-0 items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-dark shadow-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="hasSizes"
+                      checked={Boolean(form.hasSizes)}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        setForm((prev) => ({
+                          ...prev,
+                          hasSizes: isChecked,
+                          sizes: isChecked && (!prev.sizes || prev.sizes.length === 0)
+                            ? [
+                                { size: 'S', countInStock: 10 },
+                                { size: 'M', countInStock: 15 },
+                                { size: 'L', countInStock: 10 },
+                              ]
+                            : prev.sizes || [],
+                        }));
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-accent"
+                    />
+                    Enable Size Selection
+                  </label>
+                </div>
+
+                {form.hasSizes && (
+                  <div className="mt-5 border-t border-[#ead6c6] pt-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                      <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Quick Presets:</span>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              sizes: [
+                                { size: 'S', countInStock: 10 },
+                                { size: 'M', countInStock: 15 },
+                                { size: 'L', countInStock: 15 },
+                                { size: 'XL', countInStock: 10 },
+                                { size: 'XXL', countInStock: 5 },
+                              ],
+                            }));
+                          }}
+                          className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
+                        >
+                          Clothing (S - XXL)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              sizes: [
+                                { size: 'IND-4', countInStock: 10 },
+                                { size: 'IND-5', countInStock: 10 },
+                                { size: 'IND-6', countInStock: 15 },
+                                { size: 'IND-7', countInStock: 15 },
+                                { size: 'IND-8', countInStock: 10 },
+                                { size: 'IND-9', countInStock: 5 },
+                              ],
+                            }));
+                          }}
+                          className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
+                        >
+                          Shoes (IND 4 - 9)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              sizes: [...(prev.sizes || []), { size: '', countInStock: 0 }],
+                            }));
+                          }}
+                          className="inline-flex items-center rounded-full bg-brand-primary px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark transition"
+                        >
+                          <Plus size={14} className="mr-1" /> Add Custom Size
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {(form.sizes || []).map((sizeItem, sizeIndex) => (
+                        <div
+                          key={`size-${sizeIndex}`}
+                          className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-xs"
+                        >
+                          <input
+                            type="text"
+                            placeholder="Size (e.g. M / 42)"
+                            value={sizeItem.size}
+                            onChange={(e) => {
+                              const newSizeVal = e.target.value;
+                              setForm((prev) => {
+                                const nextSizes = [...(prev.sizes || [])];
+                                nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], size: newSizeVal };
+                                return { ...prev, sizes: nextSizes };
+                              });
+                            }}
+                            className="w-28 rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
+                          />
+                          <div className="flex flex-1 items-center gap-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Qty:</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={sizeItem.countInStock}
+                              onChange={(e) => {
+                                const newQty = Math.max(0, Number(e.target.value) || 0);
+                                setForm((prev) => {
+                                  const nextSizes = [...(prev.sizes || [])];
+                                  nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], countInStock: newQty };
+                                  return { ...prev, sizes: nextSizes };
+                                });
+                              }}
+                              className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-2.5 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent text-center"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm((prev) => ({
+                                ...prev,
+                                sizes: (prev.sizes || []).filter((_, idx) => idx !== sizeIndex),
+                              }));
+                            }}
+                            className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition"
+                            title="Remove size"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-[24px] border border-[#ead6c6] bg-[#fffaf4] p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>

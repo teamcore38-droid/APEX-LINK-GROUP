@@ -564,7 +564,15 @@ const AdminOrderDetailPage = () => {
                         />
                         <div>
                           <p className="font-serif text-lg font-bold text-brand-dark">{item.name}</p>
-                          <p className="mt-1 text-sm text-gray-500">Quantity: {item.qty}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                            <span>Quantity: {item.qty}</span>
+                            {item.variantLabel && <span>• {item.variantLabel}</span>}
+                            {item.size && (
+                              <span className="rounded-md bg-[#f5e9dd] px-2 py-0.5 text-xs font-bold text-[#744126]">
+                                Size: {item.size}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500">Unit Price: {formatCurrency(item.price)}</p>
                         </div>
                       </div>

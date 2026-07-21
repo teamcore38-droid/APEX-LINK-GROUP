@@ -268,13 +268,20 @@ const CartPage = () => {
                 
                 <ul className="divide-y divide-gray-100">
                   {cartItems.map(item => (
-                    <li key={`${item.product}-${item.variantId || 'default'}`} className="p-6 flex flex-col md:grid md:grid-cols-5 items-center gap-4">
+                    <li key={`${item.product}-${item.variantId || 'default'}-${item.size || 'nosize'}`} className="p-6 flex flex-col md:grid md:grid-cols-5 items-center gap-4">
                       <div className="col-span-2 flex items-center w-full">
                         <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded" />
                         <Link to={`/product/${item.product}`} className="ml-4 font-semibold text-brand-dark hover:text-brand-primary">
                           {item.name}
-                          {item.variantLabel && (
-                            <span className="mt-1 block text-xs font-medium text-gray-500">{item.variantLabel}</span>
+                          {(item.variantLabel || item.size) && (
+                            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-gray-500">
+                              {item.variantLabel && <span>{item.variantLabel}</span>}
+                              {item.size && (
+                                <span className="rounded-md bg-[#f5e9dd] px-2 py-0.5 text-[11px] font-bold text-[#744126]">
+                                  Size: {item.size}
+                                </span>
+                              )}
+                            </span>
                           )}
                         </Link>
                       </div>

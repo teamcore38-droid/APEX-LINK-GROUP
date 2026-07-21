@@ -75,6 +75,27 @@ const variantSchema = mongoose.Schema(
   }
 );
 
+const sizeSchema = mongoose.Schema(
+  {
+    size: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    countInStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    reservedStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+  },
+  { _id: false }
+);
+
 const productSchema = mongoose.Schema(
   {
     user: {
@@ -165,6 +186,14 @@ const productSchema = mongoose.Schema(
     },
     variants: {
       type: [variantSchema],
+      default: [],
+    },
+    hasSizes: {
+      type: Boolean,
+      default: false,
+    },
+    sizes: {
+      type: [sizeSchema],
       default: [],
     },
     rating: {

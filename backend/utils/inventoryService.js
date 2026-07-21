@@ -3,7 +3,14 @@ import InventoryEvent from '../models/inventoryEventModel.js';
 
 const getActorName = (actor = {}) => actor.name || actor.email || '';
 
-const getStockHolder = (product, variantId = null) => {
+const getStockHolder = (product, variantId = null, size = '') => {
+  if (product?.hasSizes && size && Array.isArray(product.sizes)) {
+    const sizeObj = product.sizes.find((s) => s.size === size);
+    if (sizeObj) {
+      return sizeObj;
+    }
+  }
+
   if (!variantId) {
     return product;
   }
@@ -64,7 +71,7 @@ const applyReservation = async ({ order, actor = {} }) => {
 
   for (const item of order.orderItems) {
     const product = await Product.findById(item.product);
-    const holder = product ? getStockHolder(product, item.variantId) : null;
+    const holder = product ? getStockHolder(product, item.variantId, item.size) : null;
 
     if (!product || !holder) {
       throw new Error(`${item.name} is no longer available`);
@@ -113,7 +120,7 @@ const deductReservedInventory = async ({ order, actor = {} }) => {
 
   for (const item of order.orderItems) {
     const product = await Product.findById(item.product);
-    const holder = product ? getStockHolder(product, item.variantId) : null;
+    const holder = product ? getStockHolder(product, item.variantId, item.size) : null;
 
     if (!product || !holder) {
       throw new Error(`${item.name} is no longer available`);
@@ -153,7 +160,7 @@ const releaseReservedInventory = async ({ order, actor = {}, note = '' }) => {
 
   for (const item of order.orderItems) {
     const product = await Product.findById(item.product);
-    const holder = product ? getStockHolder(product, item.variantId) : null;
+    const holder = product ? getStockHolder(product, item.variantId, item.size) : null;
 
     if (!product || !holder) {
       continue;

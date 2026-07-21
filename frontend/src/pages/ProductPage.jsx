@@ -180,23 +180,37 @@ const ProductPage = () => {
 
       if (relatedResult.status === 'fulfilled') {
         const relatedPayload = normalizeProductPayload(relatedResult.value.data);
-        setRelatedProducts(relatedPayload.products);
-      } else {
-        console.error(relatedResult.reason);
-        setRelatedProducts([]);
-      }
+      try {
+        const [relatedRes, reviewsRes, wishlistRes, seoRes] = await Promise.allSettled([
+          axios.get('/api/customer/recommendations', {
+            params: { productId: data._id, category: data.category, limit: 4 },
+          }),
+          axios.get(`/api/reviews/product/${data._id}`),
+          userInfo?.token
+            ? axios.get('/api/customer/wishlist', {
+                headers: { Authorization: `Bearer ${userInfo.token}` },
+              })
+            : Promise.resolve({ data: [] }),
+          axios.get(`/api/seo/product/${data._id}`).catch(() => null),
+        ]);
 
-      if (recentlyViewedResult.status === 'rejected') {
-        console.error(recentlyViewedResult.reason);
+        if (!isActive) return;
+
+        if (relatedRes.status === 'fulfilled') setRelatedProducts(relatedRes.value.data);
+        if (reviewsRes.status === 'fulfilled') setReviews(reviewsRes.value.data);
+
+        if (seoRes.status === 'fulfilled' && seoRes.value?.data) {
+          applyProductSeo(data, seoRes.value.data);
+        }
+      } catch (err) {
+        console.error(err);
       }
     };
 
     const fetchProduct = async () => {
       setLoading(true);
       setError('');
-      setRelatedProducts([]);
-      setRecommendedProducts([]);
-      setReviews([]);
+      setSizeError('');
 
       try {
         const { data } = await axios.get(`/api/products/${id}`);
@@ -211,6 +225,15 @@ const ProductPage = () => {
         const firstVariantGallery = getVariantImageUrls(firstActiveVariant);
         setSelectedImage(firstVariantGallery[0] || gallery[0] || data.image);
         setSelectedVariantId(firstActiveVariant?._id ? String(firstActiveVariant._id) : '');
+
+        // Pre-select first available in-stock size if product has sizes enabled
+        if (data.hasSizes && Array.isArray(data.sizes) && data.sizes.length > 0) {
+          const firstInStockSize = data.sizes.find((s) => Number(s.countInStock || 0) > 0);
+          setSelectedSize(firstInStockSize ? firstInStockSize.size : '');
+        } else {
+          setSelectedSize('');
+        }
+
         setQty(1);
         setLoading(false);
 
@@ -237,6 +260,11 @@ const ProductPage = () => {
     () => product?.variants?.find((variant) => String(variant._id) === String(selectedVariantId)) || null,
     [product, selectedVariantId]
   );
+  const selectedSizeObj = useMemo(
+    () => (product?.hasSizes && selectedSize ? product.sizes?.find((s) => s.size === selectedSize) : null),
+    [product, selectedSize]
+  );
+
   const productImages = useMemo(() => {
     const variantImages = getVariantImageUrls(selectedVariant);
 
@@ -247,7 +275,15 @@ const ProductPage = () => {
     : productImages[0] || selectedImage || product?.image || '';
   const selectedImageIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
   const effectivePrice = Number(product?.price || 0) + Number(selectedVariant?.priceAdjustment || 0);
-  const effectiveStock = selectedVariant ? selectedVariant.countInStock : product?.countInStock || 0;
+
+  const effectiveStock = useMemo(() => {
+    if (selectedSizeObj) {
+      return Number(selectedSizeObj.countInStock || 0);
+    }
+
+    return selectedVariant ? Number(selectedVariant.countInStock || 0) : Number(product?.countInStock || 0);
+  }, [selectedSizeObj, selectedVariant, product]);
+
   const stockPresentation = getStockPresentation(effectiveStock || 0);
 
   useEffect(() => {
@@ -258,30 +294,15 @@ const ProductPage = () => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         setIsLightboxOpen(false);
-      }
-
-      if (event.key === 'ArrowLeft') {
-        setSelectedImage((currentImage) => {
-          const currentIndex = Math.max(0, productImages.indexOf(currentImage));
-          return productImages[(currentIndex - 1 + productImages.length) % productImages.length] || currentImage;
-        });
-      }
-
-      if (event.key === 'ArrowRight') {
-        setSelectedImage((currentImage) => {
-          const currentIndex = Math.max(0, productImages.indexOf(currentImage));
-          return productImages[(currentIndex + 1) % productImages.length] || currentImage;
-        });
+      } else if (event.key === 'ArrowLeft') {
+        showPreviousImage();
+      } else if (event.key === 'ArrowRight') {
+        showNextImage();
       }
     };
 
-    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, productImages]);
 
   if (loading) {
@@ -292,8 +313,8 @@ const ProductPage = () => {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-16">
         <div className="rounded-3xl border border-red-200 bg-white px-6 py-12 text-center shadow-sm">
-          <p className="font-serif text-3xl font-bold text-brand-dark">Product unavailable</p>
-          <p className="mt-3 text-sm text-red-700">{error || 'Unable to load this product.'}</p>
+          <p className="font-serif text-3xl font-bold text-brand-dark">Product Unavailable</p>
+          <p className="mt-3 text-sm text-red-700">{error || 'This product could not be found.'}</p>
           <Link
             to="/products"
             className="mt-8 inline-flex items-center rounded-md bg-brand-primary px-5 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white transition-colors duration-200 hover:bg-brand-dark"
@@ -321,11 +342,19 @@ const ProductPage = () => {
   };
 
   const handleAddToCart = () => {
+    if (product.hasSizes && product.sizes?.length > 0 && !selectedSize) {
+      setSizeError('Please select a size before adding to cart.');
+      return;
+    }
+
+    setSizeError('');
+
     addToCart(
       {
         ...product,
         price: effectivePrice,
         countInStock: effectiveStock,
+        size: selectedSize || '',
         variantId: selectedVariant?._id || '',
         variantLabel: selectedVariant?.label || '',
         sku: selectedVariant?.sku || product.sku || '',
@@ -653,7 +682,58 @@ const ProductPage = () => {
               )}
             </div>
 
+            {/* Standalone Size Selection Component */}
+            {product?.hasSizes && product?.sizes?.length > 0 && (
+              <div className="mt-6 rounded-[24px] border border-[#ecd9ca] bg-white p-5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-base font-bold text-brand-dark">Select Size</h3>
+                  {selectedSize && (
+                    <span className="text-xs font-semibold text-brand-primary">Selected: {selectedSize}</span>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2.5">
+                  {product.sizes.map((sizeObj) => {
+                    const isOutOfStock = Number(sizeObj.countInStock || 0) <= 0;
+                    const isSelected = selectedSize === sizeObj.size;
+
+                    return (
+                      <button
+                        key={sizeObj.size}
+                        type="button"
+                        disabled={isOutOfStock}
+                        onClick={() => {
+                          setSelectedSize(sizeObj.size);
+                          setQty(1);
+                        }}
+                        className={`group relative flex min-w-[70px] flex-col items-center justify-center rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                          isOutOfStock
+                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
+                            : isSelected
+                              ? 'border-brand-primary bg-brand-primary text-white shadow-md'
+                              : 'border-gray-300 bg-white text-brand-dark hover:border-brand-primary hover:bg-[#fff7ee]'
+                        }`}
+                      >
+                        <span className="text-sm">{sizeObj.size}</span>
+                        {isOutOfStock ? (
+                          <span className="text-[9px] font-semibold text-red-500 uppercase tracking-tighter">Out of Stock</span>
+                        ) : (
+                          <span className={`text-[10px] font-medium ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                            {formatCurrency(effectivePrice)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 rounded-[28px] border border-[#ecd9ca] bg-white p-4 sm:p-5 shadow-xs">
+              {sizeError && (
+                <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700">
+                  {sizeError}
+                </div>
+              )}
               {renderVariantSelection('lg:hidden mb-5')}
 
               <div className="space-y-3">

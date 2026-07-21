@@ -50,6 +50,8 @@ export const createInitialProductForm = () => ({
   imageList: '',
   imageAssets: [],
   variantsJson: '[]',
+  hasSizes: false,
+  sizes: [],
   shortDescription: '',
   description: '',
   origin: '',
@@ -314,6 +316,8 @@ export const buildProductFormFromProduct = (product = {}) => {
     imageList: additionalImages.map((image) => image.url).join('\n'),
     imageAssets: gallery,
     variantsJson: JSON.stringify(product.variants || [], null, 2),
+    hasSizes: Boolean(product.hasSizes),
+    sizes: Array.isArray(product.sizes) ? product.sizes.map(s => ({ size: s.size || '', countInStock: s.countInStock ?? 0 })) : [],
     shortDescription: product.shortDescription || '',
     description: product.description || '',
     origin: product.origin || '',
@@ -343,6 +347,13 @@ export const buildProductPayloadFromForm = (form) => {
     imagePublicId: primaryImage.publicId,
     images: gallery,
     variants: JSON.parse(form.variantsJson || '[]'),
+    hasSizes: Boolean(form.hasSizes),
+    sizes: Array.isArray(form.sizes)
+      ? form.sizes.map((s) => ({
+          size: String(s.size || '').trim(),
+          countInStock: Math.max(0, Number(s.countInStock || 0)),
+        })).filter((s) => Boolean(s.size))
+      : [],
     shortDescription: form.shortDescription.trim(),
     description: form.description.trim(),
     origin: form.origin.trim(),

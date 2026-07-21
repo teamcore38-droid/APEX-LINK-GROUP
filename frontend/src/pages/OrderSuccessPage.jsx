@@ -201,9 +201,15 @@ const OrderSuccessPage = () => {
                         />
                         <div>
                           <h3 className="font-serif text-xl font-bold text-brand-dark">{item.name}</h3>
-                          <p className="text-sm text-gray-500">
-                            Qty: {item.qty} • {formatCurrency(item.price)} each
-                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
+                            <span>Qty: {item.qty} • {formatCurrency(item.price)} each</span>
+                            {item.variantLabel && <span>• {item.variantLabel}</span>}
+                            {item.size && (
+                              <span className="rounded-md bg-[#f5e9dd] px-2 py-0.5 text-xs font-bold text-[#744126]">
+                                Size: {item.size}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <p className="font-serif text-xl font-bold text-brand-primary">
