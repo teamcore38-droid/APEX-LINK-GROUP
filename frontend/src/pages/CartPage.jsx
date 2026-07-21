@@ -322,7 +322,7 @@ const CartPage = () => {
                         <span className="md:hidden">Total: </span>
                         {formatCurrency(item.price * item.qty)}
                         <button 
-                          onClick={() => removeFromCart(item.product)}
+                          onClick={() => removeFromCart(item)}
                           className="ml-4 text-red-500 hover:text-red-700 transition-colors"
                           title="Remove from Cart"
                         >

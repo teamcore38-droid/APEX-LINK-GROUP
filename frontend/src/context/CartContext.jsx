@@ -108,8 +108,18 @@ export const CartProvider = ({ children }) => {
     });
   };
 
-  const removeFromCart = (id) => {
-    const item = cartItems.find((cartItem) => cartItem.product === id);
+  const removeFromCart = (targetItem) => {
+    const targetProductId = typeof targetItem === 'object' ? targetItem.product : targetItem;
+    const targetVariantId = typeof targetItem === 'object' ? targetItem.variantId || '' : '';
+    const targetSize = typeof targetItem === 'object' ? targetItem.size || '' : '';
+    const targetColor = typeof targetItem === 'object' ? targetItem.color || '' : '';
+    const item = cartItems.find((cartItem) =>
+      cartItem.product === targetProductId &&
+        (typeof targetItem !== 'object' ||
+          ((cartItem.variantId || '') === targetVariantId &&
+            (cartItem.size || '') === targetSize &&
+            (cartItem.color || '') === targetColor))
+    );
     if (item) {
       trackEvent('remove_from_cart', {
         productId: item.product,
@@ -119,7 +129,21 @@ export const CartProvider = ({ children }) => {
       });
     }
 
-    setCartItems(prev => prev.filter(x => x.product !== id));
+    setCartItems(prev => prev.filter((cartItem) => {
+      if (cartItem.product !== targetProductId) {
+        return true;
+      }
+
+      if (typeof targetItem !== 'object') {
+        return false;
+      }
+
+      return (
+        (cartItem.variantId || '') !== targetVariantId ||
+        (cartItem.size || '') !== targetSize ||
+        (cartItem.color || '') !== targetColor
+      );
+    }));
   };
 
   const clearCart = () => {

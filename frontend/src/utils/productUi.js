@@ -322,6 +322,7 @@ export const buildProductFormFromProduct = (product = {}) => {
           size: s.size || '',
           price: s.price ?? 0,
           countInStock: s.countInStock ?? 0,
+          reservedStock: s.reservedStock ?? 0,
           colors: Array.isArray(s.colors) ? s.colors : [],
         }))
       : [],
@@ -361,6 +362,7 @@ export const buildProductPayloadFromForm = (form) => {
             size: String(s.size || '').trim(),
             price: Number(s.price || 0),
             countInStock: Math.max(0, Number(s.countInStock || 0)),
+            reservedStock: Math.max(0, Number(s.reservedStock || 0)),
             colors: Array.isArray(s.colors)
               ? s.colors.map((c) => String(c || '').trim()).filter(Boolean)
               : [],

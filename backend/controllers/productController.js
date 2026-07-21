@@ -196,6 +196,11 @@ const normalizeVariants = (variants = []) => {
         sku: String(variant.sku || '').trim(),
         size: String(variant.size || '').trim(),
         color: String(variant.color || '').trim(),
+        availableSizes: Array.isArray(variant.availableSizes)
+          ? variant.availableSizes.map((size) => String(size || '').trim()).filter(Boolean)
+          : typeof variant.availableSizes === 'string'
+            ? variant.availableSizes.split(',').map((size) => size.trim()).filter(Boolean)
+            : [],
         image: primaryImage.url,
         imagePublicId: primaryImage.publicId,
         images: normalizedImages,
@@ -384,6 +389,34 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
     errors.push('A valid product slug is required');
   }
 
+  const normalizedSizes = Array.isArray(payload.sizes)
+    ? payload.sizes.map((s) => ({
+        size: String(s.size || '').trim(),
+        price: Number.isNaN(Number(s.price)) || Number(s.price) < 0 ? 0 : Number(s.price),
+        countInStock: Math.max(0, Number(s.countInStock || 0)),
+        reservedStock: Math.max(0, Number(s.reservedStock || 0)),
+        colors: Array.isArray(s.colors)
+          ? s.colors.map((c) => String(c || '').trim()).filter(Boolean)
+          : typeof s.colors === 'string'
+            ? s.colors.split(',').map((c) => c.trim()).filter(Boolean)
+            : [],
+      })).filter((s) => Boolean(s.size))
+    : [];
+
+  if (payload.hasSizes && normalizedSizes.length === 0) {
+    errors.push('Add at least one size option or turn off size selection');
+  }
+
+  normalizedSizes.forEach((sizeOption) => {
+    if (Number.isNaN(sizeOption.price) || sizeOption.price < 0) {
+      errors.push(`Size ${sizeOption.size} price must be a valid non-negative number`);
+    }
+
+    if (Number.isNaN(sizeOption.countInStock) || sizeOption.countInStock < 0) {
+      errors.push(`Size ${sizeOption.size} stock cannot be negative`);
+    }
+  });
+
   const existingSlug = slug ? await findExistingSlugConflict(slug, productId) : null;
 
   if (existingSlug) {
@@ -408,19 +441,7 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       lowStockThreshold: Number.isNaN(lowStockThreshold) ? 10 : lowStockThreshold,
       variants,
       hasSizes: Boolean(payload.hasSizes),
-      sizes: Array.isArray(payload.sizes)
-        ? payload.sizes.map((s) => ({
-            size: String(s.size || '').trim(),
-            price: Number.isNaN(Number(s.price)) || Number(s.price) < 0 ? 0 : Number(s.price),
-            countInStock: Math.max(0, Number(s.countInStock || 0)),
-            reservedStock: Math.max(0, Number(s.reservedStock || 0)),
-            colors: Array.isArray(s.colors)
-              ? s.colors.map((c) => String(c || '').trim()).filter(Boolean)
-              : typeof s.colors === 'string'
-                ? s.colors.split(',').map((c) => c.trim()).filter(Boolean)
-                : [],
-          })).filter((s) => Boolean(s.size))
-        : [],
+      sizes: normalizedSizes,
       image: String(payload.image || '').trim(),
       imagePublicId: String(payload.imagePublicId || '').trim(),
       images: normalizeImageList(payload.images, payload.image, payload.imagePublicId),
@@ -757,6 +778,8 @@ const createProduct = async (req, res) => {
       countInStock: normalized.countInStock,
       lowStockThreshold: normalized.lowStockThreshold,
       variants: normalized.variants,
+      hasSizes: normalized.hasSizes,
+      sizes: normalized.sizes,
       rating: 0,
       numReviews: 0,
       weight: normalized.weight,
@@ -820,6 +843,8 @@ const updateProduct = async (req, res) => {
     product.countInStock = normalized.countInStock;
     product.lowStockThreshold = normalized.lowStockThreshold;
     product.variants = normalized.variants;
+    product.hasSizes = normalized.hasSizes;
+    product.sizes = normalized.sizes;
     product.shortDescription =
       normalized.shortDescription || normalized.description.slice(0, 160).trim();
     product.description = normalized.description;

@@ -72,6 +72,28 @@ const validateForm = (form) => {
     return 'Low-stock threshold cannot be negative.';
   }
 
+  if (form.hasSizes) {
+    const sizes = Array.isArray(form.sizes) ? form.sizes : [];
+
+    if (sizes.length === 0) {
+      return 'Add at least one size option or turn off size selection.';
+    }
+
+    for (const sizeOption of sizes) {
+      if (!String(sizeOption.size || '').trim()) {
+        return 'Every size option needs a size label.';
+      }
+
+      if (Number.isNaN(Number(sizeOption.price)) || Number(sizeOption.price) < 0) {
+        return `Size ${sizeOption.size} needs a valid price.`;
+      }
+
+      if (Number.isNaN(Number(sizeOption.countInStock)) || Number(sizeOption.countInStock) < 0) {
+        return `Size ${sizeOption.size} stock quantity cannot be negative.`;
+      }
+    }
+  }
+
   try {
     JSON.parse(form.variantsJson || '[]');
   } catch {
@@ -402,15 +424,13 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
       {
         label: `Color option ${currentVariants.length + 1}`,
         sku: '',
-        size: '',
         color: '',
+        availableSizes: [],
         image: '',
         imagePublicId: '',
         images: [],
         weight: '',
         packaging: '',
-        priceAdjustment: 0,
-        countInStock: 0,
         lowStockThreshold: 5,
         isActive: true,
       },
@@ -601,6 +621,78 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
       variantIndex,
       [image, ...variantImages.filter((variantImage) => getAssetKey(variantImage) !== getAssetKey(image))]
     );
+  };
+
+  const updateSizeOption = (sizeIndex, fields) => {
+    setError('');
+    setSuccess('');
+    setForm((currentForm) => {
+      const nextSizes = [...(currentForm.sizes || [])];
+      nextSizes[sizeIndex] = {
+        ...nextSizes[sizeIndex],
+        ...fields,
+      };
+
+      return {
+        ...currentForm,
+        sizes: nextSizes,
+      };
+    });
+  };
+
+  const addSizeOption = (size = '') => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      hasSizes: true,
+      sizes: [
+        ...(currentForm.sizes || []),
+        {
+          size,
+          price: Number(currentForm.price || 0),
+          countInStock: 0,
+          colors: [],
+        },
+      ],
+    }));
+  };
+
+  const setSizePreset = (sizes) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      hasSizes: true,
+      sizes: sizes.map((size) => ({
+        size,
+        price: Number(currentForm.price || 0),
+        countInStock: 0,
+        colors: [],
+      })),
+    }));
+  };
+
+  const getSizesForColor = (colorName) =>
+    (form.sizes || [])
+      .filter((sizeOption) => (sizeOption.colors || []).some((color) => color.toLowerCase() === colorName.toLowerCase()))
+      .map((sizeOption) => sizeOption.size);
+
+  const toggleColorForSize = (colorName, sizeName) => {
+    setForm((currentForm) => ({
+      ...currentForm,
+      sizes: (currentForm.sizes || []).map((sizeOption) => {
+        if (sizeOption.size !== sizeName) {
+          return sizeOption;
+        }
+
+        const currentColors = Array.isArray(sizeOption.colors) ? sizeOption.colors : [];
+        const hasColor = currentColors.some((color) => color.toLowerCase() === colorName.toLowerCase());
+
+        return {
+          ...sizeOption,
+          colors: hasColor
+            ? currentColors.filter((color) => color.toLowerCase() !== colorName.toLowerCase())
+            : [...currentColors, colorName],
+        };
+      }),
+    }));
   };
 
   const submitHandler = async (event) => {
@@ -1044,9 +1136,10 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
               <div className="rounded-[24px] border border-[#ead6c6] bg-[#fffaf4] p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="font-serif text-base font-bold text-brand-dark">Product Sizes & Stock</h3>
+                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Size Options</p>
+                    <h3 className="mt-1 font-serif text-xl font-bold text-brand-dark">Dedicated size pricing and stock</h3>
                     <p className="mt-1 text-xs leading-6 text-gray-500">
-                      Enable size selection (e.g. S, M, L, XL or UK/IND 36-45) with independent stock levels per size.
+                      Each size has its own storefront price, stock quantity, and available colors.
                     </p>
                   </div>
 
@@ -1062,9 +1155,9 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                           hasSizes: isChecked,
                           sizes: isChecked && (!prev.sizes || prev.sizes.length === 0)
                             ? [
-                                { size: 'S', countInStock: 10 },
-                                { size: 'M', countInStock: 15 },
-                                { size: 'L', countInStock: 10 },
+                                { size: 'S', price: Number(prev.price || 0), countInStock: 10, colors: [] },
+                                { size: 'M', price: Number(prev.price || 0), countInStock: 15, colors: [] },
+                                { size: 'L', price: Number(prev.price || 0), countInStock: 10, colors: [] },
                               ]
                             : prev.sizes || [],
                         }));
@@ -1077,54 +1170,26 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
                 {form.hasSizes && (
                   <div className="mt-5 border-t border-[#ead6c6] pt-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                      <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Quick Presets:</span>
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Quick Presets</span>
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setForm((prev) => ({
-                              ...prev,
-                              sizes: [
-                                { size: 'S', countInStock: 10 },
-                                { size: 'M', countInStock: 15 },
-                                { size: 'L', countInStock: 15 },
-                                { size: 'XL', countInStock: 10 },
-                                { size: 'XXL', countInStock: 5 },
-                              ],
-                            }));
-                          }}
+                          onClick={() => setSizePreset(['S', 'M', 'L', 'XL', 'XXL'])}
                           className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
                         >
                           Clothing (S - XXL)
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setForm((prev) => ({
-                              ...prev,
-                              sizes: [
-                                { size: 'IND-4', countInStock: 10 },
-                                { size: 'IND-5', countInStock: 10 },
-                                { size: 'IND-6', countInStock: 15 },
-                                { size: 'IND-7', countInStock: 15 },
-                                { size: 'IND-8', countInStock: 10 },
-                                { size: 'IND-9', countInStock: 5 },
-                              ],
-                            }));
-                          }}
+                          onClick={() => setSizePreset(['IND-4', 'IND-5', 'IND-6', 'IND-7', 'IND-8', 'IND-9'])}
                           className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
                         >
                           Shoes (IND 4 - 9)
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setForm((prev) => ({
-                              ...prev,
-                              sizes: [...(prev.sizes || []), { size: '', countInStock: 0 }],
-                            }));
-                          }}
+                          onClick={() => addSizeOption()}
                           className="inline-flex items-center rounded-full bg-brand-primary px-3 py-1 text-xs font-semibold text-white hover:bg-brand-dark transition"
                         >
                           <Plus size={14} className="mr-1" /> Add Custom Size
@@ -1147,11 +1212,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                                 value={sizeItem.size}
                                 onChange={(e) => {
                                   const newSizeVal = e.target.value;
-                                  setForm((prev) => {
-                                    const nextSizes = [...(prev.sizes || [])];
-                                    nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], size: newSizeVal };
-                                    return { ...prev, sizes: nextSizes };
-                                  });
+                                  updateSizeOption(sizeIndex, { size: newSizeVal });
                                 }}
                                 className="w-32 rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-1.5 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
                               />
@@ -1183,11 +1244,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                                 value={sizeItem.price || ''}
                                 onChange={(e) => {
                                   const val = Number(e.target.value) || 0;
-                                  setForm((prev) => {
-                                    const nextSizes = [...(prev.sizes || [])];
-                                    nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], price: val };
-                                    return { ...prev, sizes: nextSizes };
-                                  });
+                                  updateSizeOption(sizeIndex, { price: val });
                                 }}
                                 className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
                               />
@@ -1203,11 +1260,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                                 value={sizeItem.countInStock ?? 0}
                                 onChange={(e) => {
                                   const val = Math.max(0, Number(e.target.value) || 0);
-                                  setForm((prev) => {
-                                    const nextSizes = [...(prev.sizes || [])];
-                                    nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], countInStock: val };
-                                    return { ...prev, sizes: nextSizes };
-                                  });
+                                  updateSizeOption(sizeIndex, { countInStock: val });
                                 }}
                                 className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
                               />
@@ -1216,7 +1269,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
                           <div>
                             <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                              Available Colors for {sizeItem.size || 'this size'} (Comma Separated)
+                              Available Colors for {sizeItem.size || 'this size'}
                             </span>
                             <input
                               type="text"
@@ -1224,11 +1277,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                               value={Array.isArray(sizeItem.colors) ? sizeItem.colors.join(', ') : ''}
                               onChange={(e) => {
                                 const colorsArr = e.target.value.split(',').map((c) => c.trim()).filter(Boolean);
-                                setForm((prev) => {
-                                  const nextSizes = [...(prev.sizes || [])];
-                                  nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], colors: colorsArr };
-                                  return { ...prev, sizes: nextSizes };
-                                });
+                                updateSizeOption(sizeIndex, { colors: colorsArr });
                               }}
                               className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs text-brand-dark outline-none focus:border-brand-accent"
                             />
@@ -1243,9 +1292,10 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
               <div className="rounded-[24px] border border-[#ead6c6] bg-[#fffaf4] p-4 sm:p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-brand-dark">Color Variants</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Color Options</p>
+                    <h3 className="mt-1 font-serif text-xl font-bold text-brand-dark">Colors linked to sizes</h3>
                     <p className="mt-1 text-xs leading-6 text-gray-500">
-                      Add color, size, SKU, stock, and dedicated image galleries for each variant.
+                      Keep colors separate from size pricing and stock. Link each color to the sizes where it is available.
                     </p>
                   </div>
                   <button
@@ -1261,7 +1311,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                 <div className="mt-5 space-y-5">
                   {variants.length === 0 ? (
                     <div className="rounded-[20px] border border-dashed border-brand-accent/30 bg-white px-4 py-10 text-center text-sm text-gray-500">
-                      No variants yet. Add a color variant when a product has separate images, stock, or pricing by color.
+                      No colors yet. Add a color option when a product has selectable colors or color-specific images.
                     </div>
                   ) : (
                     variants.map((variant, variantIndex) => {
@@ -1282,7 +1332,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                                   type="text"
                                   value={variant.label || ''}
                                   onChange={(event) => updateVariantField(variantIndex, 'label', event.target.value)}
-                                  placeholder="Black / Size 42"
+                                  placeholder="Black"
                                   className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                                 />
                               </label>
@@ -1300,18 +1350,6 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                               </label>
                               <label className="block">
                                 <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
-                                  Size
-                                </span>
-                                <input
-                                  type="text"
-                                  value={variant.size || ''}
-                                  onChange={(event) => updateVariantField(variantIndex, 'size', event.target.value)}
-                                  placeholder="S, M, L, 42..."
-                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                                />
-                              </label>
-                              <label className="block">
-                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
                                   SKU
                                 </span>
                                 <input
@@ -1322,31 +1360,48 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                                   className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                                 />
                               </label>
-                              <label className="block">
+                              <div className="md:col-span-2">
                                 <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
-                                  Stock
+                                  Available Sizes
                                 </span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={variant.countInStock ?? 0}
-                                  onChange={(event) => updateVariantField(variantIndex, 'countInStock', Number(event.target.value))}
-                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                                />
-                              </label>
-                              <label className="block">
-                                <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
-                                  Price Adjustment
-                                </span>
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={variant.priceAdjustment ?? 0}
-                                  onChange={(event) => updateVariantField(variantIndex, 'priceAdjustment', Number(event.target.value))}
-                                  placeholder="0"
-                                  className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
-                                />
-                              </label>
+                                {(form.sizes || []).length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {(form.sizes || []).map((sizeOption) => {
+                                      const colorName = variant.color || variant.label || '';
+                                      const isLinked = colorName
+                                        ? (sizeOption.colors || []).some(
+                                            (color) => color.toLowerCase() === colorName.toLowerCase()
+                                          )
+                                        : false;
+
+                                      return (
+                                        <button
+                                          key={`${variantIndex}-${sizeOption.size}`}
+                                          type="button"
+                                          disabled={!colorName}
+                                          onClick={() => toggleColorForSize(colorName, sizeOption.size)}
+                                          className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                                            isLinked
+                                              ? 'border-brand-primary bg-brand-primary text-white'
+                                              : 'border-gray-200 bg-[#fff7ee] text-brand-dark hover:border-brand-primary'
+                                          } disabled:cursor-not-allowed disabled:opacity-50`}
+                                        >
+                                          {sizeOption.size}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <p className="rounded-xl border border-dashed border-brand-accent/30 bg-[#fff7ee] px-4 py-3 text-xs text-gray-500">
+                                    Add size options first to link this color to available sizes.
+                                  </p>
+                                )}
+                                {(variant.color || variant.label) && (
+                                  <p className="mt-2 text-xs text-gray-500">
+                                    Linked to: {getSizesForColor(variant.color || variant.label).join(', ') || 'No sizes yet'}
+                                  </p>
+                                )}
+                              </div>
                             </div>
 
                             <button

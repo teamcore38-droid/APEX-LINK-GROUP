@@ -89,6 +89,9 @@ const ProductPage = () => {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isLightboxZoomed, setIsLightboxZoomed] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [sizeError, setSizeError] = useState('');
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
@@ -173,30 +176,16 @@ const ProductPage = () => {
 
       if (reviewResult.status === 'fulfilled') {
         setReviews(reviewResult.value.data);
-      try {
-        const [relatedRes, reviewsRes, wishlistRes, seoRes] = await Promise.allSettled([
-          axios.get('/api/customer/recommendations', {
-            params: { productId: data._id, category: data.category, limit: 4 },
-          }),
-          axios.get(`/api/reviews/product/${data._id}`),
-          userInfo?.token
-            ? axios.get('/api/customer/wishlist', {
-                headers: { Authorization: `Bearer ${userInfo.token}` },
-              })
-            : Promise.resolve({ data: [] }),
-          axios.get(`/api/seo/product/${data._id}`).catch(() => null),
-        ]);
+      } else {
+        console.error(reviewResult.reason);
+        setReviews([]);
+      }
 
-        if (!isActive) return;
-
-        if (relatedRes.status === 'fulfilled') setRelatedProducts(relatedRes.value.data);
-        if (reviewsRes.status === 'fulfilled') setReviews(reviewsRes.value.data);
-
-        if (seoRes.status === 'fulfilled' && seoRes.value?.data) {
-          applyProductSeo(data, seoRes.value.data);
-        }
-      } catch (err) {
-        console.error(err);
+      if (relatedResult.status === 'fulfilled') {
+        setRelatedProducts(normalizeProductPayload(relatedResult.value.data).products);
+      } else {
+        console.error(relatedResult.reason);
+        setRelatedProducts([]);
       }
     };
 
@@ -214,21 +203,14 @@ const ProductPage = () => {
         setProduct(data);
         applyProductSeo(data);
         const gallery = getProductImages(data);
-        const firstActiveVariant = data.variants?.find((variant) => variant.isActive !== false);
+        const firstActiveVariant = !data.hasSizes
+          ? data.variants?.find((variant) => variant.isActive !== false)
+          : null;
         const firstVariantGallery = getVariantImageUrls(firstActiveVariant);
         setSelectedImage(firstVariantGallery[0] || gallery[0] || data.image);
         setSelectedVariantId(firstActiveVariant?._id ? String(firstActiveVariant._id) : '');
-
-        // Pre-select first available in-stock size if product has sizes enabled
-        if (data.hasSizes && Array.isArray(data.sizes) && data.sizes.length > 0) {
-          const firstInStockSize = data.sizes.find((s) => Number(s.countInStock || 0) > 0) || data.sizes[0];
-          setSelectedSize(firstInStockSize ? firstInStockSize.size : '');
-          const availableColors = Array.isArray(firstInStockSize?.colors) ? firstInStockSize.colors : [];
-          setSelectedColor(availableColors[0] || '');
-        } else {
-          setSelectedSize('');
-          setSelectedColor('');
-        }
+        setSelectedSize('');
+        setSelectedColor('');
 
         setQty(1);
         setLoading(false);
@@ -253,8 +235,21 @@ const ProductPage = () => {
   }, [id, userInfo?.token]);
 
   const selectedVariant = useMemo(
-    () => product?.variants?.find((variant) => String(variant._id) === String(selectedVariantId)) || null,
-    [product, selectedVariantId]
+    () => {
+      if (!product?.variants?.length) {
+        return null;
+      }
+
+      if (product.hasSizes && selectedColor) {
+        return product.variants.find((variant) => {
+          const optionName = String(variant.color || variant.label || '').trim().toLowerCase();
+          return optionName && optionName === selectedColor.toLowerCase();
+        }) || null;
+      }
+
+      return product.variants.find((variant) => String(variant._id) === String(selectedVariantId)) || null;
+    },
+    [product, selectedColor, selectedVariantId]
   );
   const selectedSizeObj = useMemo(
     () => (product?.hasSizes && selectedSize ? product.sizes?.find((s) => s.size === selectedSize) : null),
@@ -286,6 +281,10 @@ const ProductPage = () => {
   const effectiveStock = useMemo(() => {
     if (selectedSizeObj) {
       return Number(selectedSizeObj.countInStock || 0);
+    }
+
+    if (product?.hasSizes && Array.isArray(product.sizes)) {
+      return product.sizes.reduce((total, sizeOption) => total + Number(sizeOption.countInStock || 0), 0);
     }
 
     return selectedVariant ? Number(selectedVariant.countInStock || 0) : Number(product?.countInStock || 0);
@@ -455,6 +454,7 @@ const ProductPage = () => {
   };
 
   const renderVariantSelection = (containerClass = '') => {
+    if (product?.hasSizes) return null;
     if (!product?.variants?.length) return null;
     const activeVariants = product.variants.filter((variant) => variant.isActive !== false);
     if (!activeVariants.length) return null;
@@ -721,8 +721,9 @@ const ProductPage = () => {
                           disabled={isOutOfStock}
                           onClick={() => {
                             setSelectedSize(sizeObj.size);
-                            const nextColors = Array.isArray(sizeObj.colors) ? sizeObj.colors : [];
-                            setSelectedColor(nextColors[0] || '');
+                            setSelectedColor('');
+                            setSelectedVariantId('');
+                            setSizeError('');
                             setQty(1);
                           }}
                           className={`group relative flex min-w-[76px] flex-col items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-bold transition-all duration-200 ${
@@ -748,6 +749,12 @@ const ProductPage = () => {
                 </div>
 
                 {/* 2. Color Selection (Filtered by selected size) */}
+                {!selectedSize && (
+                  <div className="rounded-2xl border border-dashed border-brand-accent/30 bg-[#fff7ee] px-4 py-4 text-sm font-medium text-gray-600">
+                    Select a size to see available colors.
+                  </div>
+                )}
+
                 {selectedSize && availableColorsForSize.length > 0 && (
                   <div className="border-t border-[#f2e2d5] pt-4">
                     <div className="flex items-center justify-between">
@@ -764,7 +771,19 @@ const ProductPage = () => {
                           <button
                             key={colorName}
                             type="button"
-                            onClick={() => setSelectedColor(colorName)}
+                            onClick={() => {
+                              setSelectedColor(colorName);
+                              setSizeError('');
+                              const matchingVariant = product.variants?.find((variant) => {
+                                const optionName = String(variant.color || variant.label || '').trim().toLowerCase();
+                                return optionName && optionName === colorName.toLowerCase();
+                              });
+                              setSelectedVariantId(matchingVariant?._id ? String(matchingVariant._id) : '');
+                              const variantImages = getVariantImageUrls(matchingVariant);
+                              if (variantImages.length > 0) {
+                                setSelectedImage(variantImages[0]);
+                              }
+                            }}
                             className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
                               isSelected
                                 ? 'border-brand-primary bg-brand-dark text-white shadow-md'

@@ -64,6 +64,15 @@ const getAvailableStock = (product, variant = null, itemSize = '') => {
   return Math.max(Number(stockHolder.countInStock || 0) - Number(stockHolder.reservedStock || 0), 0);
 };
 
+const getSizeOption = (product, itemSize = '') => {
+  if (!product?.hasSizes || !Array.isArray(product.sizes)) {
+    return null;
+  }
+
+  const normalizedItemSize = String(itemSize || '').trim();
+  return product.sizes.find((sizeOption) => String(sizeOption.size || '') === normalizedItemSize) || null;
+};
+
 const normalizeCartItems = async (cartItems = []) => {
   if (!Array.isArray(cartItems) || cartItems.length === 0) {
     throw new Error('No order items');
@@ -100,18 +109,45 @@ const normalizeCartItems = async (cartItems = []) => {
       throw new Error(`${product.name} quantity must be greater than zero`);
     }
 
-    const availableStock = getAvailableStock(product, variant, item.size);
+    const itemSize = String(item.size || '').trim();
+    const itemColor = String(item.color || '').trim();
+    const selectedSizeOption = getSizeOption(product, itemSize);
+
+    if (product.hasSizes) {
+      if (!itemSize) {
+        throw new Error(`Please select a size for ${product.name}`);
+      }
+
+      if (!selectedSizeOption) {
+        throw new Error(`${product.name} size ${itemSize} is no longer available`);
+      }
+
+      const availableColors = Array.isArray(selectedSizeOption.colors)
+        ? selectedSizeOption.colors.map((color) => String(color || '').trim()).filter(Boolean)
+        : [];
+
+      if (availableColors.length > 0 && !itemColor) {
+        throw new Error(`Please select a color for ${product.name} size ${itemSize}`);
+      }
+
+      if (
+        itemColor &&
+        availableColors.length > 0 &&
+        !availableColors.some((color) => color.toLowerCase() === itemColor.toLowerCase())
+      ) {
+        throw new Error(`${product.name} color ${itemColor} is not available in size ${itemSize}`);
+      }
+    }
+
+    const availableStock = getAvailableStock(product, variant, itemSize);
 
     if (qty > availableStock) {
       throw new Error(`${product.name} has only ${availableStock} available`);
     }
 
     let price = roundMoney(Number(product.price || 0) + Number(variant?.priceAdjustment || 0));
-    if (product.hasSizes && item.size && Array.isArray(product.sizes)) {
-      const matchedSizeObj = product.sizes.find((s) => s.size === item.size);
-      if (matchedSizeObj && Number(matchedSizeObj.price || 0) > 0) {
-        price = roundMoney(Number(matchedSizeObj.price));
-      }
+    if (selectedSizeOption && Number(selectedSizeOption.price || 0) > 0) {
+      price = roundMoney(Number(selectedSizeOption.price));
     }
 
     const vendor = product.vendor ? await Vendor.findById(product.vendor).lean() : null;
@@ -128,8 +164,8 @@ const normalizeCartItems = async (cartItems = []) => {
       vendorName: vendor?.businessName || '',
       variantId: variant?._id || null,
       variantLabel: variant?.label || '',
-      size: String(item.size || '').trim(),
-      color: String(item.color || '').trim(),
+      size: itemSize,
+      color: itemColor,
       sku: variant?.sku || product.sku || '',
       commissionRate,
       commissionAmount,

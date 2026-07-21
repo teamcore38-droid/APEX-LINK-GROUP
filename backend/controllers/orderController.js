@@ -220,6 +220,10 @@ const buildInvoicePayload = (order) => ({
     price: item.price,
     image: item.image,
     product: item.product,
+    variantLabel: item.variantLabel || '',
+    size: item.size || '',
+    color: item.color || '',
+    sku: item.sku || '',
     lineTotal: Number(item.qty || 0) * Number(item.price || 0),
   })),
   totals: {
@@ -1065,6 +1069,8 @@ const trackOrder = async (req, res) => {
         qty: item.qty,
         image: item.image,
         price: item.price,
+        size: item.size || '',
+        color: item.color || '',
       })),
       canViewFullDetails:
         Boolean(req.user) &&
@@ -1134,6 +1140,10 @@ const getOrderPackingSlip = async (req, res) => {
         qty: item.qty,
         image: item.image,
         product: item.product,
+        variantLabel: item.variantLabel || '',
+        size: item.size || '',
+        color: item.color || '',
+        sku: item.sku || '',
       })),
       business: invoicePayload.business,
       statusHistory: invoicePayload.statusHistory,
