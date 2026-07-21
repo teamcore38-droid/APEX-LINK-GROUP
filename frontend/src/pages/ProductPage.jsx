@@ -22,6 +22,7 @@ import {
   ZoomIn,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import RouteLoadingScreen from '../components/RouteLoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import Product from '../components/Product';
 import { slugifyCategoryName } from '../utils/categoryUi';
@@ -284,11 +285,7 @@ const ProductPage = () => {
   }, [isLightboxOpen, productImages]);
 
   if (loading) {
-    return (
-      <div className="flex min-h-[70vh] items-center justify-center bg-[#fff7ee]">
-        <div className="h-16 w-16 animate-spin rounded-full border-b-2 border-t-2 border-brand-primary"></div>
-      </div>
-    );
+    return <RouteLoadingScreen message="Loading product details..." />;
   }
 
   if (error || !product) {

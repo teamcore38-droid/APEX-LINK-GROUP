@@ -19,6 +19,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import RouteLoadingScreen from '../components/RouteLoadingScreen';
 import { formatCurrency } from '../utils/productUi';
 import { ACCOUNT_TABS, createInitialAddressForm, formatAddressLines } from '../utils/accountUi';
 import {
@@ -500,12 +501,7 @@ const ProfilePage = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-[#fff7ee]">
-        <div className="h-14 w-14 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent" />
-        <p className="mt-4 font-serif text-xl text-brand-dark">Preparing your account dashboard...</p>
-      </div>
-    );
+    return <RouteLoadingScreen message="Preparing your account dashboard..." />;
   }
 
   if (error || !profile) {
