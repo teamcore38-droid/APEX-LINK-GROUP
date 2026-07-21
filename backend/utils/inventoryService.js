@@ -4,6 +4,10 @@ import InventoryEvent from '../models/inventoryEventModel.js';
 const getActorName = (actor = {}) => actor.name || actor.email || '';
 
 const getStockHolder = (product, variantId = null, size = '') => {
+  if (variantId) {
+    return product.variants.id(variantId) || null;
+  }
+
   if (product?.hasSizes && size && Array.isArray(product.sizes)) {
     const sizeObj = product.sizes.find((s) => s.size === size);
     if (sizeObj) {
@@ -11,11 +15,7 @@ const getStockHolder = (product, variantId = null, size = '') => {
     }
   }
 
-  if (!variantId) {
-    return product;
-  }
-
-  return product.variants.id(variantId) || null;
+  return product;
 };
 
 const getAvailableStock = (holder) =>

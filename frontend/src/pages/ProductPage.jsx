@@ -240,10 +240,11 @@ const ProductPage = () => {
         return null;
       }
 
-      if (product.hasSizes && selectedColor) {
+      if (product.hasSizes && selectedSize && selectedColor) {
         return product.variants.find((variant) => {
-          const optionName = String(variant.color || variant.label || '').trim().toLowerCase();
-          return optionName && optionName === selectedColor.toLowerCase();
+          const optionSize = String(variant.size || '').trim().toLowerCase();
+          const optionColor = String(variant.color || variant.label || '').trim().toLowerCase();
+          return optionSize === selectedSize.toLowerCase() && optionColor === selectedColor.toLowerCase();
         }) || null;
       }
 
@@ -258,8 +259,28 @@ const ProductPage = () => {
 
   const availableColorsForSize = useMemo(() => {
     if (!selectedSizeObj) return [];
-    return Array.isArray(selectedSizeObj.colors) ? selectedSizeObj.colors : [];
-  }, [selectedSizeObj]);
+    const comboColors = (product?.variants || [])
+      .filter((variant) =>
+        variant.isActive !== false &&
+          String(variant.size || '').trim().toLowerCase() === selectedSize.toLowerCase()
+      )
+      .map((variant) => ({
+        name: String(variant.color || variant.label || '').trim(),
+        variant,
+        stock: Number(variant.countInStock || 0),
+      }))
+      .filter((entry) => entry.name);
+
+    if (comboColors.length > 0) {
+      return comboColors;
+    }
+
+    return (Array.isArray(selectedSizeObj.colors) ? selectedSizeObj.colors : []).map((color) => ({
+      name: color,
+      variant: null,
+      stock: Number(selectedSizeObj.countInStock || 0),
+    }));
+  }, [product, selectedSize, selectedSizeObj]);
 
   const productImages = useMemo(() => {
     const variantImages = getVariantImageUrls(selectedVariant);
@@ -272,6 +293,10 @@ const ProductPage = () => {
   const selectedImageIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
 
   const effectivePrice = useMemo(() => {
+    if (selectedVariant && Number(selectedVariant.price || 0) > 0) {
+      return Number(selectedVariant.price);
+    }
+
     if (selectedSizeObj && Number(selectedSizeObj.price || 0) > 0) {
       return Number(selectedSizeObj.price);
     }
@@ -279,7 +304,22 @@ const ProductPage = () => {
   }, [product, selectedSizeObj, selectedVariant]);
 
   const effectiveStock = useMemo(() => {
+    if (selectedVariant) {
+      return Number(selectedVariant.countInStock || 0);
+    }
+
     if (selectedSizeObj) {
+      const sizeCombinationStock = (product?.variants || [])
+        .filter((variant) =>
+          variant.isActive !== false &&
+            String(variant.size || '').trim().toLowerCase() === String(selectedSizeObj.size || '').toLowerCase()
+        )
+        .reduce((total, variant) => total + Number(variant.countInStock || 0), 0);
+
+      if (sizeCombinationStock > 0) {
+        return sizeCombinationStock;
+      }
+
       return Number(selectedSizeObj.countInStock || 0);
     }
 
@@ -291,6 +331,52 @@ const ProductPage = () => {
   }, [selectedSizeObj, selectedVariant, product]);
 
   const stockPresentation = getStockPresentation(effectiveStock || 0);
+  const displaySku = selectedVariant?.sku || product?.sku || '';
+
+  const handleSelectSize = (sizeObj) => {
+    const nextSize = sizeObj.size;
+    const colors = (product?.variants || [])
+      .filter((variant) =>
+        variant.isActive !== false &&
+          String(variant.size || '').trim().toLowerCase() === String(nextSize || '').toLowerCase()
+      )
+      .map((variant) => ({
+        name: String(variant.color || variant.label || '').trim(),
+        variant,
+      }))
+      .filter((entry) => entry.name);
+    const fallbackColors = colors.length > 0
+      ? colors
+      : (Array.isArray(sizeObj.colors) ? sizeObj.colors : []).map((color) => ({ name: color, variant: null }));
+    const autoColor = fallbackColors.length === 1 ? fallbackColors[0] : null;
+
+    setSelectedSize(nextSize);
+    setSelectedColor(autoColor?.name || '');
+    setSelectedVariantId(autoColor?.variant?._id ? String(autoColor.variant._id) : '');
+    setSizeError('');
+    setQty(1);
+
+    const variantImages = getVariantImageUrls(autoColor?.variant);
+    if (variantImages.length > 0) {
+      setSelectedImage(variantImages[0]);
+      return;
+    }
+
+    const fallbackImages = getProductImages(product || {});
+    setSelectedImage(fallbackImages[0] || product.image);
+  };
+
+  const handleSelectColor = (colorOption) => {
+    setSelectedColor(colorOption.name);
+    setSizeError('');
+    setSelectedVariantId(colorOption.variant?._id ? String(colorOption.variant._id) : '');
+    setQty(1);
+
+    const variantImages = getVariantImageUrls(colorOption.variant);
+    if (variantImages.length > 0) {
+      setSelectedImage(variantImages[0]);
+    }
+  };
 
   useEffect(() => {
     if (!isLightboxOpen) {
@@ -358,6 +444,11 @@ const ProductPage = () => {
         setSizeError('Please select an available color for this size before adding to cart.');
         return;
       }
+
+      if (availableColorsForSize.length > 0 && selectedColor && !availableColorsForSize.some((color) => color.name === selectedColor)) {
+        setSizeError('That color is not available for the selected size.');
+        return;
+      }
     }
 
     setSizeError('');
@@ -365,6 +456,7 @@ const ProductPage = () => {
     addToCart(
       {
         ...product,
+        image: selectedVariant?.image || currentGalleryImage || product.image,
         price: effectivePrice,
         countInStock: effectiveStock,
         size: selectedSize || '',
@@ -647,6 +739,11 @@ const ProductPage = () => {
                   {product.weight}
                 </span>
               )}
+              {displaySku && (
+                <span className="rounded-full border border-[#ead6c6] bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-gray-600">
+                  SKU {displaySku}
+                </span>
+              )}
             </div>
 
             <div className="mt-6 overflow-hidden rounded-2xl border border-[#ecd9ca] bg-white transition-all duration-200">
@@ -710,7 +807,17 @@ const ProductPage = () => {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2.5">
                     {product.sizes.map((sizeObj) => {
-                      const isOutOfStock = Number(sizeObj.countInStock || 0) <= 0;
+                      const comboStock = (product.variants || [])
+                        .filter((variant) =>
+                          variant.isActive !== false &&
+                            String(variant.size || '').trim().toLowerCase() === String(sizeObj.size || '').toLowerCase()
+                        )
+                        .reduce((total, variant) => total + Number(variant.countInStock || 0), 0);
+                      const hasCombinationRows = (product.variants || []).some((variant) =>
+                        String(variant.size || '').trim().toLowerCase() === String(sizeObj.size || '').toLowerCase()
+                      );
+                      const sizeStock = hasCombinationRows ? comboStock : Number(sizeObj.countInStock || 0);
+                      const isOutOfStock = sizeStock <= 0;
                       const isSelected = selectedSize === sizeObj.size;
                       const displayPrice = Number(sizeObj.price || 0) > 0 ? Number(sizeObj.price) : Number(product.price || 0);
 
@@ -719,13 +826,7 @@ const ProductPage = () => {
                           key={sizeObj.size}
                           type="button"
                           disabled={isOutOfStock}
-                          onClick={() => {
-                            setSelectedSize(sizeObj.size);
-                            setSelectedColor('');
-                            setSelectedVariantId('');
-                            setSizeError('');
-                            setQty(1);
-                          }}
+                          onClick={() => handleSelectSize(sizeObj)}
                           className={`group relative flex min-w-[76px] flex-col items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-bold transition-all duration-200 ${
                             isOutOfStock
                               ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
@@ -764,37 +865,29 @@ const ProductPage = () => {
                       )}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2.5">
-                      {availableColorsForSize.map((colorName) => {
-                        const isSelected = selectedColor === colorName;
+                      {availableColorsForSize.map((colorOption) => {
+                        const isSelected = selectedColor === colorOption.name;
+                        const isOutOfStock = Number(colorOption.stock || 0) <= 0;
 
                         return (
                           <button
-                            key={colorName}
+                            key={colorOption.name}
                             type="button"
-                            onClick={() => {
-                              setSelectedColor(colorName);
-                              setSizeError('');
-                              const matchingVariant = product.variants?.find((variant) => {
-                                const optionName = String(variant.color || variant.label || '').trim().toLowerCase();
-                                return optionName && optionName === colorName.toLowerCase();
-                              });
-                              setSelectedVariantId(matchingVariant?._id ? String(matchingVariant._id) : '');
-                              const variantImages = getVariantImageUrls(matchingVariant);
-                              if (variantImages.length > 0) {
-                                setSelectedImage(variantImages[0]);
-                              }
-                            }}
+                            disabled={isOutOfStock}
+                            onClick={() => handleSelectColor(colorOption)}
                             className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
-                              isSelected
+                              isOutOfStock
+                                ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
+                                : isSelected
                                 ? 'border-brand-primary bg-brand-dark text-white shadow-md'
                                 : 'border-gray-300 bg-[#fff7ee] text-brand-dark hover:border-brand-primary'
                             }`}
                           >
                             <span
                               className="h-3.5 w-3.5 rounded-full border border-black/20 shadow-xs"
-                              style={{ backgroundColor: colorName.toLowerCase() }}
+                              style={{ backgroundColor: colorOption.name.toLowerCase() }}
                             />
-                            <span>{colorName}</span>
+                            <span>{colorOption.name}</span>
                           </button>
                         );
                       })}

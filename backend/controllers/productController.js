@@ -206,6 +206,7 @@ const normalizeVariants = (variants = []) => {
         images: normalizedImages,
         weight: String(variant.weight || '').trim(),
         packaging: String(variant.packaging || '').trim(),
+        price: Number(variant.price || 0),
         priceAdjustment: Number(variant.priceAdjustment || 0),
         countInStock: Number(variant.countInStock || 0),
         reservedStock: Number(variant.reservedStock || 0),
@@ -380,6 +381,10 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       errors.push(`Variant ${variant.label} price adjustment must be a valid number`);
     }
 
+    if (Number.isNaN(variant.price) || variant.price < 0) {
+      errors.push(`Variant ${variant.label} price must be a valid non-negative number`);
+    }
+
     if (Number.isNaN(variant.countInStock) || variant.countInStock < 0) {
       errors.push(`Variant ${variant.label} stock cannot be negative`);
     }
@@ -417,6 +422,35 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
     }
   });
 
+  const combinationVariants = variants.filter((variant) => variant.size && (variant.color || variant.label));
+
+  if (payload.hasSizes && combinationVariants.length === 0) {
+    errors.push('Add at least one Size + Color combination');
+  }
+
+  if (payload.hasSizes) {
+    const validSizes = new Set(normalizedSizes.map((sizeOption) => sizeOption.size));
+
+    combinationVariants.forEach((variant) => {
+      if (!validSizes.has(variant.size)) {
+        errors.push(`${variant.label} uses a size that is not in Size Options`);
+      }
+    });
+  }
+
+  const colorsBySize = new Map();
+
+  combinationVariants.forEach((variant) => {
+    const colors = colorsBySize.get(variant.size) || new Set();
+    colors.add(variant.color || variant.label);
+    colorsBySize.set(variant.size, colors);
+  });
+
+  const sizesWithLinkedColors = normalizedSizes.map((sizeOption) => ({
+    ...sizeOption,
+    colors: [...(colorsBySize.get(sizeOption.size) || new Set())],
+  }));
+
   const existingSlug = slug ? await findExistingSlugConflict(slug, productId) : null;
 
   if (existingSlug) {
@@ -441,7 +475,7 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       lowStockThreshold: Number.isNaN(lowStockThreshold) ? 10 : lowStockThreshold,
       variants,
       hasSizes: Boolean(payload.hasSizes),
-      sizes: normalizedSizes,
+      sizes: sizesWithLinkedColors,
       image: String(payload.image || '').trim(),
       imagePublicId: String(payload.imagePublicId || '').trim(),
       images: normalizeImageList(payload.images, payload.image, payload.imagePublicId),

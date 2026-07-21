@@ -341,6 +341,27 @@ export const buildProductFormFromProduct = (product = {}) => {
 export const buildProductPayloadFromForm = (form) => {
   const gallery = getProductFormGalleryImages(form);
   const primaryImage = gallery[0] || { url: '', publicId: '' };
+  const variants = JSON.parse(form.variantsJson || '[]').map((variant) => ({
+    ...variant,
+    price: Number(variant.price || 0),
+    priceAdjustment: Number(variant.priceAdjustment || 0),
+    countInStock: Math.max(0, Number(variant.countInStock || 0)),
+    reservedStock: Math.max(0, Number(variant.reservedStock || 0)),
+  }));
+  const colorsBySize = new Map();
+
+  variants.forEach((variant) => {
+    const size = String(variant.size || '').trim();
+    const color = String(variant.color || variant.label || '').trim();
+
+    if (!size || !color || variant.isActive === false) {
+      return;
+    }
+
+    const colors = colorsBySize.get(size) || new Set();
+    colors.add(color);
+    colorsBySize.set(size, colors);
+  });
 
   return {
     name: form.name.trim(),
@@ -354,7 +375,7 @@ export const buildProductPayloadFromForm = (form) => {
     image: primaryImage.url,
     imagePublicId: primaryImage.publicId,
     images: gallery,
-    variants: JSON.parse(form.variantsJson || '[]'),
+    variants,
     hasSizes: Boolean(form.hasSizes),
     sizes: Array.isArray(form.sizes)
       ? form.sizes
@@ -363,9 +384,7 @@ export const buildProductPayloadFromForm = (form) => {
             price: Number(s.price || 0),
             countInStock: Math.max(0, Number(s.countInStock || 0)),
             reservedStock: Math.max(0, Number(s.reservedStock || 0)),
-            colors: Array.isArray(s.colors)
-              ? s.colors.map((c) => String(c || '').trim()).filter(Boolean)
-              : [],
+            colors: [...(colorsBySize.get(String(s.size || '').trim()) || new Set())],
           }))
           .filter((s) => Boolean(s.size))
       : [],

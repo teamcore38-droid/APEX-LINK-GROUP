@@ -52,7 +52,26 @@ const getVariant = (product, variantId) => {
   return product.variants?.find((variant) => variant._id.toString() === String(variantId)) || null;
 };
 
+const getVariantForOptions = (product, itemSize = '', itemColor = '') => {
+  const normalizedSize = String(itemSize || '').trim().toLowerCase();
+  const normalizedColor = String(itemColor || '').trim().toLowerCase();
+
+  if (!normalizedSize || !normalizedColor || !Array.isArray(product?.variants)) {
+    return null;
+  }
+
+  return product.variants.find((variant) =>
+    variant.isActive !== false &&
+      String(variant.size || '').trim().toLowerCase() === normalizedSize &&
+      String(variant.color || variant.label || '').trim().toLowerCase() === normalizedColor
+  ) || null;
+};
+
 const getAvailableStock = (product, variant = null, itemSize = '') => {
+  if (variant) {
+    return Math.max(Number(variant.countInStock || 0) - Number(variant.reservedStock || 0), 0);
+  }
+
   if (product?.hasSizes && itemSize && Array.isArray(product.sizes)) {
     const sizeObj = product.sizes.find((s) => s.size === itemSize);
     if (sizeObj) {
@@ -97,7 +116,9 @@ const normalizeCartItems = async (cartItems = []) => {
       throw new Error(`${product.name} is awaiting marketplace approval`);
     }
 
-    const variant = getVariant(product, item.variantId);
+    const itemSize = String(item.size || '').trim();
+    const itemColor = String(item.color || '').trim();
+    const variant = getVariant(product, item.variantId) || getVariantForOptions(product, itemSize, itemColor);
 
     if (item.variantId && (!variant || variant.isActive === false)) {
       throw new Error(`${product.name} variant is no longer available`);
@@ -109,8 +130,6 @@ const normalizeCartItems = async (cartItems = []) => {
       throw new Error(`${product.name} quantity must be greater than zero`);
     }
 
-    const itemSize = String(item.size || '').trim();
-    const itemColor = String(item.color || '').trim();
     const selectedSizeOption = getSizeOption(product, itemSize);
 
     if (product.hasSizes) {
@@ -120,6 +139,14 @@ const normalizeCartItems = async (cartItems = []) => {
 
       if (!selectedSizeOption) {
         throw new Error(`${product.name} size ${itemSize} is no longer available`);
+      }
+
+      if (
+        variant &&
+        (String(variant.size || '').trim() !== itemSize ||
+          String(variant.color || variant.label || '').trim().toLowerCase() !== itemColor.toLowerCase())
+      ) {
+        throw new Error(`${product.name} selected color and size no longer match`);
       }
 
       const availableColors = Array.isArray(selectedSizeOption.colors)
@@ -146,7 +173,9 @@ const normalizeCartItems = async (cartItems = []) => {
     }
 
     let price = roundMoney(Number(product.price || 0) + Number(variant?.priceAdjustment || 0));
-    if (selectedSizeOption && Number(selectedSizeOption.price || 0) > 0) {
+    if (variant && Number(variant.price || 0) > 0) {
+      price = roundMoney(Number(variant.price));
+    } else if (selectedSizeOption && Number(selectedSizeOption.price || 0) > 0) {
       price = roundMoney(Number(selectedSizeOption.price));
     }
 
@@ -157,7 +186,7 @@ const normalizeCartItems = async (cartItems = []) => {
     normalizedItems.push({
       name: product.name,
       qty,
-      image: product.image,
+      image: variant?.image || product.image,
       price,
       product: product._id,
       vendor: vendor?._id || null,
