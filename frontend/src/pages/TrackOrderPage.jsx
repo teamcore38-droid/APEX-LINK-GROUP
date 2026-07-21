@@ -417,7 +417,19 @@ const TrackOrderPage = () => {
                     <img src={item.image} alt={item.name} className="h-14 w-14 sm:h-16 sm:w-16 rounded-xl object-cover shrink-0" />
                     <div className="min-w-0">
                       <p className="font-serif text-base font-bold text-brand-dark sm:text-lg break-words">{item.name}</p>
-                      <p className="text-xs text-gray-500">Qty: {item.qty}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                        <span>Qty: {item.qty}</span>
+                        {item.size && (
+                          <span className="rounded-md bg-[#f5e9dd] px-2 py-0.5 text-[10px] font-bold text-[#744126]">
+                            Size: {item.size}
+                          </span>
+                        )}
+                        {item.color && (
+                          <span className="rounded-md bg-[#efebe6] px-2 py-0.5 text-[10px] font-bold text-[#4a3b32]">
+                            Color: {item.color}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <p className="text-sm font-semibold text-brand-dark shrink-0 sm:text-right">{formatCurrency(item.price)}</p>

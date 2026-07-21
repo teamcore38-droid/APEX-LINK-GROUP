@@ -175,7 +175,25 @@ const AdminPackingSlipPage = () => {
                 <tbody className="divide-y divide-gray-100 text-sm text-brand-dark">
                   {(packingSlip.items || []).map((item) => (
                     <tr key={`${item.product}-${item.name}`}>
-                      <td className="px-4 py-3">{item.name}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold">{item.name}</div>
+                        {(item.variantLabel || item.size || item.color || item.sku) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                            {item.variantLabel && <span>{item.variantLabel}</span>}
+                            {item.size && (
+                              <span className="rounded-md bg-[#f5e9dd] px-2 py-0.5 text-[10px] font-bold text-[#744126]">
+                                Size: {item.size}
+                              </span>
+                            )}
+                            {item.color && (
+                              <span className="rounded-md bg-[#efebe6] px-2 py-0.5 text-[10px] font-bold text-[#4a3b32]">
+                                Color: {item.color}
+                              </span>
+                            )}
+                            {item.sku && <span>SKU: {item.sku}</span>}
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 font-semibold">{item.qty}</td>
                     </tr>
                   ))}
