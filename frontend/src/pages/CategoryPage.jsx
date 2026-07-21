@@ -161,7 +161,7 @@ const CategoryPage = () => {
         });
 
         const payload = normalizeProductPayload(data);
-        await preloadProductGridImages(payload.products, 4);
+        await preloadProductGridImages(payload.products);
 
         setProducts(payload.products);
         setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });

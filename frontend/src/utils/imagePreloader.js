@@ -6,19 +6,24 @@ import { getOptimizedImageUrl } from '../utils/productUi';
  * or when a safety timeout fires.
  *
  * @param {Array} products - List of product objects
- * @param {number} [count=4] - Number of initial products to preload images for
- * @param {number} [timeoutMs=3500] - Safety fallback timeout
+ * @param {number} [count] - Number of products to preload images for. Defaults to every product passed in.
+ * @param {number} [timeoutMs=5000] - Safety fallback timeout
  * @returns {Promise<void>}
  */
-export const preloadProductGridImages = (products = [], count = 4, timeoutMs = 3500) => {
+export const preloadProductGridImages = (products = [], count = products.length, timeoutMs = 5000) => {
   if (!products || products.length === 0) {
     return Promise.resolve();
   }
 
-  const initialProducts = products.slice(0, count);
-  const imageUrls = initialProducts
-    .map((product) => getOptimizedImageUrl(product.image, { width: 520, height: 520, crop: 'fill' }))
-    .filter(Boolean);
+  const preloadCount = Number.isFinite(count) ? Math.max(0, count) : products.length;
+  const imageUrls = [
+    ...new Set(
+      products
+        .slice(0, preloadCount)
+        .map((product) => getOptimizedImageUrl(product.image, { width: 520, height: 520, crop: 'fill' }))
+        .filter(Boolean)
+    ),
+  ];
 
   if (imageUrls.length === 0) {
     return Promise.resolve();
@@ -40,8 +45,14 @@ export const preloadProductGridImages = (products = [], count = 4, timeoutMs = 3
 
     imageUrls.forEach((url) => {
       const img = new Image();
+      let didSettle = false;
 
       const onFinish = () => {
+        if (didSettle || isDone) {
+          return;
+        }
+
+        didSettle = true;
         settledCount += 1;
         if (settledCount >= imageUrls.length) {
           clearTimeout(timer);

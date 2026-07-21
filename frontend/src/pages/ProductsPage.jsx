@@ -200,7 +200,7 @@ const ProductsPage = () => {
         }
 
         const payload = normalizeProductPayload(data);
-        await preloadProductGridImages(payload.products, 4);
+        await preloadProductGridImages(payload.products);
 
         if (queryVersionRef.current !== requestVersion) {
           return;
@@ -261,6 +261,12 @@ const ProductsPage = () => {
       }
 
       const payload = normalizeProductPayload(data);
+      await preloadProductGridImages(payload.products);
+
+      if (queryVersionRef.current !== requestVersion) {
+        return;
+      }
+
       setProducts((currentProducts) => {
         const seenProductIds = new Set(currentProducts.map((product) => product._id));
         const nextProducts = payload.products.filter((product) => !seenProductIds.has(product._id));
