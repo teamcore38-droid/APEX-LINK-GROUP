@@ -18,9 +18,10 @@ import { awardOrderLoyaltyPoints } from '../utils/loyaltyService.js';
 import {
   buildPayHereCheckoutPayload,
   buildPayHerePaymentResult,
-  formatPayHereAmount,
+  getPayHereStatusType,
+  isDuplicateSuccessfulPayHereNotification,
   isPayHereConfigured,
-  verifyPayHereNotification,
+  validatePayHereNotificationForOrder,
 } from '../utils/paymentService.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { notifyOrderEvent } from '../utils/pushService.js';
@@ -47,20 +48,6 @@ const isOrderOwnerOrAdmin = (order, user) =>
     user?.isAdmin ||
       order.user?.toString?.() === user?._id?.toString?.()
   );
-
-const isGuestOrderAccessor = (order, payload = {}) => {
-  const email = String(payload.email || payload.guestEmail || '').trim().toLowerCase();
-  const accessToken = String(payload.accessToken || payload.guestAccessToken || '').trim();
-  const orderEmail = String(order?.guestCustomer?.email || order?.shippingAddress?.email || '').toLowerCase();
-  const tokenMatches = Boolean(
-    order?.guestCustomer?.accessToken && accessToken === order.guestCustomer.accessToken
-  );
-
-  return Boolean(
-    order?.guestCheckout &&
-      (tokenMatches || (email && email === orderEmail && !order.guestCustomer?.accessToken))
-  );
-};
 
 const ensurePaymentEvent = async ({ eventId, type, orderId, paymentIntentId, payload }) => {
   let eventRecord = await PaymentEvent.findOne({ eventId });
@@ -105,31 +92,36 @@ const updatePaymentEvent = async (eventRecord, updates = {}) => {
 };
 
 const createPayHerePayment = async (req, res) => {
-  const { orderId = '', guestAccessToken = '', guestEmail = '' } = req.body;
+  const { orderId = '' } = req.body;
 
   try {
+    const allowedBodyKeys = new Set(['orderId']);
+    const unexpectedBodyKey = Object.keys(req.body || {}).find((key) => !allowedBodyKeys.has(key));
+
+    if (unexpectedBodyKey) {
+      return res.status(400).json({ message: 'Only orderId is accepted for PayHere checkout creation' });
+    }
+
     if (!isPayHereConfigured()) {
       return res.status(400).json({ message: 'PayHere payment is not configured for this environment' });
     }
 
-    const order = await Order.findById(orderId)
-      .select('+guestCustomer.accessToken')
-      .populate('user', 'name email phone');
+    const order = await Order.findById(orderId).populate('user', 'name email phone');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    const canAccess =
-      isOrderOwnerOrAdmin(order, req.user) ||
-      isGuestOrderAccessor(order, { guestAccessToken, guestEmail });
-
-    if (!canAccess) {
+    if (!isOrderOwnerOrAdmin(order, req.user)) {
       return res.status(401).json({ message: 'Not authorized to pay for this order' });
     }
 
     if (order.isPaid) {
       return res.status(400).json({ message: 'This order has already been paid' });
+    }
+
+    if (String(order.currency || 'LKR').toUpperCase() !== 'LKR') {
+      return res.status(400).json({ message: 'PayHere checkout currently supports LKR orders only' });
     }
 
     const fraudRisk = await assessOrderFraud(order, req);
@@ -189,6 +181,7 @@ const createPayHerePayment = async (req, res) => {
 };
 
 const completeSuccessfulPayment = async (order, payload) => {
+  const wasAlreadyPaid = Boolean(order.isPaid);
   const actor = getSafePayHereActor();
   const paymentResult = buildPayHerePaymentResult({
     ...payload,
@@ -210,6 +203,11 @@ const completeSuccessfulPayment = async (order, payload) => {
   order.paymentMethod = payload.method || 'PayHere';
   order.paymentIntentId = payload.payment_id || order.paymentIntentId || order._id.toString();
 
+  if (wasAlreadyPaid) {
+    await order.save();
+    return false;
+  }
+
   await deductReservedInventory({ order, actor });
   await commitPromotionsForOrder(order);
   await awardOrderLoyaltyPoints(order, actor);
@@ -221,6 +219,7 @@ const completeSuccessfulPayment = async (order, payload) => {
     resourceType: 'Order',
     resourceId: updatedOrder._id.toString(),
   });
+  return true;
 };
 
 const completeFailedPayment = async (order, payload, statusType) => {
@@ -292,13 +291,13 @@ const handlePayHereNotification = async (req, res) => {
       return res.status(200).json({ received: true, duplicate: true });
     }
 
-    if (!verifyPayHereNotification(payload)) {
+    if (!paymentId && statusCode === '2') {
       await updatePaymentEvent(eventRecord, {
         processed: false,
-        processingError: 'Invalid PayHere md5sig',
+        processingError: 'Missing PayHere payment_id',
         payload,
       });
-      return res.status(400).json({ message: 'Invalid PayHere signature' });
+      return res.status(400).json({ message: 'Missing PayHere payment_id' });
     }
 
     const order = await Order.findById(orderId).select('+guestCustomer.accessToken');
@@ -312,25 +311,79 @@ const handlePayHereNotification = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    const expectedAmount = formatPayHereAmount(order.totalPrice);
-    const amountMatches = Math.abs(Number(payload.payhere_amount || 0) - Number(expectedAmount)) <= 0.01;
-    const currencyMatches =
-      String(payload.payhere_currency || '').toUpperCase() === String(order.currency || '').toUpperCase();
+    const validation = validatePayHereNotificationForOrder(payload, order);
 
-    if (!amountMatches || !currencyMatches) {
+    if (!validation.valid) {
       await updatePaymentEvent(eventRecord, {
         orderId: order._id,
         paymentIntentId: paymentId,
         processed: false,
-        processingError: 'PayHere amount or currency did not match order',
+        processingError: validation.errors.join('; '),
         payload,
       });
-      return res.status(400).json({ message: 'Payment amount or currency mismatch' });
+      return res.status(400).json({ message: validation.errors[0] || 'Invalid PayHere notification' });
     }
 
-    if (statusCode === '2') {
+    if (paymentId) {
+      const paymentIdOrder = await Order.findOne({
+        _id: { $ne: order._id },
+        $or: [
+          { paymentIntentId: paymentId },
+          { 'paymentResult.id': paymentId },
+        ],
+      }).select('_id');
+
+      if (paymentIdOrder) {
+        await updatePaymentEvent(eventRecord, {
+          orderId: order._id,
+          paymentIntentId: paymentId,
+          processed: false,
+          processingError: 'PayHere payment_id is already linked to another order',
+          payload,
+        });
+        return res.status(409).json({ message: 'PayHere payment already linked to another order' });
+      }
+    }
+
+    if (statusCode === '2' && order.isPaid && !isDuplicateSuccessfulPayHereNotification(order, paymentId)) {
+      await updatePaymentEvent(eventRecord, {
+        orderId: order._id,
+        paymentIntentId: paymentId,
+        processed: false,
+        processingError: 'Order is already paid with a different payment reference',
+        payload,
+      });
+      return res.status(409).json({ message: 'Order is already paid' });
+    }
+
+    if (statusCode === '2' && isDuplicateSuccessfulPayHereNotification(order, paymentId)) {
+      order.paymentProvider = 'PayHere';
+      order.paymentMethod = payload.method || order.paymentMethod || 'PayHere';
+      order.paymentIntentId = paymentId || order.paymentIntentId || order._id.toString();
+      order.paymentResult = {
+        ...order.paymentResult,
+        ...buildPayHerePaymentResult({
+          ...payload,
+          status: 'succeeded',
+          email: order.shippingAddress?.email || order.guestCustomer?.email || '',
+        }),
+      };
+      await order.save();
+      await updatePaymentEvent(eventRecord, {
+        orderId: order._id,
+        paymentIntentId: paymentId,
+        processed: true,
+        processingError: '',
+        payload,
+      });
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
+    const statusType = getPayHereStatusType(statusCode);
+
+    if (statusType === 'paid') {
       await completeSuccessfulPayment(order, payload);
-    } else if (statusCode === '0') {
+    } else if (statusType === 'pending') {
       order.paymentProvider = 'PayHere';
       order.paymentStatus = 'Payment Pending';
       order.paymentResult = {
@@ -348,10 +401,10 @@ const handlePayHereNotification = async (req, res) => {
         updatedByName: 'PayHere',
       });
       await order.save();
-    } else if (statusCode === '-1') {
+    } else if (statusType === 'cancelled') {
       await completeFailedPayment(order, payload, 'cancelled');
     } else {
-      await completeFailedPayment(order, payload, statusCode === '-3' ? 'chargedback' : 'failed');
+      await completeFailedPayment(order, payload, statusType === 'chargedback' ? 'chargedback' : 'failed');
     }
 
     await updatePaymentEvent(eventRecord, {

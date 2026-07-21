@@ -3,7 +3,15 @@ import crypto from 'crypto';
 const md5Upper = (value) =>
   crypto.createHash('md5').update(String(value), 'utf8').digest('hex').toUpperCase();
 
-const formatPayHereAmount = (amount) => Number(amount || 0).toFixed(2);
+const formatPayHereAmount = (amount) => {
+  const numericAmount = Number(amount);
+
+  if (!Number.isFinite(numericAmount) || numericAmount < 0) {
+    throw new Error('PayHere amount must be a valid non-negative number');
+  }
+
+  return numericAmount.toFixed(2);
+};
 
 const getPayHereCurrency = () => String(process.env.PAYHERE_CURRENCY || 'LKR').toUpperCase();
 
@@ -19,6 +27,13 @@ const isPayHereConfigured = () =>
 
 const getFrontendUrl = () =>
   String(process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+
+const getPayHereReturnUrl = (orderId) =>
+  process.env.PAYHERE_RETURN_URL ||
+  `${getFrontendUrl()}/order-success?order_id=${encodeURIComponent(orderId)}`;
+
+const getPayHereCancelUrl = () =>
+  process.env.PAYHERE_CANCEL_URL || `${getFrontendUrl()}/checkout`;
 
 const getPayHereNotifyUrl = () => {
   if (process.env.PAYHERE_NOTIFY_URL) {
@@ -64,6 +79,76 @@ const verifyPayHereNotification = (payload = {}) => {
   return localSignature === String(payload.md5sig || '').toUpperCase();
 };
 
+const getPayHereStatusType = (statusCode = '') => {
+  switch (String(statusCode)) {
+    case '2':
+      return 'paid';
+    case '0':
+      return 'pending';
+    case '-1':
+      return 'cancelled';
+    case '-2':
+      return 'failed';
+    case '-3':
+      return 'chargedback';
+    default:
+      return 'unknown';
+  }
+};
+
+const isDuplicateSuccessfulPayHereNotification = (order = {}, paymentId = '') =>
+  Boolean(
+    order.isPaid &&
+      (!paymentId ||
+        String(order.paymentIntentId || '') === String(paymentId) ||
+        String(order.paymentResult?.id || '') === String(paymentId))
+  );
+
+const validatePayHereNotificationForOrder = (payload = {}, order = {}) => {
+  const errors = [];
+  const expectedMerchantId = String(process.env.PAYHERE_MERCHANT_ID || '').trim();
+  const payloadMerchantId = String(payload.merchant_id || '').trim();
+  const orderId = order?._id?.toString?.() || String(order._id || '');
+  let expectedAmount = '';
+  let payloadAmount = '';
+  const payloadCurrency = String(payload.payhere_currency || '').toUpperCase();
+
+  try {
+    expectedAmount = formatPayHereAmount(order.totalPrice);
+    payloadAmount = formatPayHereAmount(payload.payhere_amount);
+  } catch {
+    errors.push('PayHere amount must be valid');
+  }
+
+  if (!expectedMerchantId || payloadMerchantId !== expectedMerchantId) {
+    errors.push('PayHere merchant_id mismatch');
+  }
+
+  if (!orderId || String(payload.order_id || '').trim() !== orderId) {
+    errors.push('PayHere order_id mismatch');
+  }
+
+  if (payloadAmount && expectedAmount && payloadAmount !== expectedAmount) {
+    errors.push('PayHere amount mismatch');
+  }
+
+  if (payloadCurrency !== 'LKR') {
+    errors.push('PayHere currency must be LKR');
+  }
+
+  if (!verifyPayHereNotification(payload)) {
+    errors.push('Invalid PayHere md5sig');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    expectedAmount,
+    payloadAmount,
+    payloadCurrency,
+  };
+};
+
 const splitCustomerName = (fullName = '') => {
   const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
 
@@ -95,10 +180,9 @@ const buildPayHereCheckoutPayload = (order) => {
   const merchantId = process.env.PAYHERE_MERCHANT_ID;
   const orderId = order._id.toString();
   const amount = formatPayHereAmount(order.totalPrice);
-  const currency = String(order.currency || getPayHereCurrency()).toUpperCase();
+  const currency = 'LKR';
   const fullName = order.shippingAddress?.fullName || order.guestCustomer?.name || order.user?.name || '';
   const { firstName, lastName } = splitCustomerName(fullName);
-  const frontendUrl = getFrontendUrl();
   const items =
     order.orderItems?.map((item) => item.name).filter(Boolean).join(', ').slice(0, 250) ||
     `Order ${orderId}`;
@@ -107,8 +191,8 @@ const buildPayHereCheckoutPayload = (order) => {
     checkoutUrl: getPayHereCheckoutUrl(),
     fields: {
       merchant_id: merchantId,
-      return_url: `${frontendUrl}/order/${orderId}/confirm`,
-      cancel_url: `${frontendUrl}/checkout`,
+      return_url: getPayHereReturnUrl(orderId),
+      cancel_url: getPayHereCancelUrl(),
       notify_url: notifyUrl,
       order_id: orderId,
       items,
@@ -149,6 +233,9 @@ export {
   generatePayHereNotificationSignature,
   getPayHereCheckoutUrl,
   getPayHereCurrency,
+  getPayHereStatusType,
   isPayHereConfigured,
+  isDuplicateSuccessfulPayHereNotification,
+  validatePayHereNotificationForOrder,
   verifyPayHereNotification,
 };

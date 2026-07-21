@@ -117,6 +117,7 @@ function App() {
             <Route path="/admin/mobile" element={<AdminMobilePage />} />
             <Route path="/admin/products/new" element={<AddProductPage />} />
             <Route path="/admin/product/:id/edit" element={<EditProductPage />} />
+            <Route path="/order-success" element={<OrderSuccessPage />} />
             <Route path="/order/:id/confirm" element={<OrderSuccessPage />} />
             <Route path="/orders/:id" element={<OrderSuccessPage />} />
             <Route path="/orders/:id/invoice" element={<OrderInvoicePage />} />

@@ -32,7 +32,7 @@ import { useCart } from '../context/CartContext';
 
 const OrderSuccessPage = () => {
   const { id } = useParams();
-  const { state, pathname } = useLocation();
+  const { search, state, pathname } = useLocation();
   const { userInfo } = useAuth();
   const { clearCart } = useCart();
   const navigate = useNavigate();
@@ -40,46 +40,96 @@ const OrderSuccessPage = () => {
   const [order, setOrder] = useState(state?.order || null);
   const [loading, setLoading] = useState(!state?.order);
   const [error, setError] = useState('');
+  const [polling, setPolling] = useState(false);
+
+  const query = useMemo(() => new URLSearchParams(search), [search]);
+  const resolvedOrderId =
+    id ||
+    query.get('order_id') ||
+    query.get('orderId') ||
+    query.get('custom_1') ||
+    localStorage.getItem('apexPendingPayHereOrderId') ||
+    state?.order?._id ||
+    '';
 
   useEffect(() => {
-    if (order) {
+    if (order?.isPaid || ['Payment Failed', 'Cancelled', 'Payment Cancelled', 'Refunded'].includes(order?.paymentStatus)) {
       return;
     }
 
-    const guestAccessToken = localStorage.getItem(`apexGuestOrder:${id}`) || '';
+    if (!resolvedOrderId) {
+      setLoading(false);
+      setError('We could not determine which order PayHere returned.');
+      return;
+    }
+
+    const guestAccessToken = localStorage.getItem(`apexGuestOrder:${resolvedOrderId}`) || '';
 
     if (!userInfo?.token && !guestAccessToken) {
       navigate(`/login?redirect=${pathname}`);
       return;
     }
 
-    const fetchOrder = async () => {
+    let isActive = true;
+    let attempts = 0;
+    const maxAttempts = pathname === '/order-success' ? 20 : 1;
+
+    const fetchOrder = async ({ keepPolling = false } = {}) => {
       try {
         const guestQuery = guestAccessToken
           ? `?guestAccessToken=${encodeURIComponent(guestAccessToken)}`
           : '';
-        const { data } = await axios.get(`/api/orders/${id}${guestQuery}`, {
+        const { data } = await axios.get(`/api/orders/${resolvedOrderId}${guestQuery}`, {
           headers: {
             ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
           },
         });
 
+        if (!isActive) {
+          return;
+        }
+
         setOrder(data);
         if (data.isPaid) {
+          localStorage.removeItem('apexPendingPayHereOrderId');
           clearCart();
+        }
+
+        const terminalPaymentStatuses = ['Paid', 'Payment Failed', 'Cancelled', 'Payment Cancelled', 'Refunded'];
+        const shouldContinue =
+          keepPolling &&
+          !terminalPaymentStatuses.includes(data.paymentStatus || '') &&
+          attempts < maxAttempts;
+
+        if (shouldContinue) {
+          attempts += 1;
+          setPolling(true);
+          window.setTimeout(() => void fetchOrder({ keepPolling: true }), 3000);
+        } else {
+          setPolling(false);
         }
       } catch (fetchError) {
         console.error(fetchError);
-        setError(fetchError.response?.data?.message || fetchError.message);
+        if (isActive) {
+          setError(fetchError.response?.data?.message || fetchError.message);
+          setPolling(false);
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchOrder();
-  }, [clearCart, id, navigate, order, pathname, userInfo]);
+    void fetchOrder({ keepPolling: pathname === '/order-success' });
 
-  const isConfirmation = pathname.includes('confirm');
+    return () => {
+      isActive = false;
+    };
+  }, [clearCart, navigate, pathname, resolvedOrderId, userInfo?.token]);
+
+  const isPayHereReturn = pathname === '/order-success';
+  const isConfirmation = pathname.includes('confirm') || isPayHereReturn;
 
   const status = order?.orderStatus || 'Processing';
   const shippingLines = useMemo(
@@ -138,10 +188,16 @@ const OrderSuccessPage = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">
-                {isConfirmation ? 'Order Confirmed' : 'Order Details'}
+                {isPayHereReturn && !order?.isPaid ? 'Payment Confirmation' : isConfirmation ? 'Order Confirmed' : 'Order Details'}
               </p>
               <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">
-                {isConfirmation ? 'Your order is confirmed' : 'Track your order details'}
+                {isPayHereReturn && !order?.isPaid
+                  ? polling
+                    ? 'Confirming your payment...'
+                    : 'Payment status pending'
+                  : isConfirmation
+                    ? 'Your order is confirmed'
+                    : 'Track your order details'}
               </h1>
             </div>
 

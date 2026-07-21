@@ -389,6 +389,11 @@ const CheckoutInner = () => {
     event.preventDefault();
     setError('');
 
+    if (!userInfo?.token) {
+      navigate('/login?redirect=/checkout');
+      return;
+    }
+
     const validationError = validateCheckoutForm(form);
 
     if (validationError) {
@@ -425,18 +430,15 @@ const CheckoutInner = () => {
         return;
       }
 
-      const guestAccessToken = localStorage.getItem(`apexGuestOrder:${order._id}`) || '';
       const { data: payHereCheckout } = await axios.post(
         '/api/payments/payhere/create',
         {
           orderId: order._id,
-          guestAccessToken,
-          guestEmail: form.email,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
+            Authorization: `Bearer ${userInfo.token}`,
           },
         }
       );
@@ -452,6 +454,7 @@ const CheckoutInner = () => {
         { token: userInfo?.token }
       );
 
+      localStorage.setItem('apexPendingPayHereOrderId', order._id);
       submitPayHereForm(payHereCheckout);
     } catch (submitError) {
       console.error(submitError);
