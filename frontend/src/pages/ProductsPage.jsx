@@ -21,6 +21,7 @@ import {
 import { applySeo } from '../utils/seo';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { preloadProductGridImages } from '../utils/imagePreloader';
+import { getCategories } from '../utils/categoryApi';
 
 const INITIAL_FILTERS = {
   keyword: '',
@@ -91,25 +92,29 @@ const ProductsPage = () => {
     const keywordParam = searchParams.get('keyword') || '';
     const brandParam = searchParams.get('brand') || '';
 
-    setFilters((prev) => {
-      if (
-        prev.category === categoryParam &&
-        prev.keyword === keywordParam &&
-        prev.brand === brandParam
-      ) {
-        return prev;
+    const frame = window.requestAnimationFrame(() => {
+      setFilters((prev) => {
+        if (
+          prev.category === categoryParam &&
+          prev.keyword === keywordParam &&
+          prev.brand === brandParam
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          category: categoryParam,
+          keyword: keywordParam,
+          brand: brandParam,
+        };
+      });
+
+      if (keywordParam) {
+        setSearchInput(keywordParam);
       }
-      return {
-        ...prev,
-        category: categoryParam,
-        keyword: keywordParam,
-        brand: brandParam,
-      };
     });
 
-    if (keywordParam) {
-      setSearchInput(keywordParam);
-    }
+    return () => window.cancelAnimationFrame(frame);
   }, [location.search]);
 
   useEffect(() => {
@@ -161,8 +166,7 @@ const ProductsPage = () => {
 
     const fetchCategories = async () => {
       try {
-        const { data } = await axios.get('/api/categories');
-        setCategories(data);
+        setCategories(await getCategories());
       } catch (fetchError) {
         console.error(fetchError);
       } finally {
@@ -645,7 +649,7 @@ const ProductsPage = () => {
                     className={`h-full reveal-fade-up ${productsVisible ? 'is-visible' : ''}`}
                     style={{ transitionDelay: `${(index % 8 + 1) * 75}ms` }}
                   >
-                    <Product product={product} />
+                    <Product product={product} priority={index < 4} />
                   </div>
                 ))}
                 {loadingMore

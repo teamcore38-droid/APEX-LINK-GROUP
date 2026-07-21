@@ -269,6 +269,12 @@ const productSchema = mongoose.Schema(
   }
 );
 
+productSchema.index({ isActive: 1, approvalStatus: 1, isFeatured: -1, isBestSeller: -1, createdAt: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, category: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, price: 1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, countInStock: 1 });
+productSchema.index({ sku: 1 }, { sparse: true });
+
 const Product = mongoose.model('Product', productSchema);
 
 export default Product;

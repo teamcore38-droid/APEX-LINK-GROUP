@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import { ChevronDown, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
+import { getCategories } from '../utils/categoryApi';
 
-const NavItem = ({ parent, children, getChildrenForParent, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
+const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
   const buttonRef = useRef(null);
   const leaveTimeoutRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState(null);
@@ -167,7 +167,7 @@ const NavItem = ({ parent, children, getChildrenForParent, handleCategoryClick, 
       )}
     </div>
   );
-};
+});
 
 const CategoryNavBar = () => {
   const [categories, setCategories] = useState([]);
@@ -184,8 +184,7 @@ const CategoryNavBar = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await axios.get('/api/categories');
-        setCategories(data);
+        setCategories(await getCategories());
       } catch (err) {
         console.error('Failed to load categories for nav bar', err);
       } finally {
@@ -197,7 +196,8 @@ const CategoryNavBar = () => {
 
   // Close dropdown on route change
   useEffect(() => {
-    setActiveDropdown(null);
+    const frame = window.requestAnimationFrame(() => setActiveDropdown(null));
+    return () => window.cancelAnimationFrame(frame);
   }, [location.pathname, location.search]);
 
   // Handle explicit closing (outside click or Escape key)
@@ -224,31 +224,43 @@ const CategoryNavBar = () => {
     };
   }, []);
 
-  // Separate parent and child categories
-  const parentCategories = categories.filter((c) => !c.parentCategory && c.isActive);
+  const { parentCategories, childrenByParent } = useMemo(() => {
+    const nextParents = [];
+    const nextChildren = new Map();
 
-  const getChildrenForParent = (parentId) => {
-    return categories.filter(
-      (c) =>
-        c.isActive &&
-        (c.parentCategory?._id === parentId ||
-          c.parentCategory === parentId ||
-          (typeof c.parentCategory === 'object' && c.parentCategory?._id === parentId))
-    );
-  };
+    categories.forEach((category) => {
+      if (!category.isActive) return;
 
-  const handleCategoryClick = (categoryName) => {
+      const parentId = category.parentCategory?._id || category.parentCategory;
+      if (!parentId) {
+        nextParents.push(category);
+        return;
+      }
+
+      const key = String(parentId);
+      nextChildren.set(key, [...(nextChildren.get(key) || []), category]);
+    });
+
+    return { parentCategories: nextParents, childrenByParent: nextChildren };
+  }, [categories]);
+
+  const getChildrenForParent = useCallback(
+    (parentId) => childrenByParent.get(String(parentId)) || [],
+    [childrenByParent]
+  );
+
+  const handleCategoryClick = useCallback((categoryName) => {
     setActiveDropdown(null);
     navigate(`/products?category=${encodeURIComponent(categoryName)}`);
-  };
+  }, [navigate]);
 
   // Scroll checking logic
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
     setCanScrollLeft(scrollLeft > 5);
     setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 5);
-  };
+  }, []);
 
   useEffect(() => {
     checkScroll();
@@ -261,7 +273,7 @@ const CategoryNavBar = () => {
       if (container) container.removeEventListener('scroll', checkScroll);
       window.removeEventListener('resize', checkScroll);
     };
-  }, [categories, loading]);
+  }, [categories, loading, checkScroll]);
 
   const scroll = (direction) => {
     if (!scrollContainerRef.current) return;

@@ -3,6 +3,7 @@ import Product from '../models/productModel.js';
 import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { destroyProductImage } from '../utils/cloudinaryService.js';
+import { setPublicCatalogCache } from '../utils/catalogPerformance.js';
 
 const slugify = (value = '') =>
   value
@@ -85,8 +86,12 @@ const getCategories = async (req, res) => {
 
     const categories = await Category.find(filter)
       .populate('parentCategory', 'name slug')
-      .sort({ displayOrder: 1, name: 1 });
+      .sort({ displayOrder: 1, name: 1 })
+      .lean();
 
+    if (!isAdminRequest) {
+      setPublicCatalogCache(res, 120);
+    }
     res.json(categories);
   } catch (error) {
     console.error(error);
@@ -100,12 +105,13 @@ const getCategories = async (req, res) => {
 const getCategoryBySlug = async (req, res) => {
   try {
     const slug = slugify(req.params.slug);
-    const category = await Category.findOne({ slug, isActive: true });
+    const category = await Category.findOne({ slug, isActive: true }).lean();
 
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    setPublicCatalogCache(res, 120);
     res.json(category);
   } catch (error) {
     console.error(error);

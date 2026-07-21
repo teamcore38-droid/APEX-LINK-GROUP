@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import connectDB from './config/db.js';
@@ -104,6 +105,7 @@ app.use(
     },
   })
 );
+app.use(compression({ threshold: 1024 }));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true, limit: '8mb' }));

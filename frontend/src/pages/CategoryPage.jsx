@@ -577,7 +577,7 @@ const CategoryPage = () => {
                       className={`h-full reveal-fade-up ${productsVisible ? 'is-visible' : ''}`}
                       style={{ transitionDelay: `${(index % 8 + 1) * 75}ms` }}
                     >
-                      <Product product={product} />
+                      <Product product={product} priority={index < 4} />
                     </div>
                   ))}
                 </div>

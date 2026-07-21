@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft,
   Eye,
   EyeOff,
-  Image as ImageIcon,
   Loader2,
   Pencil,
   Plus,
@@ -16,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getCategoryImage, slugifyCategoryName } from '../utils/categoryUi';
+import { invalidateCategoriesCache } from '../utils/categoryApi';
 
 const INITIAL_FORM = {
   name: '',
@@ -34,6 +34,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'
 const AdminCategoriesPage = () => {
   const navigate = useNavigate();
   const { userInfo } = useAuth();
+  const authToken = userInfo?.token;
   const canManageCatalog = Boolean(
     userInfo?.isAdmin ||
       userInfo?.permissions?.includes('catalog:write') ||
@@ -63,12 +64,12 @@ const AdminCategoriesPage = () => {
     }
   }, [canManageCatalog, navigate, userInfo]);
 
-  const loadCategories = async () => {
-    if (!userInfo?.token) return;
+  const loadCategories = useCallback(async () => {
+    if (!authToken) return;
 
     try {
       const { data } = await axios.get('/api/categories', {
-        headers: { Authorization: `Bearer ${userInfo.token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
         params: { includeInactive: true },
       });
       setCategories(data);
@@ -78,11 +79,12 @@ const AdminCategoriesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authToken]);
 
   useEffect(() => {
-    loadCategories();
-  }, [userInfo]);
+    const frame = window.requestAnimationFrame(() => loadCategories());
+    return () => window.cancelAnimationFrame(frame);
+  }, [loadCategories]);
 
   const slugPreview = useMemo(() => {
     return slugifyCategoryName(form.slug || form.name);
@@ -268,6 +270,7 @@ const AdminCategoriesPage = () => {
         setSuccess('Category created successfully.');
       }
 
+      invalidateCategoriesCache();
       resetForm();
       await loadCategories();
     } catch (saveError) {
@@ -301,6 +304,7 @@ const AdminCategoriesPage = () => {
         }
       );
 
+      invalidateCategoriesCache();
       setSuccess(`Category ${category.isActive ? 'deactivated' : 'activated'} successfully.`);
       await loadCategories();
     } catch (toggleError) {
@@ -326,6 +330,7 @@ const AdminCategoriesPage = () => {
         headers: { Authorization: `Bearer ${userInfo.token}` },
       });
 
+      invalidateCategoriesCache();
       if (editingId === category._id) resetForm();
       setSuccess('Category deleted successfully.');
       await loadCategories();

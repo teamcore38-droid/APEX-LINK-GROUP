@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apex-link-v2';
+const CACHE_NAME = 'apex-link-v3';
 const APP_SHELL = [
   '/offline.html',
   '/manifest.webmanifest',
@@ -32,11 +32,6 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (url.pathname.startsWith('/api/')) {
-    return;
-  }
-
-  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
-    event.respondWith(fetch(request));
     return;
   }
 

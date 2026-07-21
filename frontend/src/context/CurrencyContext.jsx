@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export const CURRENCIES = [
   { code: 'LKR', symbol: 'Rs.', flag: '🇱🇰', name: 'Sri Lankan Rupee' },
@@ -20,23 +21,24 @@ export const CurrencyProvider = ({ children }) => {
     localStorage.setItem('apex_currency', currency);
   }, [currency]);
 
-  const setCurrency = (newCurrency) => {
+  const setCurrency = useCallback((newCurrency) => {
     if (CURRENCIES.some((c) => c.code === newCurrency)) {
       setCurrencyState(newCurrency);
     }
-  };
+  }, []);
 
-  const selectedCurrencyObj = CURRENCIES.find((c) => c.code === currency) || CURRENCIES[0];
+  const contextValue = useMemo(
+    () => ({
+      currency,
+      setCurrency,
+      selectedCurrencyObj: CURRENCIES.find((c) => c.code === currency) || CURRENCIES[0],
+      currencies: CURRENCIES,
+    }),
+    [currency, setCurrency]
+  );
 
   return (
-    <CurrencyContext.Provider
-      value={{
-        currency,
-        setCurrency,
-        selectedCurrencyObj,
-        currencies: CURRENCIES,
-      }}
-    >
+    <CurrencyContext.Provider value={contextValue}>
       {children}
     </CurrencyContext.Provider>
   );

@@ -7,6 +7,7 @@ import { LoyaltyAccount, LoyaltyTransaction } from '../models/loyaltyModel.js';
 import { activeProductFilter, getPersonalizedRecommendations } from '../utils/recommendationService.js';
 import { getOrCreateLoyaltyAccount } from '../utils/loyaltyService.js';
 import { emitWebhookEvent } from '../utils/webhookService.js';
+import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -125,16 +126,18 @@ const getAdvancedSearch = async (req, res) => {
     'name-asc': { name: 1 },
   };
 
-  const [totalProducts, products, facets, priceRange] = await Promise.all([
-    Product.countDocuments(filter),
+  const [products, catalogSummary] = await Promise.all([
     Product.find(filter)
+      .select(PRODUCT_CARD_FIELDS)
       .sort(sortMap[sort] || { isFeatured: -1, isBestSeller: -1, createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit),
+      .limit(limit)
+      .lean(),
     Product.aggregate([
       { $match: filter },
       {
         $facet: {
+          metadata: [{ $count: 'total' }],
           categories: [{ $group: { _id: '$category', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }],
           brands: [{ $group: { _id: '$brand', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }],
           origins: [{ $group: { _id: '$origin', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }],
@@ -146,17 +149,17 @@ const getAdvancedSearch = async (req, res) => {
               },
             },
           ],
+          priceRange: [{ $group: { _id: null, min: { $min: '$price' }, max: { $max: '$price' } } }],
         },
       },
     ]),
-    Product.aggregate([
-      { $match: filter },
-      { $group: { _id: null, min: { $min: '$price' }, max: { $max: '$price' } } },
-    ]),
   ]);
 
+  const facets = catalogSummary[0] || {};
+  const totalProducts = facets.metadata?.[0]?.total || 0;
   const totalPages = totalProducts === 0 ? 1 : Math.ceil(totalProducts / limit);
 
+  setPublicCatalogCache(res);
   res.json({
     products,
     currentPage: Math.min(page, totalPages),
@@ -165,11 +168,11 @@ const getAdvancedSearch = async (req, res) => {
     hasNextPage: page < totalPages,
     hasPrevPage: page > 1,
     facets: {
-      categories: facets[0]?.categories || [],
-      brands: facets[0]?.brands || [],
-      origins: facets[0]?.origins || [],
-      availability: facets[0]?.availability || [],
-      priceRange: priceRange[0] || { min: 0, max: 0 },
+      categories: facets.categories || [],
+      brands: facets.brands || [],
+      origins: facets.origins || [],
+      availability: facets.availability || [],
+      priceRange: facets.priceRange?.[0] || { min: 0, max: 0 },
     },
   });
 };

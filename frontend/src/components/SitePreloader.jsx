@@ -1,89 +1,74 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 
-const VISITED_ROUTES_KEY = 'apex_visited_routes_session';
+const PRELOADER_SEEN_KEY = 'apex_preloader_seen_session';
 
-const getVisitedRoutes = () => {
+const hasSeenPreloader = () => {
   try {
-    const data = window.sessionStorage.getItem(VISITED_ROUTES_KEY);
-    return data ? new Set(JSON.parse(data)) : new Set();
+    return window.sessionStorage.getItem(PRELOADER_SEEN_KEY) === '1';
   } catch (err) {
     console.error(err);
-    return new Set();
+    return false;
   }
 };
 
-const markRouteVisited = (pathname) => {
+const markPreloaderSeen = () => {
   try {
-    const visited = getVisitedRoutes();
-    visited.add(pathname);
-    window.sessionStorage.setItem(VISITED_ROUTES_KEY, JSON.stringify([...visited]));
+    window.sessionStorage.setItem(PRELOADER_SEEN_KEY, '1');
   } catch (err) {
     console.error(err);
   }
 };
 
 const SitePreloader = () => {
-  const location = useLocation();
-  const [showLoader, setShowLoader] = useState(false);
+  const [showLoader, setShowLoader] = useState(() => !hasSeenPreloader());
   const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
-    const currentPath = location.pathname;
-    const visited = getVisitedRoutes();
-
-    if (visited.has(currentPath)) {
-      setShowLoader(false);
+    if (!showLoader) {
       return undefined;
     }
 
-    // First time loading this route in session
-    setShowLoader(true);
-    setIsFadingOut(false);
-
     let isMounted = true;
+    let finishStarted = false;
     const startTime = Date.now();
-    const MIN_DISPLAY_TIME = 650; // Minimum time to show loader for smooth feel
-    const MAX_DISPLAY_TIME = 1800; // Fallback maximum timeout
+    const timers = [];
+    const MIN_DISPLAY_TIME = 300;
+    const MAX_DISPLAY_TIME = 1400;
 
     const finishLoading = () => {
-      if (!isMounted) return;
+      if (!isMounted || finishStarted) return;
+
+      finishStarted = true;
 
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(0, MIN_DISPLAY_TIME - elapsedTime);
 
-      setTimeout(() => {
+      timers.push(window.setTimeout(() => {
         if (!isMounted) return;
         setIsFadingOut(true);
-        markRouteVisited(currentPath);
+        markPreloaderSeen();
 
-        setTimeout(() => {
+        timers.push(window.setTimeout(() => {
           if (!isMounted) return;
           setShowLoader(false);
-        }, 450); // Match CSS fade-out transition duration
-      }, remainingTime);
+        }, 300));
+      }, remainingTime));
     };
 
-    // Check document readiness and critical images
-    const handleCheckReady = () => {
-      if (document.readyState === 'complete') {
-        finishLoading();
-      } else {
-        window.addEventListener('load', finishLoading, { once: true });
-      }
-    };
+    if (document.readyState === 'complete') {
+      finishLoading();
+    } else {
+      window.addEventListener('load', finishLoading, { once: true });
+    }
 
-    handleCheckReady();
-
-    // Safety fallback timeout
-    const fallbackTimer = setTimeout(finishLoading, MAX_DISPLAY_TIME);
+    timers.push(window.setTimeout(finishLoading, MAX_DISPLAY_TIME));
 
     return () => {
       isMounted = false;
       window.removeEventListener('load', finishLoading);
-      clearTimeout(fallbackTimer);
+      timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [location.pathname]);
+  }, [showLoader]);
 
   if (!showLoader) {
     return null;
@@ -93,14 +78,10 @@ const SitePreloader = () => {
     <div
       role="status"
       aria-label="Loading page content"
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#1f0f0a]/90 backdrop-blur-xl transition-opacity duration-500 ease-out ${
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#1f0f0a] transition-opacity duration-300 ease-out ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* Background ambient glow effects */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#d99a32]/15 blur-3xl animate-pulse" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8c3b2a]/20 blur-2xl animate-pulse" />
-
       <div className="relative z-10 flex flex-col items-center px-6 text-center">
         {/* Animated Logo Container with glowing ring */}
         <div className="relative mb-6 flex h-28 w-28 items-center justify-center">
@@ -111,6 +92,9 @@ const SitePreloader = () => {
             <img
               src="/logo.webp"
               alt="Apex Spices logo"
+              width="96"
+              height="96"
+              decoding="async"
               className="h-16 w-auto animate-preloader-pulse object-contain"
               onError={(event) => {
                 event.currentTarget.style.display = 'none';

@@ -16,7 +16,15 @@ if (apiBaseUrl) {
 }
 
 installFrontendErrorMonitoring()
-installAdTracking()
+
+const installTrackingWhenIdle = () => {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(installAdTracking, { timeout: 2500 })
+    return
+  }
+
+  window.setTimeout(installAdTracking, 1200)
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -31,6 +39,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </React.StrictMode>,
 )
+
+installTrackingWhenIdle()
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

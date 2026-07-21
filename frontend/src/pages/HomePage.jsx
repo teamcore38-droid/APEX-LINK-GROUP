@@ -3,37 +3,9 @@ import axios from 'axios';
 import Product from '../components/Product';
 import FeaturedProductCarousel from '../components/FeaturedProductCarousel';
 import { Link } from 'react-router-dom';
-import { Truck, ShieldCheck, Globe, Award, ChevronRight, ChevronLeft } from 'lucide-react';
-import { getCategoryImageCandidates } from '../utils/categoryUi';
+import { Truck, ShieldCheck, Globe, Award } from 'lucide-react';
 import { normalizeProductPayload } from '../utils/productUi';
 import useScrollReveal from '../hooks/useScrollReveal';
-
-const fallbackCategories = [
-  {
-    _id: 'fallback-textiles',
-    slug: 'textiles-apparel',
-    name: 'Textiles & Apparel',
-    description: 'Premium fabrics and garments from certified mills worldwide.',
-    image:
-      'https://images.pexels.com/photos/6069552/pexels-photo-6069552.jpeg?auto=compress&cs=tinysrgb&w=1400',
-  },
-  {
-    _id: 'fallback-it',
-    slug: 'it-solutions-electronics',
-    name: 'IT Solutions & Electronics',
-    description: 'Enterprise hardware and technology from leading global partners.',
-    image:
-      'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1400',
-  },
-  {
-    _id: 'fallback-industrial',
-    slug: 'industrial-machinery',
-    name: 'Industrial & Machinery',
-    description: 'Certified machinery, tools, and industrial supplies built to perform.',
-    image:
-      'https://images.pexels.com/photos/1145434/pexels-photo-1145434.jpeg?auto=compress&cs=tinysrgb&w=1400',
-  },
-];
 
 const heroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-bg-${index + 1}.webp`);
 const mobileHeroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-mobile-${index + 1}.webp`);
@@ -41,62 +13,14 @@ const mobileHeroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/her
 const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [categoryImageAttempts, setCategoryImageAttempts] = useState({});
-  const [categoryImageFailed, setCategoryImageFailed] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [isReviewPaused, setIsReviewPaused] = useState(false);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
 
   const [trustBadgesRef, trustBadgesVisible] = useScrollReveal();
-  const [categoriesRef, categoriesVisible] = useScrollReveal();
   const [featuredRef, featuredVisible] = useScrollReveal();
   const [bestSellersRef, bestSellersVisible] = useScrollReveal();
   const [fashionBannerRef, fashionBannerVisible] = useScrollReveal();
-  const [testimonialsRef, testimonialsVisible] = useScrollReveal();
-
-  const testimonials = [
-    {
-      id: 1,
-      name: 'Sarah Jenkins',
-      role: 'Procurement Director',
-      text: 'Apex Link Group has become our single sourcing partner across three product categories. The consistency, documentation, and delivery reliability are unmatched.',
-    },
-    {
-      id: 2,
-      name: 'Michael Chen',
-      role: 'Restaurant Group Owner',
-      text: 'We source both our specialty food ingredients and our kitchen equipment through Apex Link Group. One trusted platform, premium quality across the board.',
-    },
-    {
-      id: 3,
-      name: 'Elena Rodriguez',
-      role: 'Operations Manager',
-      text: 'From office IT hardware to textile supplies, every order arrives exactly as specified. Their quality verification process gives us complete confidence.',
-    },
-  ];
-
-  const nextTestimonial = () => {
-    setActiveTestimonial((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
-  };
-
-  const prevTestimonial = () => {
-    setActiveTestimonial((prev) => (prev === 0 ? testimonials.length - 1 : prev - 1));
-  };
-
-  useEffect(() => {
-    if (isReviewPaused) {
-      return undefined;
-    }
-
-    const timer = window.setInterval(() => {
-      setActiveTestimonial((prev) => (prev === testimonials.length - 1 ? 0 : prev + 1));
-    }, 5000);
-
-    return () => window.clearInterval(timer);
-  }, [isReviewPaused, testimonials.length]);
 
   useEffect(() => {
     const heroTimer = window.setInterval(() => {
@@ -109,51 +33,28 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    [...heroBackgroundImages, ...mobileHeroBackgroundImages].forEach((imageUrl) => {
+    const imageSet = window.matchMedia('(min-width: 768px)').matches
+      ? heroBackgroundImages
+      : mobileHeroBackgroundImages;
+    const nextImageUrl = imageSet[(activeHeroImage + 1) % imageSet.length];
+    const preloadNextImage = () => {
       const image = new Image();
-      image.src = imageUrl;
-    });
-  }, []);
+      image.src = nextImageUrl;
+    };
 
-  const getCategoryCardKey = (category) =>
-    category?._id || category?.slug || String(category?.name || '');
-
-  const getCategoryCardImage = (category) => {
-    const key = getCategoryCardKey(category);
-    const attempt = categoryImageAttempts[key] || 0;
-    const candidates = getCategoryImageCandidates(category);
-    return candidates[Math.min(attempt, candidates.length - 1)];
-  };
-
-  const onCategoryImageError = (category) => {
-    const key = getCategoryCardKey(category);
-    const candidates = getCategoryImageCandidates(category);
-
-    const currentAttempt = categoryImageAttempts[key] || 0;
-
-    if (currentAttempt >= candidates.length - 1) {
-      setCategoryImageFailed((previousFailed) => ({
-        ...previousFailed,
-        [key]: true,
-      }));
-      return;
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(preloadNextImage, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idleId);
     }
 
-    setCategoryImageAttempts((previousAttempts) => ({
-      ...previousAttempts,
-      [key]: currentAttempt + 1,
-    }));
-  };
-
-  const isCategoryImageFailed = (category) => {
-    const key = getCategoryCardKey(category);
-    return Boolean(categoryImageFailed[key]);
-  };
+    const timer = window.setTimeout(preloadNextImage, 600);
+    return () => window.clearTimeout(timer);
+  }, [activeHeroImage]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [featuredResult, bestSellersResult, categoriesResult] = await Promise.allSettled([
+        const [featuredResult, bestSellersResult] = await Promise.allSettled([
           axios.get('/api/products', {
             params: {
               featured: true,
@@ -166,12 +67,10 @@ const HomePage = () => {
               limit: 4,
             },
           }),
-          axios.get('/api/categories'),
         ]);
 
         let nextFeaturedProducts = [];
         let nextBestSellers = [];
-        let nextCategories = [];
         if (featuredResult.status === 'fulfilled') {
           const featuredPayload = normalizeProductPayload(featuredResult.value.data);
           nextFeaturedProducts = featuredPayload.products;
@@ -184,17 +83,8 @@ const HomePage = () => {
           nextBestSellers = bestSellerPayload.products;
         }
 
-        if (categoriesResult.status === 'fulfilled' && Array.isArray(categoriesResult.value.data)) {
-          nextCategories = categoriesResult.value.data;
-        }
-
-        if (nextCategories.length === 0) {
-          nextCategories = fallbackCategories;
-        }
-
         setFeaturedProducts(nextFeaturedProducts);
         setBestSellers(nextBestSellers);
-        setCategories(nextCategories);
         if (featuredResult.status === 'fulfilled') {
           setError(null);
         }
@@ -202,7 +92,6 @@ const HomePage = () => {
       } catch (err) {
         console.error(err);
         setError('Unable to load featured collection right now.');
-        setCategories(fallbackCategories);
         setLoading(false);
       }
     };
@@ -220,30 +109,26 @@ const HomePage = () => {
               'radial-gradient(ellipse at 20% 20%, rgba(217, 154, 50,0.14), transparent 52%), radial-gradient(ellipse at 80% 75%, rgba(140, 59, 42,0.85), transparent 62%), linear-gradient(155deg, #2a140e 0%, #351a11 45%, #4a2317 100%)',
           }}
         ></div>
-        {mobileHeroBackgroundImages.map((imageUrl, index) => (
-          <div
-            key={`mobile-hero-bg-${imageUrl}`}
-            className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[12%] -right-[12%] md:hidden"
-            style={{
-              backgroundImage: `url(${imageUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              opacity: index === activeHeroImage % mobileHeroBackgroundImages.length ? 0.42 : 0,
-            }}
-          ></div>
-        ))}
-        {heroBackgroundImages.map((imageUrl, index) => (
-          <div
-            key={`desktop-hero-bg-${imageUrl}`}
-            className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[10%] -right-[10%] hidden md:block"
-            style={{
-              backgroundImage: `url(${imageUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              opacity: index === activeHeroImage % heroBackgroundImages.length ? 0.4 : 0,
-            }}
-          ></div>
-        ))}
+        <div
+          key={`mobile-hero-bg-${activeHeroImage}`}
+          className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[12%] -right-[12%] md:hidden"
+          style={{
+            '--hero-opacity': 0.42,
+            backgroundImage: `url(${mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        ></div>
+        <div
+          key={`desktop-hero-bg-${activeHeroImage}`}
+          className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[10%] -right-[10%] hidden md:block"
+          style={{
+            '--hero-opacity': 0.4,
+            backgroundImage: `url(${heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        ></div>
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
@@ -263,6 +148,8 @@ const HomePage = () => {
           <img
             src="/apex-fashion-mobile-hero.webp"
             alt="Apex Fashion hero mark"
+            fetchPriority="high"
+            decoding="async"
             className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
           />
           <p className="mx-auto mb-7 hidden max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:block md:text-xl">
@@ -412,6 +299,10 @@ const HomePage = () => {
               <img
                 src="https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg?auto=compress&cs=tinysrgb&w=1000"
                 alt="Curated fashion apparel and footwear collection"
+                width="1000"
+                height="1250"
+                loading="lazy"
+                decoding="async"
                 className="relative z-10 h-[500px] w-full rounded-lg object-cover shadow-2xl"
               />
             </div>

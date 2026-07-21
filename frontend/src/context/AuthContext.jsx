@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext, useRef } from 'react';
+import { createContext, useCallback, useState, useEffect, useContext, useMemo, useRef } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
       const { data } = await axios.post('/api/users/login', { email, password }, config);
@@ -95,9 +95,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error.response?.data?.message || error.message;
     }
-  };
+  }, []);
 
-  const verifyTwoFactorLogin = async ({ challengeId, code }) => {
+  const verifyTwoFactorLogin = useCallback(async ({ challengeId, code }) => {
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
       const { data } = await axios.post('/api/users/login/2fa', { challengeId, code }, config);
@@ -106,9 +106,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error.response?.data?.message || error.message;
     }
-  };
+  }, []);
 
-  const register = async ({ name, email, password, confirmPassword, phone = '' }) => {
+  const register = useCallback(async ({ name, email, password, confirmPassword, phone = '' }) => {
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
       const { data } = await axios.post(
@@ -121,13 +121,13 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error.response?.data?.message || error.message;
     }
-  };
+  }, []);
 
-  const syncUserInfo = (nextUserInfo) => {
+  const syncUserInfo = useCallback((nextUserInfo) => {
     setUserInfo(nextUserInfo);
-  };
+  }, []);
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     try {
       const { data } = await axios.post('/api/users/refresh');
       setUserInfo(data);
@@ -136,9 +136,9 @@ export const AuthProvider = ({ children }) => {
       setUserInfo(null);
       throw error.response?.data?.message || error.message;
     }
-  };
+  }, []);
 
-  const googleLogin = async (credential) => {
+  const googleLogin = useCallback(async (credential) => {
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
       const { data } = await axios.post('/api/users/google', { credential }, config);
@@ -147,9 +147,9 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       throw error.response?.data?.message || error.message;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       if (userInfo?.token) {
         await axios.post(
@@ -166,21 +166,33 @@ export const AuthProvider = ({ children }) => {
       console.error(error);
     }
     setUserInfo(null);
-  };
+  }, [userInfo]);
+
+  const contextValue = useMemo(
+    () => ({
+      userInfo,
+      login,
+      googleLogin,
+      verifyTwoFactorLogin,
+      register,
+      refreshSession,
+      syncUserInfo,
+      logout,
+    }),
+    [
+      userInfo,
+      login,
+      googleLogin,
+      verifyTwoFactorLogin,
+      register,
+      refreshSession,
+      syncUserInfo,
+      logout,
+    ]
+  );
 
   return (
-    <AuthContext.Provider
-      value={{
-        userInfo,
-        login,
-        googleLogin,
-        verifyTwoFactorLogin,
-        register,
-        refreshSession,
-        syncUserInfo,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

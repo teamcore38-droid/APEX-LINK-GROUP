@@ -9,7 +9,7 @@ import {
   getStockPresentation,
 } from '../utils/productUi';
 
-const Product = ({ product }) => {
+const Product = ({ product, priority = false }) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
   const statusBadge = getProductStatusBadge(product);
@@ -32,7 +32,10 @@ const Product = ({ product }) => {
           <img
             src={getOptimizedImageUrl(product.image, { width: 520, height: 520, crop: 'fill' })}
             alt={product.name}
-            loading="lazy"
+            width="520"
+            height="520"
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
             decoding="async"
             sizes="(min-width: 1280px) 240px, (min-width: 768px) 30vw, 50vw"
             className="h-full w-full object-cover transition duration-700 group-hover:scale-105"

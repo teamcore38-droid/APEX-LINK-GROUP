@@ -41,8 +41,11 @@ const Header = () => {
 
   // Close all open menus automatically on route change
   useEffect(() => {
-    setDesktopUserMenuOpen(false);
-    setMobileNavOpen(false);
+    const frame = window.requestAnimationFrame(() => {
+      setDesktopUserMenuOpen(false);
+      setMobileNavOpen(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [location.pathname]);
 
   // Click-outside and touch-outside handler for desktop and mobile menus
@@ -85,6 +88,10 @@ const Header = () => {
           <img
             src="/logo.webp"
             alt="Apex Fashion logo"
+            width="128"
+            height="128"
+            fetchPriority="high"
+            decoding="async"
             className="h-12 w-auto shrink-0 object-contain sm:h-14 xl:h-16"
           />
           <span className="flex min-w-0 flex-col">

@@ -3,15 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header'
 import CategoryNavBar from './components/CategoryNavBar'
 import Footer from './components/Footer'
-import HomePage from './pages/HomePage'
-import ProductsPage from './pages/ProductsPage'
-import CategoriesPage from './pages/CategoriesPage'
-import CategoryPage from './pages/CategoryPage'
-import CartPage from './pages/CartPage'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
-import AboutPage from './pages/AboutPage'
-import NotFoundPage from './pages/NotFoundPage'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
 import CookieConsentBanner from './components/CookieConsentBanner'
 import ScrollToTop from './components/ScrollToTop'
@@ -38,6 +29,15 @@ const lazyWithReload = (loader) =>
       })
   )
 
+const HomePage = lazyWithReload(() => import('./pages/HomePage'))
+const ProductsPage = lazyWithReload(() => import('./pages/ProductsPage'))
+const CategoriesPage = lazyWithReload(() => import('./pages/CategoriesPage'))
+const CategoryPage = lazyWithReload(() => import('./pages/CategoryPage'))
+const CartPage = lazyWithReload(() => import('./pages/CartPage'))
+const LoginPage = lazyWithReload(() => import('./pages/LoginPage'))
+const RegisterPage = lazyWithReload(() => import('./pages/RegisterPage'))
+const AboutPage = lazyWithReload(() => import('./pages/AboutPage'))
+const NotFoundPage = lazyWithReload(() => import('./pages/NotFoundPage'))
 const ProductPage = lazyWithReload(() => import('./pages/ProductPage'))
 const CheckoutPage = lazyWithReload(() => import('./pages/CheckoutPage'))
 const ProfilePage = lazyWithReload(() => import('./pages/ProfilePage'))

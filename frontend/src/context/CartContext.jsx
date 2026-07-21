@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useCallback, useState, useEffect, useContext, useMemo } from 'react';
 import axios from 'axios';
 import { getMarketingSessionId, trackEvent } from '../utils/analytics';
 
@@ -29,6 +29,10 @@ export const CartProvider = ({ children }) => {
 
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));
+
+    if (cartItems.length === 0) {
+      return undefined;
+    }
 
     const timer = window.setTimeout(() => {
       const subtotal = cartItems.reduce((total, item) => total + Number(item.price || 0) * Number(item.qty || 0), 0);
@@ -67,7 +71,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('districtShippingFee', String(districtShippingFee));
   }, [districtShippingFee]);
 
-  const addToCart = (product, qty) => {
+  const addToCart = useCallback((product, qty) => {
     trackEvent('add_to_cart', {
       productId: product._id || product.product,
       name: product.name,
@@ -106,9 +110,9 @@ export const CartProvider = ({ children }) => {
         }];
       }
     });
-  };
+  }, []);
 
-  const removeFromCart = (targetItem) => {
+  const removeFromCart = useCallback((targetItem) => {
     const targetProductId = typeof targetItem === 'object' ? targetItem.product : targetItem;
     const targetVariantId = typeof targetItem === 'object' ? targetItem.variantId || '' : '';
     const targetSize = typeof targetItem === 'object' ? targetItem.size || '' : '';
@@ -144,23 +148,23 @@ export const CartProvider = ({ children }) => {
         (cartItem.color || '') !== targetColor
       );
     }));
-  };
+  }, [cartItems]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
-  };
+  }, []);
 
-  const saveShippingAddress = (data) => {
+  const saveShippingAddress = useCallback((data) => {
     setShippingAddress(data);
-  };
+  }, []);
 
-  const saveDistrict = (district, fee) => {
+  const saveDistrict = useCallback((district, fee) => {
     setSelectedDistrict(district);
     setDistrictShippingFee(fee);
-  };
+  }, []);
 
-  return (
-    <CartContext.Provider value={{
+  const contextValue = useMemo(
+    () => ({
       cartItems,
       addToCart,
       removeFromCart,
@@ -170,7 +174,22 @@ export const CartProvider = ({ children }) => {
       selectedDistrict,
       districtShippingFee,
       saveDistrict,
-    }}>
+    }),
+    [
+      cartItems,
+      addToCart,
+      removeFromCart,
+      clearCart,
+      shippingAddress,
+      saveShippingAddress,
+      selectedDistrict,
+      districtShippingFee,
+      saveDistrict,
+    ]
+  );
+
+  return (
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );

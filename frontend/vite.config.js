@@ -16,19 +16,32 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) {
+          const normalizedId = id.replaceAll('\\', '/')
+
+          if (!normalizedId.includes('/node_modules/')) {
             return undefined
           }
 
-          if (id.includes('react-router-dom')) {
+          if (
+            normalizedId.includes('/node_modules/react-router/') ||
+            normalizedId.includes('/node_modules/react-router-dom/')
+          ) {
             return 'router-vendor'
           }
 
-          if (id.includes('react') || id.includes('scheduler')) {
+          if (
+            normalizedId.includes('/node_modules/react/') ||
+            normalizedId.includes('/node_modules/react-dom/') ||
+            normalizedId.includes('/node_modules/scheduler/')
+          ) {
             return 'react-vendor'
           }
 
-          return 'vendor'
+          if (normalizedId.includes('/node_modules/axios/')) {
+            return 'http-vendor'
+          }
+
+          return undefined
         },
       },
     },

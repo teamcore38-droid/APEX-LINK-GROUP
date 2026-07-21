@@ -4,6 +4,7 @@ import Product from '../models/productModel.js';
 import { slugify } from './categoryController.js';
 import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
+import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
 import {
   destroyProductImage,
   destroyProductImages,
@@ -626,10 +627,21 @@ const getProducts = async (req, res) => {
     const skip = (currentPage - 1) * limitNumber;
     const sortOption = PRODUCT_SORT_OPTIONS[sortKey] || DEFAULT_PRODUCT_SORT;
 
-    const products = await Product.find(queryFilter)
+    let productsQuery = Product.find(queryFilter)
       .sort(sortOption)
       .skip(skip)
       .limit(limitNumber);
+
+    if (!isAdmin) {
+      productsQuery = productsQuery.select(PRODUCT_CARD_FIELDS).lean();
+    }
+
+    const products = await productsQuery;
+
+    if (!isAdmin) {
+      setPublicCatalogCache(res);
+    }
+    res.vary('Authorization');
 
     res.json(
       buildPaginationPayload({

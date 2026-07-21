@@ -13,6 +13,9 @@ const RouteLoadingScreen = ({ message = 'Preparing your experience' }) => (
           <img
             src="/logo.webp"
             alt="Apex Spices logo"
+            width="80"
+            height="80"
+            decoding="async"
             className="h-12 w-auto animate-preloader-pulse object-contain"
             onError={(event) => {
               event.currentTarget.style.display = 'none';

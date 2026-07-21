@@ -111,6 +111,15 @@
     }
   }
 
+  @keyframes hero-bg-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: var(--hero-opacity, 0.4);
+    }
+  }
+
   @keyframes preloader-pulse {
     0%, 100% {
       transform: scale(1);
@@ -145,7 +154,7 @@
   }
 
   .hero-bg-crossfade {
-    transition: opacity 2400ms cubic-bezier(0.4, 0, 0.2, 1);
+    animation: hero-bg-fade-in 1200ms ease-out both;
     will-change: opacity, transform;
   }
 
@@ -218,6 +227,14 @@
   .reveal-fade-up.is-visible {
     opacity: 1;
     transform: translateY(0);
+    will-change: auto;
+  }
+
+  @supports (content-visibility: auto) {
+    .product-grid > :nth-child(n + 9) {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 430px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

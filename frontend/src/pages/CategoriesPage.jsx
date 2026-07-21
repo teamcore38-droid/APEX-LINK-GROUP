@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import { ArrowRight, Globe, Sparkles, Tag } from 'lucide-react';
 import { getCategoryImage } from '../utils/categoryUi';
+import { getCategories } from '../utils/categoryApi';
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState([]);
@@ -12,8 +12,7 @@ const CategoriesPage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await axios.get('/api/categories');
-        setCategories(data);
+        setCategories(await getCategories());
       } catch (fetchError) {
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load categories right now.');
@@ -85,7 +84,7 @@ const CategoriesPage = () => {
             </div>
           ) : (
             <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-              {parentCategories.map((category) => {
+              {parentCategories.map((category, index) => {
                 const subcategories = getChildrenForParent(category._id);
 
                 return (
@@ -98,6 +97,11 @@ const CategoriesPage = () => {
                         <img
                           src={getCategoryImage(category)}
                           alt={category.name}
+                          width="720"
+                          height="576"
+                          loading={index < 3 ? 'eager' : 'lazy'}
+                          fetchPriority={index === 0 ? 'high' : 'auto'}
+                          decoding="async"
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/85 via-brand-dark/20 to-transparent" />
