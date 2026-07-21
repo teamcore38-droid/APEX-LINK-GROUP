@@ -20,6 +20,7 @@ import {
 } from '../utils/productUi';
 import { applySeo } from '../utils/seo';
 import useScrollReveal from '../hooks/useScrollReveal';
+import { preloadProductGridImages } from '../utils/imagePreloader';
 
 const INITIAL_FILTERS = {
   keyword: '',
@@ -199,6 +200,12 @@ const ProductsPage = () => {
         }
 
         const payload = normalizeProductPayload(data);
+        await preloadProductGridImages(payload.products, 4);
+
+        if (queryVersionRef.current !== requestVersion) {
+          return;
+        }
+
         setProducts(payload.products);
         setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
         setMeta({

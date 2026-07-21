@@ -21,6 +21,7 @@ import {
 } from '../utils/productUi';
 import { applySeo, buildCategoryStructuredData } from '../utils/seo';
 import useScrollReveal from '../hooks/useScrollReveal';
+import { preloadProductGridImages } from '../utils/imagePreloader';
 
 const createCategoryFilters = (categoryName = '') => ({
   keyword: '',
@@ -160,6 +161,8 @@ const CategoryPage = () => {
         });
 
         const payload = normalizeProductPayload(data);
+        await preloadProductGridImages(payload.products, 4);
+
         setProducts(payload.products);
         setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
         setMeta({
