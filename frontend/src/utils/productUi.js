@@ -317,7 +317,14 @@ export const buildProductFormFromProduct = (product = {}) => {
     imageAssets: gallery,
     variantsJson: JSON.stringify(product.variants || [], null, 2),
     hasSizes: Boolean(product.hasSizes),
-    sizes: Array.isArray(product.sizes) ? product.sizes.map(s => ({ size: s.size || '', countInStock: s.countInStock ?? 0 })) : [],
+    sizes: Array.isArray(product.sizes)
+      ? product.sizes.map((s) => ({
+          size: s.size || '',
+          price: s.price ?? 0,
+          countInStock: s.countInStock ?? 0,
+          colors: Array.isArray(s.colors) ? s.colors : [],
+        }))
+      : [],
     shortDescription: product.shortDescription || '',
     description: product.description || '',
     origin: product.origin || '',
@@ -349,10 +356,16 @@ export const buildProductPayloadFromForm = (form) => {
     variants: JSON.parse(form.variantsJson || '[]'),
     hasSizes: Boolean(form.hasSizes),
     sizes: Array.isArray(form.sizes)
-      ? form.sizes.map((s) => ({
-          size: String(s.size || '').trim(),
-          countInStock: Math.max(0, Number(s.countInStock || 0)),
-        })).filter((s) => Boolean(s.size))
+      ? form.sizes
+          .map((s) => ({
+            size: String(s.size || '').trim(),
+            price: Number(s.price || 0),
+            countInStock: Math.max(0, Number(s.countInStock || 0)),
+            colors: Array.isArray(s.colors)
+              ? s.colors.map((c) => String(c || '').trim()).filter(Boolean)
+              : [],
+          }))
+          .filter((s) => Boolean(s.size))
       : [],
     shortDescription: form.shortDescription.trim(),
     description: form.description.trim(),

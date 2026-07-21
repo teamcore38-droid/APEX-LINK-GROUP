@@ -1132,56 +1132,107 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                       </div>
                     </div>
 
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2">
                       {(form.sizes || []).map((sizeItem, sizeIndex) => (
                         <div
                           key={`size-${sizeIndex}`}
-                          className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white p-3 shadow-xs"
+                          className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs space-y-3"
                         >
-                          <input
-                            type="text"
-                            placeholder="Size (e.g. M / 42)"
-                            value={sizeItem.size}
-                            onChange={(e) => {
-                              const newSizeVal = e.target.value;
-                              setForm((prev) => {
-                                const nextSizes = [...(prev.sizes || [])];
-                                nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], size: newSizeVal };
-                                return { ...prev, sizes: nextSizes };
-                              });
-                            }}
-                            className="w-28 rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
-                          />
-                          <div className="flex flex-1 items-center gap-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Qty:</span>
+                          <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Size:</span>
+                              <input
+                                type="text"
+                                placeholder="e.g. S / IND-6"
+                                value={sizeItem.size}
+                                onChange={(e) => {
+                                  const newSizeVal = e.target.value;
+                                  setForm((prev) => {
+                                    const nextSizes = [...(prev.sizes || [])];
+                                    nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], size: newSizeVal };
+                                    return { ...prev, sizes: nextSizes };
+                                  });
+                                }}
+                                className="w-32 rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-1.5 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setForm((prev) => ({
+                                  ...prev,
+                                  sizes: (prev.sizes || []).filter((_, idx) => idx !== sizeIndex),
+                                }));
+                              }}
+                              className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition"
+                              title="Remove size"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="block">
+                              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                Size Price (LKR)
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder={`Base: ${form.price || 0}`}
+                                value={sizeItem.price || ''}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value) || 0;
+                                  setForm((prev) => {
+                                    const nextSizes = [...(prev.sizes || [])];
+                                    nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], price: val };
+                                    return { ...prev, sizes: nextSizes };
+                                  });
+                                }}
+                                className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
+                              />
+                            </label>
+
+                            <label className="block">
+                              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                Stock Quantity
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={sizeItem.countInStock ?? 0}
+                                onChange={(e) => {
+                                  const val = Math.max(0, Number(e.target.value) || 0);
+                                  setForm((prev) => {
+                                    const nextSizes = [...(prev.sizes || [])];
+                                    nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], countInStock: val };
+                                    return { ...prev, sizes: nextSizes };
+                                  });
+                                }}
+                                className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
+                              />
+                            </label>
+                          </div>
+
+                          <div>
+                            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                              Available Colors for {sizeItem.size || 'this size'} (Comma Separated)
+                            </span>
                             <input
-                              type="number"
-                              min="0"
-                              value={sizeItem.countInStock}
+                              type="text"
+                              placeholder="e.g. Red, Black, Tan, White"
+                              value={Array.isArray(sizeItem.colors) ? sizeItem.colors.join(', ') : ''}
                               onChange={(e) => {
-                                const newQty = Math.max(0, Number(e.target.value) || 0);
+                                const colorsArr = e.target.value.split(',').map((c) => c.trim()).filter(Boolean);
                                 setForm((prev) => {
                                   const nextSizes = [...(prev.sizes || [])];
-                                  nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], countInStock: newQty };
+                                  nextSizes[sizeIndex] = { ...nextSizes[sizeIndex], colors: colorsArr };
                                   return { ...prev, sizes: nextSizes };
                                 });
                               }}
-                              className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-2.5 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent text-center"
+                              className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs text-brand-dark outline-none focus:border-brand-accent"
                             />
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setForm((prev) => ({
-                                ...prev,
-                                sizes: (prev.sizes || []).filter((_, idx) => idx !== sizeIndex),
-                              }));
-                            }}
-                            className="rounded-lg p-1.5 text-red-500 hover:bg-red-50 transition"
-                            title="Remove size"
-                          >
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       ))}
                     </div>

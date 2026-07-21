@@ -566,6 +566,11 @@ const CheckoutInner = () => {
                               Size: {item.size}
                             </span>
                           )}
+                          {item.color && (
+                            <span className="rounded bg-[#efebe6] px-1.5 py-0.2 text-[10px] font-bold text-[#4a3b32]">
+                              Color: {item.color}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

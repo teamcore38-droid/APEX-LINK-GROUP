@@ -411,8 +411,14 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       sizes: Array.isArray(payload.sizes)
         ? payload.sizes.map((s) => ({
             size: String(s.size || '').trim(),
+            price: Number.isNaN(Number(s.price)) || Number(s.price) < 0 ? 0 : Number(s.price),
             countInStock: Math.max(0, Number(s.countInStock || 0)),
             reservedStock: Math.max(0, Number(s.reservedStock || 0)),
+            colors: Array.isArray(s.colors)
+              ? s.colors.map((c) => String(c || '').trim()).filter(Boolean)
+              : typeof s.colors === 'string'
+                ? s.colors.split(',').map((c) => c.trim()).filter(Boolean)
+                : [],
           })).filter((s) => Boolean(s.size))
         : [],
       image: String(payload.image || '').trim(),

@@ -67,6 +67,7 @@ const orderSchema = mongoose.Schema(
         },
         variantLabel: { type: String, default: '' },
         size: { type: String, default: '' },
+        color: { type: String, default: '' },
         sku: { type: String, default: '' },
         commissionRate: { type: Number, default: 0 },
         commissionAmount: { type: Number, default: 0 },

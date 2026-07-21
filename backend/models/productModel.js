@@ -82,6 +82,11 @@ const sizeSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
+    price: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     countInStock: {
       type: Number,
       default: 0,
@@ -91,6 +96,10 @@ const sizeSchema = mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    colors: {
+      type: [String],
+      default: [],
     },
   },
   { _id: false }

@@ -572,6 +572,11 @@ const AdminOrderDetailPage = () => {
                                 Size: {item.size}
                               </span>
                             )}
+                            {item.color && (
+                              <span className="rounded-md bg-[#efebe6] px-2 py-0.5 text-xs font-bold text-[#4a3b32]">
+                                Color: {item.color}
+                              </span>
+                            )}
                           </div>
                           <p className="text-sm text-gray-500">Unit Price: {formatCurrency(item.price)}</p>
                         </div>

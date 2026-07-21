@@ -173,13 +173,6 @@ const ProductPage = () => {
 
       if (reviewResult.status === 'fulfilled') {
         setReviews(reviewResult.value.data);
-      } else {
-        console.error(reviewResult.reason);
-        setReviews([]);
-      }
-
-      if (relatedResult.status === 'fulfilled') {
-        const relatedPayload = normalizeProductPayload(relatedResult.value.data);
       try {
         const [relatedRes, reviewsRes, wishlistRes, seoRes] = await Promise.allSettled([
           axios.get('/api/customer/recommendations', {
@@ -228,10 +221,13 @@ const ProductPage = () => {
 
         // Pre-select first available in-stock size if product has sizes enabled
         if (data.hasSizes && Array.isArray(data.sizes) && data.sizes.length > 0) {
-          const firstInStockSize = data.sizes.find((s) => Number(s.countInStock || 0) > 0);
+          const firstInStockSize = data.sizes.find((s) => Number(s.countInStock || 0) > 0) || data.sizes[0];
           setSelectedSize(firstInStockSize ? firstInStockSize.size : '');
+          const availableColors = Array.isArray(firstInStockSize?.colors) ? firstInStockSize.colors : [];
+          setSelectedColor(availableColors[0] || '');
         } else {
           setSelectedSize('');
+          setSelectedColor('');
         }
 
         setQty(1);
@@ -265,6 +261,11 @@ const ProductPage = () => {
     [product, selectedSize]
   );
 
+  const availableColorsForSize = useMemo(() => {
+    if (!selectedSizeObj) return [];
+    return Array.isArray(selectedSizeObj.colors) ? selectedSizeObj.colors : [];
+  }, [selectedSizeObj]);
+
   const productImages = useMemo(() => {
     const variantImages = getVariantImageUrls(selectedVariant);
 
@@ -274,7 +275,13 @@ const ProductPage = () => {
     ? selectedImage
     : productImages[0] || selectedImage || product?.image || '';
   const selectedImageIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
-  const effectivePrice = Number(product?.price || 0) + Number(selectedVariant?.priceAdjustment || 0);
+
+  const effectivePrice = useMemo(() => {
+    if (selectedSizeObj && Number(selectedSizeObj.price || 0) > 0) {
+      return Number(selectedSizeObj.price);
+    }
+    return Number(product?.price || 0) + Number(selectedVariant?.priceAdjustment || 0);
+  }, [product, selectedSizeObj, selectedVariant]);
 
   const effectiveStock = useMemo(() => {
     if (selectedSizeObj) {
@@ -342,9 +349,16 @@ const ProductPage = () => {
   };
 
   const handleAddToCart = () => {
-    if (product.hasSizes && product.sizes?.length > 0 && !selectedSize) {
-      setSizeError('Please select a size before adding to cart.');
-      return;
+    if (product.hasSizes && product.sizes?.length > 0) {
+      if (!selectedSize) {
+        setSizeError('Please select a size before adding to cart.');
+        return;
+      }
+
+      if (availableColorsForSize.length > 0 && !selectedColor) {
+        setSizeError('Please select an available color for this size before adding to cart.');
+        return;
+      }
     }
 
     setSizeError('');
@@ -355,6 +369,7 @@ const ProductPage = () => {
         price: effectivePrice,
         countInStock: effectiveStock,
         size: selectedSize || '',
+        color: selectedColor || '',
         variantId: selectedVariant?._id || '',
         variantLabel: selectedVariant?.label || '',
         sku: selectedVariant?.sku || product.sku || '',
@@ -682,49 +697,91 @@ const ProductPage = () => {
               )}
             </div>
 
-            {/* Standalone Size Selection Component */}
+            {/* Standalone Size & Color Selection Component */}
             {product?.hasSizes && product?.sizes?.length > 0 && (
-              <div className="mt-6 rounded-[24px] border border-[#ecd9ca] bg-white p-5 shadow-xs">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-serif text-base font-bold text-brand-dark">Select Size</h3>
-                  {selectedSize && (
-                    <span className="text-xs font-semibold text-brand-primary">Selected: {selectedSize}</span>
-                  )}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2.5">
-                  {product.sizes.map((sizeObj) => {
-                    const isOutOfStock = Number(sizeObj.countInStock || 0) <= 0;
-                    const isSelected = selectedSize === sizeObj.size;
+              <div className="mt-6 rounded-[24px] border border-[#ecd9ca] bg-white p-5 shadow-xs space-y-5">
+                {/* 1. Size Selection */}
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-base font-bold text-brand-dark">1. Select Size</h3>
+                    {selectedSize && (
+                      <span className="text-xs font-semibold text-brand-primary">Selected Size: {selectedSize}</span>
+                    )}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2.5">
+                    {product.sizes.map((sizeObj) => {
+                      const isOutOfStock = Number(sizeObj.countInStock || 0) <= 0;
+                      const isSelected = selectedSize === sizeObj.size;
+                      const displayPrice = Number(sizeObj.price || 0) > 0 ? Number(sizeObj.price) : Number(product.price || 0);
 
-                    return (
-                      <button
-                        key={sizeObj.size}
-                        type="button"
-                        disabled={isOutOfStock}
-                        onClick={() => {
-                          setSelectedSize(sizeObj.size);
-                          setQty(1);
-                        }}
-                        className={`group relative flex min-w-[70px] flex-col items-center justify-center rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
-                          isOutOfStock
-                            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
-                            : isSelected
-                              ? 'border-brand-primary bg-brand-primary text-white shadow-md'
-                              : 'border-gray-300 bg-white text-brand-dark hover:border-brand-primary hover:bg-[#fff7ee]'
-                        }`}
-                      >
-                        <span className="text-sm">{sizeObj.size}</span>
-                        {isOutOfStock ? (
-                          <span className="text-[9px] font-semibold text-red-500 uppercase tracking-tighter">Out of Stock</span>
-                        ) : (
-                          <span className={`text-[10px] font-medium ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                            {formatCurrency(effectivePrice)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={sizeObj.size}
+                          type="button"
+                          disabled={isOutOfStock}
+                          onClick={() => {
+                            setSelectedSize(sizeObj.size);
+                            const nextColors = Array.isArray(sizeObj.colors) ? sizeObj.colors : [];
+                            setSelectedColor(nextColors[0] || '');
+                            setQty(1);
+                          }}
+                          className={`group relative flex min-w-[76px] flex-col items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-bold transition-all duration-200 ${
+                            isOutOfStock
+                              ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
+                              : isSelected
+                                ? 'border-brand-primary bg-brand-primary text-white shadow-md'
+                                : 'border-gray-300 bg-white text-brand-dark hover:border-brand-primary hover:bg-[#fff7ee]'
+                          }`}
+                        >
+                          <span className="text-sm">{sizeObj.size}</span>
+                          {isOutOfStock ? (
+                            <span className="text-[9px] font-semibold text-red-500 uppercase tracking-tighter">Out of Stock</span>
+                          ) : (
+                            <span className={`text-[10px] font-medium ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                              {formatCurrency(displayPrice)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* 2. Color Selection (Filtered by selected size) */}
+                {selectedSize && availableColorsForSize.length > 0 && (
+                  <div className="border-t border-[#f2e2d5] pt-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-serif text-base font-bold text-brand-dark">2. Select Color</h3>
+                      {selectedColor && (
+                        <span className="text-xs font-semibold text-brand-primary">Selected Color: {selectedColor}</span>
+                      )}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2.5">
+                      {availableColorsForSize.map((colorName) => {
+                        const isSelected = selectedColor === colorName;
+
+                        return (
+                          <button
+                            key={colorName}
+                            type="button"
+                            onClick={() => setSelectedColor(colorName)}
+                            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                              isSelected
+                                ? 'border-brand-primary bg-brand-dark text-white shadow-md'
+                                : 'border-gray-300 bg-[#fff7ee] text-brand-dark hover:border-brand-primary'
+                            }`}
+                          >
+                            <span
+                              className="h-3.5 w-3.5 rounded-full border border-black/20 shadow-xs"
+                              style={{ backgroundColor: colorName.toLowerCase() }}
+                            />
+                            <span>{colorName}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -106,7 +106,14 @@ const normalizeCartItems = async (cartItems = []) => {
       throw new Error(`${product.name} has only ${availableStock} available`);
     }
 
-    const price = roundMoney(Number(product.price || 0) + Number(variant?.priceAdjustment || 0));
+    let price = roundMoney(Number(product.price || 0) + Number(variant?.priceAdjustment || 0));
+    if (product.hasSizes && item.size && Array.isArray(product.sizes)) {
+      const matchedSizeObj = product.sizes.find((s) => s.size === item.size);
+      if (matchedSizeObj && Number(matchedSizeObj.price || 0) > 0) {
+        price = roundMoney(Number(matchedSizeObj.price));
+      }
+    }
+
     const vendor = product.vendor ? await Vendor.findById(product.vendor).lean() : null;
     const commissionRate = vendor ? Number(vendor.commissionRate || 0) : 0;
     const commissionAmount = roundMoney(price * qty * (commissionRate / 100));
@@ -122,6 +129,7 @@ const normalizeCartItems = async (cartItems = []) => {
       variantId: variant?._id || null,
       variantLabel: variant?.label || '',
       size: String(item.size || '').trim(),
+      color: String(item.color || '').trim(),
       sku: variant?.sku || product.sku || '',
       commissionRate,
       commissionAmount,
