@@ -39,10 +39,10 @@ const Product = ({ product }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
 
-          <div className="absolute inset-x-2 top-2 flex flex-col items-start gap-1 sm:inset-x-3 sm:top-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="absolute inset-x-1.5 top-1.5 flex flex-row flex-wrap items-center justify-between gap-1 sm:inset-x-3 sm:top-3">
             {statusBadge && (
               <span
-                className={`inline-flex max-w-full rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] shadow-lg sm:px-3 sm:text-[10px] sm:tracking-[0.12em] ${statusBadge.className}`}
+                className={`inline-flex max-w-full rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.04em] shadow-lg sm:px-3 sm:py-1 sm:text-[10px] sm:tracking-[0.12em] ${statusBadge.className}`}
               >
                 {statusBadge.label}
               </span>
@@ -50,7 +50,7 @@ const Product = ({ product }) => {
 
             {showStockBadge && (
               <span
-                className={`inline-flex max-w-full rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] sm:px-3 sm:text-[10px] sm:tracking-[0.12em] ${stockBadge.className}`}
+                className={`inline-flex max-w-full rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.04em] sm:px-3 sm:py-1 sm:text-[10px] sm:tracking-[0.12em] ${stockBadge.className}`}
               >
                 {stockBadge.label}
               </span>
