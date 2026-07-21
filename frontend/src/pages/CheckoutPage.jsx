@@ -11,6 +11,7 @@ import {
   MapPin,
   ShieldCheck,
   Truck,
+  Trash2,
   UserRound,
   RotateCcw,
 } from 'lucide-react';
@@ -86,6 +87,11 @@ const submitPayHereForm = ({ checkoutUrl, fields }) => {
   form.submit();
 };
 
+const sortSavedAddresses = (addressList = []) =>
+  [...addressList].sort((left, right) =>
+    left.isDefault === right.isDefault ? 0 : left.isDefault ? -1 : 1
+  );
+
 const CheckoutInner = () => {
   const { cartItems, shippingAddress, saveShippingAddress, clearCart, selectedDistrict, districtShippingFee } = useCart();
   const { userInfo } = useAuth();
@@ -93,11 +99,12 @@ const CheckoutInner = () => {
 
   const [addresses, setAddresses] = useState([]);
   const [addressesLoading, setAddressesLoading] = useState(false);
+  const [deletingAddressId, setDeletingAddressId] = useState('');
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [form, setForm] = useState(() => {
     const base = createInitialCheckoutForm(shippingAddress, userInfo);
-    // Pre-fill district from cart context (selected in district modal)
-    if (selectedDistrict && !base.state) {
+    // The cart delivery modal is the source of truth for checkout district.
+    if (selectedDistrict) {
       base.state = selectedDistrict;
     }
     if (!base.country) base.country = 'Sri Lanka';
@@ -117,15 +124,32 @@ const CheckoutInner = () => {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [payhereExpanded, setPayhereExpanded] = useState(false);
   const guestCheckoutEnabled = true;
+  const applySelectedDistrict = (address = {}) => ({
+    ...address,
+    state: selectedDistrict || address.state || '',
+    country: address.country || 'Sri Lanka',
+  });
 
   // Auto-trigger quote on mount if district was pre-selected via cart modal
   useEffect(() => {
     if (cartItems.length > 0 && (form.state || selectedDistrict)) {
-      const addr = { ...form, state: form.state || selectedDistrict, country: 'Sri Lanka' };
+      const addr = applySelectedDistrict(form);
       requestQuote(addr);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!selectedDistrict) {
+      return;
+    }
+
+    setForm((currentForm) => (
+      currentForm.state === selectedDistrict
+        ? currentForm
+        : { ...currentForm, state: selectedDistrict, country: currentForm.country || 'Sri Lanka' }
+    ));
+  }, [selectedDistrict]);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -158,9 +182,7 @@ const CheckoutInner = () => {
           },
         });
 
-        const sortedAddresses = [...data].sort((left, right) =>
-          left.isDefault === right.isDefault ? 0 : left.isDefault ? -1 : 1
-        );
+        const sortedAddresses = sortSavedAddresses(data);
 
         setAddresses(sortedAddresses);
 
@@ -175,9 +197,11 @@ const CheckoutInner = () => {
           setSelectedAddressId(defaultAddress._id);
           setForm((currentForm) => ({
             ...currentForm,
-            ...normalizeShippingAddress(defaultAddress, {
-              email: userInfo.email || currentForm.email,
-            }),
+            ...applySelectedDistrict(
+              normalizeShippingAddress(defaultAddress, {
+                email: userInfo.email || currentForm.email,
+              })
+            ),
           }));
           setSaveAddressToBook(true);
           setSetDefaultAddress(Boolean(defaultAddress.isDefault));
@@ -219,10 +243,10 @@ const CheckoutInner = () => {
         '/api/orders/quote',
         {
           orderItems: cartItems,
-          shippingAddress: {
+          shippingAddress: applySelectedDistrict({
             ...nextShippingAddress,
             address: nextShippingAddress.addressLine1,
-          },
+          }),
           couponCode,
           giftCardCode,
           shippingRateId,
@@ -277,7 +301,7 @@ const CheckoutInner = () => {
     setError('');
 
     if (!addressId) {
-      setForm(createInitialCheckoutForm(shippingAddress, userInfo));
+      setForm(applySelectedDistrict(createInitialCheckoutForm(shippingAddress, userInfo)));
       setSetDefaultAddress(false);
       return;
     }
@@ -290,12 +314,51 @@ const CheckoutInner = () => {
 
     setForm((currentForm) => ({
       ...currentForm,
-      ...normalizeShippingAddress(nextAddress, {
-        email: userInfo?.email || currentForm.email,
-      }),
+      ...applySelectedDistrict(
+        normalizeShippingAddress(nextAddress, {
+          email: userInfo?.email || currentForm.email,
+        })
+      ),
     }));
     setSaveAddressToBook(true);
     setSetDefaultAddress(Boolean(nextAddress.isDefault));
+  };
+
+  const handleDeleteSavedAddress = async (addressId) => {
+    if (!userInfo?.token || !addressId) {
+      return;
+    }
+
+    const confirmed = window.confirm('Delete this saved address?');
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError('');
+    setDeletingAddressId(addressId);
+
+    try {
+      const { data } = await axios.delete(`/api/users/addresses/${addressId}`, {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+      });
+
+      setAddresses(sortSavedAddresses(data));
+
+      if (selectedAddressId === addressId) {
+        setSelectedAddressId('');
+        setForm(applySelectedDistrict(createInitialCheckoutForm(shippingAddress, userInfo)));
+        setSaveAddressToBook(false);
+        setSetDefaultAddress(false);
+      }
+    } catch (deleteError) {
+      console.error(deleteError);
+      setError(deleteError.response?.data?.message || 'Unable to delete this address.');
+    } finally {
+      setDeletingAddressId('');
+    }
   };
 
   const createOrder = async (nextShippingAddress) => {
@@ -303,7 +366,7 @@ const CheckoutInner = () => {
       userInfo?.token ? '/api/orders' : '/api/orders/guest',
       {
         orderItems: cartItems,
-        shippingAddress: nextShippingAddress,
+        shippingAddress: applySelectedDistrict(nextShippingAddress),
         paymentMethod: 'PayHere',
         paymentProvider: 'PayHere',
         couponCode,
@@ -394,7 +457,8 @@ const CheckoutInner = () => {
       return;
     }
 
-    const validationError = validateCheckoutForm(form);
+    const checkoutForm = applySelectedDistrict(form);
+    const validationError = validateCheckoutForm(checkoutForm);
 
     if (validationError) {
       setError(validationError);
@@ -402,8 +466,8 @@ const CheckoutInner = () => {
     }
 
     const nextShippingAddress = {
-      ...form,
-      address: form.addressLine1,
+      ...checkoutForm,
+      address: checkoutForm.addressLine1,
     };
 
     saveShippingAddress(nextShippingAddress);
@@ -696,16 +760,32 @@ const CheckoutInner = () => {
                             : 'border-gray-100 bg-white'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="font-serif text-xl font-bold text-brand-dark">{address.fullName}</p>
                             <p className="text-sm text-gray-500">{address.phone}</p>
                           </div>
-                          {address.isDefault && (
-                            <span className="rounded-full bg-green-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-green-700">
-                              Default
-                            </span>
-                          )}
+                          <div className="flex shrink-0 items-center gap-2">
+                            {address.isDefault && (
+                              <span className="rounded-full bg-green-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-green-700">
+                                Default
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              title="Delete saved address"
+                              aria-label={`Delete saved address for ${address.fullName}`}
+                              disabled={deletingAddressId === address._id}
+                              onClick={() => handleDeleteSavedAddress(address._id)}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {deletingAddressId === address._id ? (
+                                <Loader2 size={15} className="animate-spin" />
+                              ) : (
+                                <Trash2 size={15} />
+                              )}
+                            </button>
+                          </div>
                         </div>
                         <p className="mt-3 text-sm leading-7 text-gray-600">
                           {[
@@ -903,7 +983,7 @@ const CheckoutInner = () => {
                   <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-brand-accent/25 bg-[#fbf3ea] px-4 py-3">
                     <MapPin size={15} className="text-brand-accent shrink-0" />
                     <div className="text-sm">
-                      <span className="font-semibold text-brand-dark">{form.state || selectedDistrict || '—'}</span>
+                      <span className="font-semibold text-brand-dark">{selectedDistrict || form.state || '-'}</span>
                       <span className="mx-1.5 text-gray-400">/</span>
                       <span className="text-gray-600">Sri Lanka</span>
                     </div>
