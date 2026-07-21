@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronDown,
   CreditCard,
+  X,
   Home,
   Loader2,
   LogIn,
@@ -100,6 +101,7 @@ const CheckoutInner = () => {
   const [addresses, setAddresses] = useState([]);
   const [addressesLoading, setAddressesLoading] = useState(false);
   const [deletingAddressId, setDeletingAddressId] = useState('');
+  const [addressDeleteTarget, setAddressDeleteTarget] = useState(null);
   const [selectedAddressId, setSelectedAddressId] = useState('');
   const [form, setForm] = useState(() => {
     const base = createInitialCheckoutForm(shippingAddress, userInfo);
@@ -324,14 +326,27 @@ const CheckoutInner = () => {
     setSetDefaultAddress(Boolean(nextAddress.isDefault));
   };
 
-  const handleDeleteSavedAddress = async (addressId) => {
-    if (!userInfo?.token || !addressId) {
+  const requestDeleteSavedAddress = (address) => {
+    if (!address) {
       return;
     }
 
-    const confirmed = window.confirm('Delete this saved address?');
+    setError('');
+    setAddressDeleteTarget(address);
+  };
 
-    if (!confirmed) {
+  const closeDeleteAddressModal = () => {
+    if (deletingAddressId) {
+      return;
+    }
+
+    setAddressDeleteTarget(null);
+  };
+
+  const confirmDeleteSavedAddress = async () => {
+    const addressId = addressDeleteTarget?._id;
+
+    if (!userInfo?.token || !addressId) {
       return;
     }
 
@@ -353,6 +368,7 @@ const CheckoutInner = () => {
         setSaveAddressToBook(false);
         setSetDefaultAddress(false);
       }
+      setAddressDeleteTarget(null);
     } catch (deleteError) {
       console.error(deleteError);
       setError(deleteError.response?.data?.message || 'Unable to delete this address.');
@@ -689,6 +705,93 @@ const CheckoutInner = () => {
 
   return (
     <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-12">
+      {addressDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-dark/55 px-4 py-6 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-address-title"
+            className="w-full max-w-md rounded-[28px] border border-brand-accent/20 bg-white shadow-[0_24px_70px_rgba(53,26,17,0.28)]"
+          >
+            <div className="flex items-start justify-between gap-4 rounded-t-[28px] bg-brand-dark px-6 py-5 text-white">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-brand-accent">
+                  <Trash2 size={20} />
+                </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-accent">Saved Address</p>
+                  <h2 id="delete-address-title" className="font-serif text-2xl font-bold">Delete this address?</h2>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeDeleteAddressModal}
+                disabled={Boolean(deletingAddressId)}
+                aria-label="Close delete address confirmation"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="px-6 py-6">
+              <p className="text-sm leading-6 text-gray-600">
+                This saved delivery address will be removed from your address book. Your current cart items will stay unchanged.
+              </p>
+
+              <div className="mt-5 rounded-2xl border border-gray-100 bg-[#fff7ee] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-serif text-xl font-bold text-brand-dark">{addressDeleteTarget.fullName}</p>
+                    <p className="mt-0.5 text-sm text-gray-500">{addressDeleteTarget.phone}</p>
+                  </div>
+                  {addressDeleteTarget.isDefault && (
+                    <span className="rounded-full bg-green-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-green-700">
+                      Default
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 text-sm leading-6 text-gray-600">
+                  {[
+                    addressDeleteTarget.addressLine1,
+                    addressDeleteTarget.addressLine2,
+                    [addressDeleteTarget.city, addressDeleteTarget.state].filter(Boolean).join(', '),
+                    [addressDeleteTarget.postalCode, addressDeleteTarget.country].filter(Boolean).join(' '),
+                  ]
+                    .filter(Boolean)
+                    .join(' | ')}
+                </p>
+              </div>
+
+              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeDeleteAddressModal}
+                  disabled={Boolean(deletingAddressId)}
+                  className="inline-flex justify-center rounded-xl border border-brand-primary/20 px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-brand-primary transition hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Keep Address
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteSavedAddress}
+                  disabled={Boolean(deletingAddressId)}
+                  className="inline-flex justify-center rounded-xl bg-red-600 px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {deletingAddressId ? (
+                    <span className="inline-flex items-center">
+                      <Loader2 size={16} className="mr-2 animate-spin" /> Deleting
+                    </span>
+                  ) : (
+                    'Delete Address'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto max-w-7xl px-3 sm:px-4">
         <div className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Checkout</p>
@@ -776,7 +879,7 @@ const CheckoutInner = () => {
                               title="Delete saved address"
                               aria-label={`Delete saved address for ${address.fullName}`}
                               disabled={deletingAddressId === address._id}
-                              onClick={() => handleDeleteSavedAddress(address._id)}
+                              onClick={() => requestDeleteSavedAddress(address)}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {deletingAddressId === address._id ? (
