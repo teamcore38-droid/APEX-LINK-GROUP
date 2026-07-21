@@ -264,11 +264,13 @@ const buildInvoicePayload = (order) => ({
 
 const getOrderRecipient = (order) => order?.shippingAddress?.email || order?.user?.email || '';
 
+const getOrderUserId = (order) => order?.user?._id || order?.user;
+
 const isOrderOwnerOrAdmin = (order, user) =>
   Boolean(
     user?.isAdmin ||
       hasPermission(user, 'orders:read') ||
-      order.user?.toString?.() === user?._id?.toString?.()
+      getOrderUserId(order)?.toString?.() === user?._id?.toString?.()
   );
 
 const isGuestOrderAccessor = (order, payload = {}) => {

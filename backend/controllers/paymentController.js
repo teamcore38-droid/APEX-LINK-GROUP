@@ -43,10 +43,12 @@ const getAdminActor = (user) => ({
   email: user?.email || '',
 });
 
+const getOrderUserId = (order) => order?.user?._id || order?.user;
+
 const isOrderOwnerOrAdmin = (order, user) =>
   Boolean(
     user?.isAdmin ||
-      order.user?.toString?.() === user?._id?.toString?.()
+      getOrderUserId(order)?.toString?.() === user?._id?.toString?.()
   );
 
 const ensurePaymentEvent = async ({ eventId, type, orderId, paymentIntentId, payload }) => {
