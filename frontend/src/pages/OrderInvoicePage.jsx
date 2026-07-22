@@ -21,37 +21,53 @@ const DEFAULT_BUSINESS_INFO = {
 
 const LEGACY_BUSINESS_ADDRESS = '580/12, Moque Lane, Nawala, Rajagiriya, Sri Lanka';
 
-const buildShippingAddressLines = (shippingAddress = {}) =>
-  [
-    shippingAddress.fullName,
-    shippingAddress.email,
-    shippingAddress.phone,
-    shippingAddress.addressLine1,
-    shippingAddress.addressLine2,
-    [shippingAddress.city, shippingAddress.state].filter(Boolean).join(', '),
-    [shippingAddress.postalCode, shippingAddress.country].filter(Boolean).join(' '),
-  ].filter(Boolean);
+const buildShippingAddressLines = (shippingAddress = {}) => {
+  const address = shippingAddress || {};
 
-const buildBillingLines = (invoice = {}) =>
-  [
-    invoice.customer?.name || invoice.shippingAddress?.fullName,
-    invoice.customer?.email || invoice.shippingAddress?.email,
-    invoice.customer?.phone || invoice.shippingAddress?.phone,
+  return [
+    address.fullName,
+    address.email,
+    address.phone,
+    address.addressLine1,
+    address.addressLine2,
+    [address.city, address.state].filter(Boolean).join(', '),
+    [address.postalCode, address.country].filter(Boolean).join(' '),
   ].filter(Boolean);
+};
 
-const getBusinessInfo = (business = {}) => ({
-  name: business.name && !/^apex spices$/i.test(business.name) ? business.name : DEFAULT_BUSINESS_INFO.name,
-  email: business.email && !/apexspices\.lk/i.test(business.email) ? business.email : DEFAULT_BUSINESS_INFO.email,
-  phone: business.phone || DEFAULT_BUSINESS_INFO.phone,
-  address:
-    business.address && business.address !== LEGACY_BUSINESS_ADDRESS
-      ? business.address
-      : DEFAULT_BUSINESS_INFO.address,
-  website:
-    business.website && !/apexspices\.lk/i.test(business.website)
-      ? business.website
-      : DEFAULT_BUSINESS_INFO.website,
-});
+const buildBillingLines = (invoice = {}) => {
+  const invoiceData = invoice || {};
+
+  return [
+    invoiceData.customer?.name || invoiceData.shippingAddress?.fullName,
+    invoiceData.customer?.email || invoiceData.shippingAddress?.email,
+    invoiceData.customer?.phone || invoiceData.shippingAddress?.phone,
+  ].filter(Boolean);
+};
+
+const getBusinessInfo = (business = {}) => {
+  const businessData = business || {};
+
+  return {
+    name:
+      businessData.name && !/^apex spices$/i.test(businessData.name)
+        ? businessData.name
+        : DEFAULT_BUSINESS_INFO.name,
+    email:
+      businessData.email && !/apexspices\.lk/i.test(businessData.email)
+        ? businessData.email
+        : DEFAULT_BUSINESS_INFO.email,
+    phone: businessData.phone || DEFAULT_BUSINESS_INFO.phone,
+    address:
+      businessData.address && businessData.address !== LEGACY_BUSINESS_ADDRESS
+        ? businessData.address
+        : DEFAULT_BUSINESS_INFO.address,
+    website:
+      businessData.website && !/apexspices\.lk/i.test(businessData.website)
+        ? businessData.website
+        : DEFAULT_BUSINESS_INFO.website,
+  };
+};
 
 const formatInvoiceDate = (value, includeTime = false) => {
   if (!value) {
@@ -651,7 +667,7 @@ const OrderInvoicePage = () => {
         <div className="print-surface max-w-full overflow-hidden rounded-[24px] border border-brand-accent/20 bg-white shadow-[0_20px_60px_rgba(53,26,17,0.1)] md:rounded-[32px]">
           <div className="min-w-0 bg-gradient-to-r from-brand-dark via-brand-primary to-brand-accent px-4 py-7 text-white sm:px-6 md:px-10 md:py-10">
             <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-brand-accent sm:text-xs sm:tracking-[0.35em]">
-              APEX LINK GROUP
+              APEX FASHION
             </p>
             <h1 className="mt-3 font-serif text-3xl font-bold sm:mt-4 sm:text-4xl">Invoice / Receipt</h1>
             <p className="mt-3 break-words text-xs text-white/80 sm:text-sm">
