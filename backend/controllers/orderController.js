@@ -181,13 +181,13 @@ const mapStatusHistory = (statusHistory = []) =>
   }));
 
 const getBusinessInfoForDocuments = () => ({
-  name: process.env.BUSINESS_NAME || 'APEX SPICES',
-  email: process.env.BUSINESS_EMAIL || 'info@apexspices.lk',
+  name: process.env.BUSINESS_NAME || 'APEX FASHION',
+  email: process.env.BUSINESS_EMAIL || 'info@apexfashion.lk',
   phone: process.env.BUSINESS_PHONE || '+94 76 566 9961',
   address:
     process.env.BUSINESS_ADDRESS ||
-    '580/12, Moque Lane, Nawala, Rajagiriya, Sri Lanka',
-  website: process.env.BUSINESS_WEBSITE || process.env.FRONTEND_URL || 'https://apexspices.lk',
+    'Apex Fashion, Sri Lanka',
+  website: process.env.BUSINESS_WEBSITE || process.env.FRONTEND_URL || 'https://apexfashion.lk',
 });
 
 const buildInvoicePayload = (order) => ({
