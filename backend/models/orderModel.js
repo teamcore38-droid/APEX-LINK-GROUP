@@ -327,7 +327,11 @@ const orderSchema = mongoose.Schema(
       },
     ],
     notifications: {
+      orderPlacedSentAt: { type: Date },
+      orderConfirmedSentAt: { type: Date },
       orderConfirmationSentAt: { type: Date },
+      orderCancelledSentAt: { type: Date },
+      orderDeliveredSentAt: { type: Date },
       paymentFailedSentAt: { type: Date },
       invoiceSentAt: { type: Date },
       lastStatusEmailKey: { type: String, default: '' },

@@ -3,14 +3,11 @@ import Order from '../models/orderModel.js';
 import User from '../models/userModel.js';
 import { normalizeAddressPayload, saveAddressToUser } from '../utils/addressBook.js';
 import {
-  sendOrderConfirmationEmail,
-} from '../utils/emailService.js';
-import {
   isPayHereConfigured,
 } from '../utils/paymentService.js';
 import {
-  createStatusEmailKey,
-  maybeSendStatusEmail,
+  maybeSendOrderLifecycleStatusEmail,
+  maybeSendOrderPlacedEmail,
 } from '../utils/orderPaymentLifecycle.js';
 import {
   calculateOrderPricing,
@@ -430,8 +427,8 @@ const addOrderItems = async (req, res) => {
       }
     }
 
-    if (normalizedPaymentProvider !== 'PayHere') {
-      await sendOrderConfirmationEmail(populatedOrder);
+    if (await maybeSendOrderPlacedEmail(populatedOrder)) {
+      await populatedOrder.save({ validateBeforeSave: false });
     }
 
     await notifyOrderEvent(populatedOrder, 'order.created');
@@ -533,8 +530,8 @@ const addGuestOrderItems = async (req, res) => {
       await recordFraudSignal(req, createdOrder, 'checkout.tamper.detected', order.fraudRisk);
     }
     await syncVendorOrdersForOrder(createdOrder);
-    if (normalizedPaymentProvider !== 'PayHere') {
-      await sendOrderConfirmationEmail(createdOrder);
+    if (await maybeSendOrderPlacedEmail(createdOrder)) {
+      await createdOrder.save({ validateBeforeSave: false });
     }
     await notifyOrderEvent(createdOrder, 'order.created');
     await emitWebhookEvent('order.created', createdOrder.toObject(), {
@@ -955,13 +952,8 @@ const updateOrderStatus = async (req, res) => {
     });
     const populatedOrder = await Order.findById(updatedOrder._id).populate('user', 'name email phone');
 
-    if (
-      previousState.orderStatus !== updatedOrder.orderStatus ||
-      previousState.isDelivered !== updatedOrder.isDelivered ||
-      previousState.trackingNumber !== (updatedOrder.trackingNumber || '') ||
-      previousState.isPaid !== updatedOrder.isPaid
-    ) {
-      await maybeSendStatusEmail(populatedOrder, createStatusEmailKey(populatedOrder));
+    if (await maybeSendOrderLifecycleStatusEmail(populatedOrder, previousState)) {
+      await populatedOrder.save({ validateBeforeSave: false });
     }
     await notifyOrderEvent(populatedOrder, 'order.status.updated');
     await emitWebhookEvent('order.status.updated', populatedOrder.toObject(), {

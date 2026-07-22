@@ -142,13 +142,6 @@ const registerSuccessfulLogin = async (req, user) => {
   await user.save({ validateBeforeSave: false });
   await recordSecurityEvent(req, suspicious ? 'login.suspicious' : 'login.success', user, { previousIp, nextIp }, suspicious ? 'warning' : 'info');
 
-  if (suspicious) {
-    await sendSecurityAlertEmail(user, {
-      title: 'New login location detected',
-      message: 'We noticed a login from a different network than your last sign-in.',
-      ipAddress: nextIp,
-    });
-  }
 };
 
 const adminRequiresTwoFactor = (user) =>

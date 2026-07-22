@@ -362,13 +362,13 @@ const buildOrderHtml = ({ heading, copy, order, ctaLabel, ctaUrl }) => {
 
 const sendOrderConfirmationEmail = async (order) =>
   sendMailSafe({
-    label: 'order-confirmation',
+    label: 'order-placed',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Order Confirmation - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Link Group Order Placed - ${order?._id?.toString?.() || ''}`,
     html: buildOrderHtml({
-      heading: 'Your order has been received',
+      heading: 'Your order has been placed',
       copy:
-        'Thank you for ordering from Apex Link Group. We have recorded your purchase and will keep you updated as payment and fulfillment progress.',
+        'Thank you for ordering from Apex Link Group. We have received your order and will keep you updated when payment or fulfillment is confirmed.',
       order,
       ctaLabel: 'View Order',
       ctaUrl: buildOrderUrl(order?._id?.toString?.() || ''),
@@ -377,6 +377,68 @@ const sendOrderConfirmationEmail = async (order) =>
       orderId: order?._id?.toString?.() || '',
       orderStatus: order?.orderStatus || 'Processing',
       totalPrice: order?.totalPrice || 0,
+    },
+  });
+
+const sendOrderPlacedEmail = sendOrderConfirmationEmail;
+
+const sendOrderConfirmedEmail = async (order) =>
+  sendMailSafe({
+    label: 'order-confirmed',
+    to: getSafeOrderRecipient(order),
+    subject: `Apex Link Group Order Confirmed - ${order?._id?.toString?.() || ''}`,
+    html: buildOrderHtml({
+      heading: 'Your order is confirmed',
+      copy:
+        'Your order has been confirmed. We will continue preparing it and share final updates when the order is delivered or if a final status changes.',
+      order,
+      ctaLabel: 'View Order',
+      ctaUrl: buildOrderUrl(order?._id?.toString?.() || ''),
+    }),
+    developmentPayload: {
+      orderId: order?._id?.toString?.() || '',
+      orderStatus: order?.orderStatus || 'Processing',
+      paymentStatus: order?.paymentStatus || '',
+    },
+  });
+
+const sendOrderCancelledEmail = async (order) =>
+  sendMailSafe({
+    label: 'order-cancelled',
+    to: getSafeOrderRecipient(order),
+    subject: `Apex Link Group Order Cancelled - ${order?._id?.toString?.() || ''}`,
+    html: buildOrderHtml({
+      heading: 'Your order was cancelled',
+      copy:
+        'Your order has been cancelled. Review the order page for the latest cancellation, payment, and refund details.',
+      order,
+      ctaLabel: 'View Order',
+      ctaUrl: buildOrderUrl(order?._id?.toString?.() || ''),
+    }),
+    developmentPayload: {
+      orderId: order?._id?.toString?.() || '',
+      orderStatus: order?.orderStatus || 'Cancelled',
+      paymentStatus: order?.paymentStatus || '',
+    },
+  });
+
+const sendOrderDeliveredEmail = async (order) =>
+  sendMailSafe({
+    label: 'order-delivered',
+    to: getSafeOrderRecipient(order),
+    subject: `Apex Link Group Order Delivered - ${order?._id?.toString?.() || ''}`,
+    html: buildOrderHtml({
+      heading: 'Your order was delivered',
+      copy:
+        'Your order has been marked as delivered. Thank you for shopping with Apex Link Group.',
+      order,
+      ctaLabel: 'View Order',
+      ctaUrl: buildOrderUrl(order?._id?.toString?.() || ''),
+    }),
+    developmentPayload: {
+      orderId: order?._id?.toString?.() || '',
+      orderStatus: order?.orderStatus || 'Delivered',
+      deliveredAt: order?.deliveredAt || '',
     },
   });
 
@@ -667,7 +729,11 @@ const sendTestEmail = async (to = process.env.EMAIL_TEST_TO || process.env.EMAIL
 export {
   getEmailConfigurationStatus,
   isEmailConfigured,
+  sendOrderPlacedEmail,
   sendOrderConfirmationEmail,
+  sendOrderConfirmedEmail,
+  sendOrderCancelledEmail,
+  sendOrderDeliveredEmail,
   sendOrderStatusUpdateEmail,
   sendInvoiceEmail,
   sendRefundConfirmationEmail,
