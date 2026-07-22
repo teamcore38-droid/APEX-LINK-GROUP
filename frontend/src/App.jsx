@@ -4,11 +4,9 @@ import Header from './components/Header'
 import CategoryNavBar from './components/CategoryNavBar'
 import Footer from './components/Footer'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
-import CookieConsentBanner from './components/CookieConsentBanner'
 import ScrollToTop from './components/ScrollToTop'
 import SitePreloader from './components/SitePreloader'
 import SeoRouteManager from './components/SeoRouteManager'
-import AnalyticsRouteTracker from './components/AnalyticsRouteTracker'
 
 const CHUNK_RELOAD_KEY = 'apex-fashion-chunk-reload'
 
@@ -80,7 +78,6 @@ function App() {
       <SitePreloader />
       <ScrollToTop />
       <SeoRouteManager />
-      <AnalyticsRouteTracker />
       <Header />
       <CategoryNavBar />
       <main className="flex-grow">
@@ -137,7 +134,6 @@ function App() {
         </Suspense>
       </main>
       <Footer />
-      <CookieConsentBanner />
     </div>
   )
 }

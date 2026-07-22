@@ -7,12 +7,12 @@ const PrivacyPage = () => {
     <PolicyPageLayout
       eyebrow="Privacy Policy"
       title="How Apex Fashion handles your personal information"
-      intro={`${policyUpdateNote} This policy explains how ${BUSINESS_INFO.brandName} collects, uses, shares, protects, and retains personal information when you browse, create an account, place an order, use PayHere checkout, contact customer care, or manage privacy choices.`}
+      intro={`${policyUpdateNote} This policy explains how ${BUSINESS_INFO.brandName} collects, uses, shares, protects, and retains personal information when you browse, create an account, place an order, use PayHere checkout, or contact customer care.`}
       highlights={[
         {
           icon: UserRound,
           title: 'Clear Collection',
-          body: 'We collect customer, order, delivery, support, payment confirmation, device, consent, and account information needed to operate a fashion e-commerce store.',
+          body: 'We collect customer, order, delivery, support, payment confirmation, device, and account information needed to operate a fashion e-commerce store.',
         },
         {
           icon: Database,
@@ -42,7 +42,7 @@ const PrivacyPage = () => {
             'Account and identity details: name, email address, phone number, password credentials in protected form, saved addresses, wishlist, reviews, and account preferences.',
             'Order and delivery details: products ordered, sizes, colors, SKU or variant details, quantity, price, shipping address, delivery notes, courier updates, invoices, return requests, and customer support messages.',
             'Payment confirmation details: PayHere payment ID, method, status code, masked card or wallet details if provided by PayHere, amount, currency, and payment notification metadata.',
-            'Technical and consent details: IP address, device/browser information, session identifiers, cookie preferences, consent records, security logs, and analytics/marketing preferences where enabled.',
+            'Technical details: IP address, device/browser information, necessary session identifiers, error information, and security logs.',
           ],
         },
         {
@@ -62,10 +62,10 @@ const PrivacyPage = () => {
         },
         {
           title: 'Cookies and consent choices',
-          body: 'Necessary cookies and local storage keep checkout, account security, cart state, and privacy consent records working. Analytics, marketing, and personalisation storage should be used only according to your choices. See the Cookie Policy for more detail.',
+          body: 'Necessary cookies and local storage keep checkout, account security, and cart state working. The storefront currently keeps optional analytics, advertising pixels, and tracking-based personalisation disabled. See the Cookie Policy for more detail.',
           points: [
-            'Cookie consent choices are recorded with a consent version, session ID, selected preferences, IP address, and browser information.',
-            'You can choose necessary-only cookies in the banner. You may also clear browser cookies/local storage or contact us for help changing stored preferences.',
+            'The website does not display an automatic cookie-preference banner or treat continued browsing as consent to optional tracking.',
+            'You may clear browser cookies/local storage or contact us for help identifying stored website data.',
           ],
         },
         {

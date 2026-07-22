@@ -61,7 +61,7 @@ const FAQPage = () => {
         },
         {
           title: 'How can I manage privacy or cookie choices?',
-          body: 'Use the cookie banner for cookie preferences. Logged-in customers can use the Privacy Center for data export or deletion/anonymisation requests, or contact customer care for privacy support.',
+          body: 'Optional analytics and advertising tracking are currently disabled. You can clear necessary website storage through your browser settings. Logged-in customers can use the Privacy Center for data export or deletion/anonymisation requests, or contact customer care for privacy support.',
         },
       ]}
       relatedLinks={[

@@ -2,9 +2,13 @@ import axios from 'axios';
 
 const SESSION_KEY = 'apexMarketingSessionId';
 const CONSENT_KEY = 'apexCookieConsent';
-const CONSENT_EVENT = 'apex-consent-updated';
+const OPTIONAL_TRACKING_ENABLED = false;
 
 const getStoredConsent = () => {
+  if (!OPTIONAL_TRACKING_ENABLED) {
+    return null;
+  }
+
   try {
     return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null');
   } catch {
@@ -149,8 +153,8 @@ const trackPageView = (path = `${window.location.pathname}${window.location.sear
 };
 
 export {
-  CONSENT_EVENT,
   CONSENT_KEY,
+  OPTIONAL_TRACKING_ENABLED,
   getMarketingSessionId,
   getStoredConsent,
   installAdTracking,

@@ -7,7 +7,6 @@ import { AuthProvider } from './context/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
 import App from './App.jsx'
 import { installFrontendErrorMonitoring } from './utils/errorMonitoring'
-import { installAdTracking } from './utils/analytics'
 import './index.css'
 
 const apiBaseUrl = (import.meta.env.VITE_API_URL || '').trim()
@@ -16,15 +15,6 @@ if (apiBaseUrl) {
 }
 
 installFrontendErrorMonitoring()
-
-const installTrackingWhenIdle = () => {
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(installAdTracking, { timeout: 2500 })
-    return
-  }
-
-  window.setTimeout(installAdTracking, 1200)
-}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -39,8 +29,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </React.StrictMode>,
 )
-
-installTrackingWhenIdle()
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {

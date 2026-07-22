@@ -7,7 +7,7 @@ const CookiePolicyPage = () => {
     <PolicyPageLayout
       eyebrow="Cookie Policy"
       title="How Apex Fashion uses cookies and similar storage"
-      intro={`${policyUpdateNote} This policy explains how ${BUSINESS_INFO.domain} uses cookies, local storage, session identifiers, and consent records for checkout, security, analytics, marketing, and personalisation.`}
+      intro={`${policyUpdateNote} This policy explains how ${BUSINESS_INFO.domain} uses necessary cookies, local storage, and session identifiers for checkout, security, and ordinary website operation.`}
       highlights={[
         {
           icon: Cookie,
@@ -16,18 +16,18 @@ const CookiePolicyPage = () => {
         },
         {
           icon: SlidersHorizontal,
-          title: 'Optional Choices',
-          body: 'Analytics, marketing, and personalisation preferences are controlled through the cookie banner and should be honoured according to your saved choices.',
+          title: 'Optional Tracking Disabled',
+          body: 'The storefront does not currently activate optional analytics, advertising pixels, or tracking-based personalisation.',
         },
         {
           icon: ShieldCheck,
-          title: 'Consent Records',
-          body: 'Consent choices may be recorded with a consent version, session ID, IP address, browser information, and selected preference categories.',
+          title: 'Privacy by Default',
+          body: 'Removing the preference banner does not enable optional tracking. Those integrations remain disabled in the application.',
         },
         {
           icon: Settings,
-          title: 'Manage Preferences',
-          body: 'You can choose necessary-only storage, accept all optional categories, clear browser storage, or contact customer care for help changing preferences.',
+          title: 'Browser Controls',
+          body: 'You can inspect or clear cookies and local storage through your browser settings, or contact customer care for assistance.',
         },
       ]}
       sections={[
@@ -37,30 +37,29 @@ const CookiePolicyPage = () => {
         },
         {
           title: 'Categories used by this website',
-          body: 'Apex Fashion currently presents customers with necessary, analytics, marketing, and personalisation choices.',
+          body: 'Apex Fashion currently uses necessary browser storage. Optional tracking categories remain disabled.',
           points: [
-            'Necessary: required for checkout, cart/session behaviour, account security, privacy consent records, error handling, and basic site functions.',
-            'Analytics: helps understand site traffic, page performance, product interest, and service improvement where enabled.',
-            'Marketing: supports promotional measurement, newsletter flows, advertising, or campaign attribution where enabled.',
-            'Personalisation: supports remembered preferences and experience improvements where enabled.',
+            'Necessary storage supports checkout, cart/session behaviour, account security, error handling, and basic site functions.',
+            'Optional analytics and advertising pixels are not loaded by the storefront.',
+            'Newsletter subscription remains a separate, voluntary action submitted through the newsletter form.',
           ],
         },
         {
           title: 'Current consent implementation',
-          body: 'The cookie banner stores consent locally under the key apexCookieConsent and records a session identifier under apexConsentSessionId. The website also submits consent choices to the backend privacy endpoint so Apex Fashion can keep a consent record.',
+          body: 'The storefront no longer displays an automatic cookie-preference banner. Previously stored optional preferences are ignored, and optional analytics, marketing, and personalisation tracking remain disabled.',
         },
         {
           title: 'Third-party services',
           body: 'Third-party providers may set or read cookies or similar storage if their services are enabled on the website. This may include payment, hosting, analytics, advertising, email, security, or customer-support providers.',
           points: [
             'PayHere may process payment-session and checkout information when customers are redirected to PayHere.',
-            'Analytics or marketing tools should be activated only according to consent preferences and applicable law.',
+            'Analytics or marketing tools must not be activated unless Apex Fashion introduces an appropriate consent mechanism and updates this policy.',
             '[BUSINESS OWNER TO CONFIRM: full list of analytics, advertising, chat, tracking, and customer-support tools used on the production website].',
           ],
         },
         {
           title: 'How to manage cookies',
-          body: 'You can use the website banner to accept all optional categories, save selected choices, or continue with necessary-only storage. You can also delete cookies and local storage through your browser settings. Some website functions may not work properly if necessary storage is disabled in the browser.',
+          body: 'You can delete cookies and local storage through your browser settings. Some website functions may not work properly if necessary storage is disabled in the browser. Contact customer care if you need help identifying stored website data.',
         },
         {
           title: 'Updates to this policy',
