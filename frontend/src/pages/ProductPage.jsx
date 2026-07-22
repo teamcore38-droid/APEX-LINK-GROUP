@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft,
@@ -25,7 +25,8 @@ import { useCart } from '../context/CartContext';
 import RouteLoadingScreen from '../components/RouteLoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import Product from '../components/Product';
-import { slugifyCategoryName } from '../utils/categoryUi';
+import { getCategories } from '../utils/categoryApi';
+import { getPublicCategoryPath } from '../utils/categoryUi';
 import { trackEvent } from '../utils/analytics';
 import {
   NOINDEX_ROBOTS,
@@ -80,6 +81,7 @@ const getProductLightboxImageUrl = (image) =>
 
 const ProductPage = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { userInfo } = useAuth();
@@ -103,6 +105,7 @@ const ProductPage = () => {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
+  const [categorySlug, setCategorySlug] = useState('');
 
   useEffect(() => {
     let isActive = true;
@@ -152,8 +155,8 @@ const ProductPage = () => {
         { token: userInfo?.token }
       );
 
-      const [seoResult, , recommendationResult, reviewResult, relatedResult] = await Promise.allSettled([
-        axios.get(`/api/seo/product/${data._id}`),
+      const [seoResult, , recommendationResult, reviewResult, relatedResult, categoriesResult] = await Promise.allSettled([
+        axios.get(`/api/seo/product/${data._id}${location.search}`),
         axios.post(
           '/api/customer/recently-viewed',
           { productId: data._id, sessionId },
@@ -166,12 +169,13 @@ const ProductPage = () => {
         axios.get(`/api/reviews/product/${data._id}`),
         axios.get('/api/products', {
           params: {
-            category: slugifyCategoryName(data.category),
+            category: data.category,
             exclude: data._id,
             limit: 4,
             sort: '',
           },
         }),
+        getCategories(),
       ]);
 
       if (!isActive) {
@@ -202,12 +206,24 @@ const ProductPage = () => {
         console.error(relatedResult.reason);
         setRelatedProducts([]);
       }
+
+      if (categoriesResult.status === 'fulfilled') {
+        const matchingCategory = categoriesResult.value.find(
+          (category) =>
+            String(category.name || '').trim().toLowerCase() ===
+            String(data.category || '').trim().toLowerCase()
+        );
+        setCategorySlug(matchingCategory?.slug || '');
+      } else {
+        setCategorySlug('');
+      }
     };
 
     const fetchProduct = async () => {
       setLoading(true);
       setError('');
       setSizeError('');
+      setCategorySlug('');
 
       try {
         const { data } = await axios.get(`/api/products/${id}`);
@@ -218,14 +234,26 @@ const ProductPage = () => {
         setProduct(data);
         applyProductSeo(data);
         const gallery = getProductImages(data);
+        const requestedOptions = new URLSearchParams(location.search);
+        const requestedVariantId = requestedOptions.get('variant') || '';
+        const requestedSize = requestedOptions.get('size') || '';
+        const requestedColor = requestedOptions.get('color') || '';
+        const requestedVariant = data.variants?.find((variant) => {
+          if (variant.isActive === false) return false;
+          if (requestedVariantId && String(variant._id) === requestedVariantId) return true;
+          const sizeMatches = !requestedSize || String(variant.size || '').toLowerCase() === requestedSize.toLowerCase();
+          const colorMatches = !requestedColor || String(variant.color || '').toLowerCase() === requestedColor.toLowerCase();
+          return Boolean(requestedSize || requestedColor) && sizeMatches && colorMatches;
+        });
         const firstActiveVariant = !data.hasSizes
           ? data.variants?.find((variant) => variant.isActive !== false)
           : null;
-        const firstVariantGallery = getVariantImageUrls(firstActiveVariant);
-        setSelectedImage(firstVariantGallery[0] || gallery[0] || data.image);
-        setSelectedVariantId(firstActiveVariant?._id ? String(firstActiveVariant._id) : '');
-        setSelectedSize('');
-        setSelectedColor('');
+        const initialVariant = requestedVariant || firstActiveVariant;
+        const initialVariantGallery = getVariantImageUrls(initialVariant);
+        setSelectedImage(initialVariantGallery[0] || gallery[0] || data.image);
+        setSelectedVariantId(initialVariant?._id ? String(initialVariant._id) : '');
+        setSelectedSize(requestedSize || initialVariant?.size || '');
+        setSelectedColor(requestedColor || initialVariant?.color || '');
 
         setQty(1);
         setLoading(false);
@@ -253,7 +281,7 @@ const ProductPage = () => {
     return () => {
       isActive = false;
     };
-  }, [id, userInfo?.token]);
+  }, [id, location.search, userInfo?.token]);
 
   const selectedVariant = useMemo(
     () => {
@@ -273,6 +301,7 @@ const ProductPage = () => {
     },
     [product, selectedColor, selectedSize, selectedVariantId]
   );
+  const categoryPath = getPublicCategoryPath(product?.category, categorySlug);
   const selectedSizeObj = useMemo(
     () => (product?.hasSizes && selectedSize ? product.sizes?.find((s) => s.size === selectedSize) : null),
     [product, selectedSize]
@@ -700,7 +729,7 @@ const ProductPage = () => {
           <section className="rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.10)] sm:p-8">
             <div className="flex flex-wrap items-center gap-3">
               <Link
-                to={`/category/${slugifyCategoryName(product.category)}`}
+                to={categoryPath}
                 className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent transition-colors duration-200 hover:text-brand-primary"
               >
                 {product.category}
@@ -1099,7 +1128,7 @@ const ProductPage = () => {
                 </h2>
               </div>
               <Link
-                to={`/category/${slugifyCategoryName(product.category)}`}
+                to={categoryPath}
                 className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
               >
                 Explore Category

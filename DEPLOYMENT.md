@@ -280,3 +280,5 @@ The production storefront uses `https://apexfashion.lk` as its canonical domain.
 9. Confirm the IndexNow key file is reachable at `https://apexfashion.lk/1ef018ac3d1ac76bbd2ec0b7d79ce2ce.txt`.
 10. Test representative product and category URLs with Google Rich Results Test and Search Console URL Inspection after deployment.
 11. Keep product names, descriptions, images, prices, availability, categories, SKUs, sizes, and colors complete and accurate in the admin catalog.
+12. Run `npm run seo:repair-descriptions` from `backend` to audit descriptions. Review the dry-run output before using `npm run seo:repair-descriptions -- --apply`.
+13. Run `npm run seo:audit:live` from `frontend` after deployment. Treat any non-zero result as a launch blocker or document the external configuration that caused it.

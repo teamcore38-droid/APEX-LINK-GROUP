@@ -31,7 +31,15 @@ export default async function handler(req, res) {
     }
 
     shellHtml = await shellResponse.text();
-    const seoResponse = await fetchBackend(`/api/seo/${type}/${encodeURIComponent(value)}`);
+    const backendPath = new URLSearchParams();
+    if (type === 'product') {
+      ['variant', 'size', 'color'].forEach((key) => {
+        const queryValue = getSingleQueryValue(req.query[key]);
+        if (queryValue) backendPath.set(key, String(queryValue).slice(0, 100));
+      });
+    }
+    const seoQuery = backendPath.size > 0 ? `?${backendPath.toString()}` : '';
+    const seoResponse = await fetchBackend(`/api/seo/${type}/${encodeURIComponent(value)}${seoQuery}`);
 
     if (seoResponse.status === 404) {
       const html = injectSeoHead(shellHtml, {

@@ -16,6 +16,7 @@
     "perf:checkout": "node scripts/loadCheckoutQuote.js",
     "uptime:check": "node scripts/uptimeCheck.js",
     "marketing:send-abandoned": "node scripts/sendAbandonedCartEmails.js",
+    "seo:repair-descriptions": "node scripts/repairProductDescriptions.js",
     "data:import": "node seeder.js",
     "data:destroy": "node seeder.js -d",
     "data:seed-categories": "node seedCategories.js"

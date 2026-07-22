@@ -157,7 +157,7 @@ const productSchema = mongoose.Schema(
     },
     description: {
       type: String,
-      default: '',
+      required: true,
       trim: true,
     },
     shortDescription: {
@@ -179,7 +179,7 @@ const productSchema = mongoose.Schema(
       type: Number,
       required: true,
       default: 0,
-      min: 0,
+      min: 0.01,
     },
     compareAtPrice: {
       type: Number,

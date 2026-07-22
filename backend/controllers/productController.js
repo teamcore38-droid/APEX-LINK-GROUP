@@ -6,6 +6,7 @@ import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
 import { notifyIndexNow } from '../utils/indexNowService.js';
+import { hasCopiedMarketplaceDescription } from '../utils/productSeoContent.js';
 import {
   destroyProductImage,
   destroyProductImages,
@@ -362,8 +363,16 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
     errors.push('Product category is required');
   }
 
-  if (Number.isNaN(price) || price < 0) {
-    errors.push('Product price is required and must be a valid number');
+  const description = String(payload.description || '').trim();
+
+  if (!description) {
+    errors.push('Product description is required');
+  } else if (hasCopiedMarketplaceDescription(description)) {
+    errors.push('Product description must not contain copied marketplace or certification text');
+  }
+
+  if (Number.isNaN(price) || price <= 0) {
+    errors.push('Product price is required and must be greater than zero');
   }
 
   if (Number.isNaN(countInStock) || countInStock < 0) {
@@ -482,7 +491,7 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       imagePublicId: String(payload.imagePublicId || '').trim(),
       images: normalizeImageList(payload.images, payload.image, payload.imagePublicId),
       shortDescription: String(payload.shortDescription || '').trim(),
-      description: String(payload.description || '').trim(),
+      description,
       brand: String(payload.brand || 'Apex Fashion').trim() || 'Apex Fashion',
       weight: String(payload.weight || '').trim(),
       origin: String(payload.origin || '').trim(),

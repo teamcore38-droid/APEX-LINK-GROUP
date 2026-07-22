@@ -21,6 +21,13 @@ export const slugifyCategoryName = (value = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+export const getPublicCategoryPath = (categoryName = '', categorySlug = '') => {
+  const slug = slugifyCategoryName(categorySlug);
+  return slug
+    ? `/category/${slug}`
+    : `/products?category=${encodeURIComponent(String(categoryName || '').trim())}`;
+};
+
 export const getCategoryImage = (category) => {
   const [firstCandidate] = getCategoryImageCandidates(category);
   return firstCandidate;

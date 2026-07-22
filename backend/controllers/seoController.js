@@ -1,25 +1,31 @@
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
+import {
+  cleanProductText,
+  getDatabaseProductDescription,
+  getProductOptions,
+} from '../utils/productSeoContent.js';
 
 const DEFAULT_SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_IMAGE_PATH = '/hero/hero-bg-4.webp';
 const STORE_ID = `${DEFAULT_SITE_URL}/#organization`;
-
-const getSiteUrl = () => {
-  const configuredUrl = String(
-    process.env.FRONTEND_URL || process.env.CLIENT_URL || DEFAULT_SITE_URL
-  ).replace(/\/+$/, '');
-
-  try {
-    const url = new URL(configuredUrl);
-    if (url.hostname === 'www.apexfashion.lk') {
-      url.hostname = 'apexfashion.lk';
-    }
-    return url.href.replace(/\/+$/, '');
-  } catch {
-    return DEFAULT_SITE_URL;
-  }
+const PUBLIC_PRODUCT_FILTER = {
+  $and: [
+    { $or: [{ isActive: true }, { isActive: { $exists: false } }] },
+    { $or: [{ approvalStatus: 'Approved' }, { approvalStatus: { $exists: false } }] },
+  ],
 };
+const SEO_PRODUCT_FILTER = {
+  $and: [
+    ...PUBLIC_PRODUCT_FILTER.$and,
+    { name: { $type: 'string', $regex: /\S/ } },
+    { image: { $type: 'string', $regex: /\S/ } },
+    { brand: { $type: 'string', $regex: /\S/ } },
+    { price: { $gt: 0 } },
+  ],
+};
+
+const getSiteUrl = () => DEFAULT_SITE_URL;
 
 const escapeXml = (value = '') =>
   String(value)
@@ -29,19 +35,22 @@ const escapeXml = (value = '') =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-const cleanText = (value = '', maxLength = 5000) =>
-  String(value || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, maxLength);
-
 const getImageUrl = (image = '') =>
   typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '').trim();
 
 const toAbsoluteUrl = (value = '', siteUrl = getSiteUrl()) => {
   try {
-    return new URL(value || DEFAULT_IMAGE_PATH, siteUrl).href;
+    const url = new URL(value || DEFAULT_IMAGE_PATH, siteUrl);
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('Unsupported public URL protocol');
+    }
+    if (
+      ['localhost', '127.0.0.1', '0.0.0.0'].includes(url.hostname) ||
+      url.hostname.endsWith('.vercel.app')
+    ) {
+      throw new Error('Development or preview URL is not public');
+    }
+    return url.href;
   } catch {
     return `${siteUrl}${DEFAULT_IMAGE_PATH}`;
   }
@@ -51,19 +60,8 @@ const getProductImageUrls = (product = {}) =>
   [product.image, ...(product.images || [])]
     .map((image) => getImageUrl(image))
     .filter(Boolean)
-    .map((image) => toAbsoluteUrl(image));
-
-const getProductColors = (product = {}) =>
-  [
-    ...(product.variants || []).map((variant) => variant.color),
-    ...(product.sizes || []).flatMap((size) => size.colors || []),
-  ].filter(Boolean);
-
-const getProductSizes = (product = {}) =>
-  [
-    ...(product.variants || []).flatMap((variant) => [variant.size, ...(variant.availableSizes || [])]),
-    ...(product.sizes || []).map((size) => size.size),
-  ].filter(Boolean);
+    .map((image) => toAbsoluteUrl(image))
+    .filter((image, index, images) => images.indexOf(image) === index);
 
 const buildBreadcrumbs = (items) => ({
   '@context': 'https://schema.org',
@@ -76,42 +74,79 @@ const buildBreadcrumbs = (items) => ({
   })),
 });
 
-const buildProductSeo = (product) => {
+const getSelectedProductOption = (product = {}, selection = {}) => {
+  const requestedVariant = cleanProductText(selection.variant, 80);
+  const requestedSize = cleanProductText(selection.size, 100).toLowerCase();
+  const requestedColor = cleanProductText(selection.color, 100).toLowerCase();
+  const variants = (product.variants || []).filter((variant) => variant.isActive !== false);
+  const variant = variants.find((option) => {
+    if (requestedVariant && option._id?.toString() === requestedVariant) return true;
+    const sizeMatches = !requestedSize || cleanProductText(option.size, 100).toLowerCase() === requestedSize;
+    const colorMatches =
+      !requestedColor || cleanProductText(option.color, 100).toLowerCase() === requestedColor;
+    return Boolean(requestedSize || requestedColor) && sizeMatches && colorMatches;
+  });
+  const sizeOption = !variant && requestedSize
+    ? (product.sizes || []).find(
+        (option) => cleanProductText(option.size, 100).toLowerCase() === requestedSize
+      )
+    : null;
+
+  return variant || sizeOption || null;
+};
+
+const buildProductSeo = (product, selection = {}) => {
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/product/${product._id}`;
-  const description =
-    cleanText(product.seo?.description, 160) ||
-    cleanText(product.shortDescription, 160) ||
-    cleanText(product.description, 160) ||
-    `Shop ${product.name} online from Apex Fashion Sri Lanka.`;
-  const colors = [...new Set(getProductColors(product))];
-  const sizes = [...new Set(getProductSizes(product))];
+  const selectedOption = getSelectedProductOption(product, selection);
+  const offerUrl = new URL(url);
+  const selectedSize = cleanProductText(selectedOption?.size, 100);
+  const selectedColor = cleanProductText(selectedOption?.color, 100);
+  const selectedImage = getImageUrl(selectedOption?.image || selectedOption?.images?.[0]);
+
+  if (selectedOption?._id) offerUrl.searchParams.set('variant', selectedOption._id.toString());
+  if (selectedSize) offerUrl.searchParams.set('size', selectedSize);
+  if (selectedColor) offerUrl.searchParams.set('color', selectedColor);
+
+  const fullDescription = getDatabaseProductDescription(product);
+  const description = getDatabaseProductDescription(product, 160);
+  const { colors, sizes } = getProductOptions(product);
+  const productName = cleanProductText(product.name, 150);
+  const brand = cleanProductText(product.brand, 100);
+  const selectedPrice = getFeedPrice(product, selectedOption || {});
+  const selectedStock = selectedOption
+    ? Number(selectedOption.countInStock || 0)
+    : Number(product.countInStock || 0);
+  const schemaImages = [
+    ...(selectedImage ? [toAbsoluteUrl(selectedImage)] : []),
+    ...getProductImageUrls(product),
+  ].filter((image, index, images) => images.indexOf(image) === index);
 
   return {
-    title: product.seo?.title || `${product.name} | Apex Fashion`,
+    title: cleanProductText(product.seo?.title, 150) || `${productName} | Apex Fashion`,
     description,
     keywords:
       product.seo?.keywords?.length > 0
         ? product.seo.keywords
-        : [product.name, product.category, product.brand, product.sku, 'Sri Lanka'].filter(Boolean),
+        : [productName, product.category, brand, product.sku, 'Sri Lanka'].filter(Boolean),
     canonicalUrl: url,
-    ogImage: toAbsoluteUrl(product.seo?.ogImage || product.image),
+    ogImage: toAbsoluteUrl(selectedImage || product.seo?.ogImage || product.image),
     url,
     type: 'product',
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'Product',
       '@id': `${url}#product`,
-      name: product.name,
-      image: getProductImageUrls(product),
-      description: cleanText(product.description || product.shortDescription),
-      sku: product.sku || product._id.toString(),
+      name: productName,
+      image: schemaImages,
+      description: fullDescription,
+      sku: selectedOption?.sku || product.sku || product._id.toString(),
       category: product.category,
-      color: colors.join(', ') || undefined,
-      size: sizes.join(', ') || undefined,
+      color: selectedColor || colors.join(', ') || undefined,
+      size: selectedSize || sizes.join(', ') || undefined,
       brand: {
         '@type': 'Brand',
-        name: product.brand || 'Apex Fashion',
+        name: brand,
       },
       aggregateRating:
         Number(product.numReviews || 0) > 0 && Number(product.rating || 0) > 0
@@ -123,11 +158,11 @@ const buildProductSeo = (product) => {
           : undefined,
       offers: {
         '@type': 'Offer',
-        url,
-        priceCurrency: process.env.DEFAULT_CURRENCY || 'LKR',
-        price: Number(product.price || 0).toFixed(2),
+        url: offerUrl.href,
+        priceCurrency: 'LKR',
+        price: selectedPrice.toFixed(2),
         availability:
-          Number(product.countInStock || 0) > 0
+          selectedStock > 0
             ? 'https://schema.org/InStock'
             : 'https://schema.org/OutOfStock',
         itemCondition: 'https://schema.org/NewCondition',
@@ -137,7 +172,7 @@ const buildProductSeo = (product) => {
     breadcrumbs: buildBreadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Products', url: '/products' },
-      { name: product.name, url },
+      { name: productName, url },
     ]),
   };
 };
@@ -146,8 +181,8 @@ const buildCategorySeo = (category) => {
   const siteUrl = getSiteUrl();
   const url = `${siteUrl}/category/${category.slug}`;
   const description =
-    cleanText(category.seo?.description, 160) ||
-    cleanText(category.description, 160) ||
+    cleanProductText(category.seo?.description, 160) ||
+    cleanProductText(category.description, 160) ||
     `Shop ${category.name} online from Apex Fashion Sri Lanka.`;
 
   return {
@@ -181,18 +216,14 @@ const buildCategorySeo = (category) => {
 };
 
 const getProductSeo = async (req, res) => {
-  const product = await Product.findOne({
-    _id: req.params.id,
-    isActive: true,
-    approvalStatus: 'Approved',
-  });
+  const product = await Product.findOne({ _id: req.params.id, ...SEO_PRODUCT_FILTER });
 
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });
   }
 
   res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-  return res.json(buildProductSeo(product));
+  return res.json(buildProductSeo(product, req.query));
 };
 
 const getCategorySeo = async (req, res) => {
@@ -227,7 +258,7 @@ const INDEXABLE_STATIC_PATHS = [
 const getSitemap = async (_req, res) => {
   const siteUrl = getSiteUrl();
   const [products, categories] = await Promise.all([
-    Product.find({ isActive: true, approvalStatus: 'Approved' })
+    Product.find(SEO_PRODUCT_FILTER)
       .select('_id name image images updatedAt')
       .lean(),
     Category.find({ isActive: true }).select('slug image updatedAt').lean(),
@@ -263,38 +294,94 @@ const getSitemap = async (_req, res) => {
   res.type('application/xml').send(xml);
 };
 
-const getProductFeed = async (_req, res) => {
+const getFeedPrice = (product, option = {}) => {
+  const explicitPrice = Number(option.price || 0);
+  if (explicitPrice > 0) return explicitPrice;
+  return Number(product.price || 0) + Number(option.priceAdjustment || 0);
+};
+
+const buildFeedOptions = (product = {}) => {
+  const activeVariants = (product.variants || []).filter(
+    (variant) => variant.isActive !== false && (variant.size || variant.color)
+  );
+  const representedSizes = new Set(activeVariants.map((variant) => variant.size).filter(Boolean));
+  const sizeOnlyOptions = product.hasSizes
+    ? (product.sizes || [])
+        .filter((size) => size.size && !representedSizes.has(size.size))
+        .map((size) => ({ ...size, isSizeOnly: true }))
+    : [];
+  const options = [...activeVariants, ...sizeOnlyOptions];
+
+  return options.length > 0 ? options : [null];
+};
+
+const buildFeedItem = (product, option = null, variantDimensions = []) => {
   const siteUrl = getSiteUrl();
-  const products = await Product.find({ isActive: true, approvalStatus: 'Approved' })
-    .select(
-      '_id name description shortDescription image images category brand price countInStock sku variants sizes'
-    )
-    .lean();
+  const baseLink = `${siteUrl}/product/${product._id}`;
+  const description = getDatabaseProductDescription(product);
+  const brand = cleanProductText(product.brand, 100);
+  const size = cleanProductText(option?.size, 100);
+  const color = cleanProductText(option?.color, 100);
+  const optionId = option?._id?.toString() || (size ? `size-${size.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : '');
+  const id = cleanProductText(option ? `${product._id}-${optionId}` : product.sku || product._id, 50);
+  const titleSuffix = [size, color].filter(Boolean).join(' - ');
+  const title = cleanProductText(`${product.name}${titleSuffix ? ` - ${titleSuffix}` : ''}`, 150);
+  const price = getFeedPrice(product, option || {});
+  const stock = option ? Number(option.countInStock || 0) : Number(product.countInStock || 0);
+  const image = getImageUrl(option?.image || option?.images?.[0]) || product.image;
+  const link = new URL(baseLink);
 
-  const items = products
-    .filter((product) => product.name && product.image && Number(product.price) >= 0)
-    .map((product) => {
-      const link = `${siteUrl}/product/${product._id}`;
-      const description =
-        cleanText(product.description || product.shortDescription) ||
-        `Shop ${product.name} online from Apex Fashion Sri Lanka.`;
-      const colors = [...new Set(getProductColors(product))];
-      const sizes = [...new Set(getProductSizes(product))];
+  if (option?._id) link.searchParams.set('variant', option._id.toString());
+  if (size) link.searchParams.set('size', size);
+  if (color) link.searchParams.set('color', color);
 
-      return `    <item>
-      <g:id>${escapeXml(product.sku || product._id)}</g:id>
-      <title>${escapeXml(product.name)}</title>
+  return `    <item>
+      <g:id>${escapeXml(id)}</g:id>
+      <title>${escapeXml(title)}</title>
       <description>${escapeXml(description)}</description>
-      <link>${escapeXml(link)}</link>
-      <g:image_link>${escapeXml(toAbsoluteUrl(product.image))}</g:image_link>
-      <g:availability>${Number(product.countInStock || 0) > 0 ? 'in_stock' : 'out_of_stock'}</g:availability>
-      <g:price>${Number(product.price || 0).toFixed(2)} ${escapeXml(process.env.DEFAULT_CURRENCY || 'LKR')}</g:price>
+      <link>${escapeXml(link.href)}</link>
+      <g:image_link>${escapeXml(toAbsoluteUrl(image))}</g:image_link>
+      <g:availability>${stock > 0 ? 'in_stock' : 'out_of_stock'}</g:availability>
+      <g:price>${price.toFixed(2)} LKR</g:price>
       <g:condition>new</g:condition>
-      <g:brand>${escapeXml(product.brand || 'Apex Fashion')}</g:brand>
-      <g:product_type>${escapeXml(product.category || 'Fashion')}</g:product_type>${colors.length ? `\n      <g:color>${escapeXml(colors.join('/'))}</g:color>` : ''}${sizes.length ? `\n      <g:size>${escapeXml(sizes.join('/'))}</g:size>` : ''}
+      <g:brand>${escapeXml(brand)}</g:brand>
+      <g:product_type>${escapeXml(product.category || 'Fashion')}</g:product_type>${option ? `
+      <g:item_group_id>${escapeXml(product._id)}</g:item_group_id>
+      <g:item_group_title>${escapeXml(cleanProductText(product.name, 150))}</g:item_group_title>${color ? `
+      <g:color>${escapeXml(color)}</g:color>` : ''}${size ? `
+      <g:size>${escapeXml(size)}</g:size>` : ''}${variantDimensions
+        .map(
+          (dimension) => `
+      <g:variant_option>
+        <g:name>${escapeXml(dimension)}</g:name>
+        <g:value>${escapeXml(dimension === 'size' ? size : color)}</g:value>
+      </g:variant_option>`
+        )
+        .join('')}` : ''}
     </item>`;
+};
+
+const buildProductFeedItems = (products = []) =>
+  products
+    .flatMap((product) => {
+      const options = buildFeedOptions(product);
+      const variantDimensions = options[0]
+        ? ['size', 'color'].filter((dimension) =>
+            options.every((option) => cleanProductText(option?.[dimension], 100))
+          )
+        : [];
+      return options.map((option) => buildFeedItem(product, option, variantDimensions));
     })
     .join('\n');
+
+const getProductFeed = async (_req, res) => {
+  const siteUrl = getSiteUrl();
+  const products = await Product.find(SEO_PRODUCT_FILTER)
+    .select(
+      '_id name description shortDescription image images category brand price countInStock sku variants hasSizes sizes seo origin'
+    )
+    .lean();
+  const items = buildProductFeedItems(products);
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
@@ -320,6 +407,7 @@ const getRobots = (_req, res) => {
 
 export {
   buildCategorySeo,
+  buildProductFeedItems,
   buildProductSeo,
   getCategorySeo,
   getProductFeed,
