@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
@@ -8,8 +8,26 @@ const GoogleLoginButton = ({ onSuccess, onError, text = 'Continue with Google' }
   const [errorMsg, setErrorMsg] = useState('');
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+  const handleCredentialResponse = useCallback(async (response) => {
+    if (!response.credential) return;
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      await googleLogin(response.credential);
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.error('Google login error:', err);
+      const msg = typeof err === 'string' ? err : 'Google authentication failed';
+      setErrorMsg(msg);
+      if (onError) onError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [googleLogin, onError, onSuccess]);
+
   useEffect(() => {
     if (!clientId) return;
+    let scriptWithLoadListener = null;
 
     const initializeGoogle = () => {
       if (window.google?.accounts?.id) {
@@ -47,26 +65,16 @@ const GoogleLoginButton = ({ onSuccess, onError, text = 'Continue with Google' }
         document.body.appendChild(script);
       } else {
         existingScript.addEventListener('load', initializeGoogle);
+        scriptWithLoadListener = existingScript;
       }
     }
-  }, [clientId]);
 
-  const handleCredentialResponse = async (response) => {
-    if (!response.credential) return;
-    setLoading(true);
-    setErrorMsg('');
-    try {
-      await googleLogin(response.credential);
-      if (onSuccess) onSuccess();
-    } catch (err) {
-      console.error('Google login error:', err);
-      const msg = typeof err === 'string' ? err : 'Google authentication failed';
-      setErrorMsg(msg);
-      if (onError) onError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      if (scriptWithLoadListener) {
+        scriptWithLoadListener.removeEventListener('load', initializeGoogle);
+      }
+    };
+  }, [clientId, handleCredentialResponse]);
 
   return (
     <div className="w-full space-y-2">

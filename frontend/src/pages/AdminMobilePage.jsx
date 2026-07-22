@@ -197,7 +197,7 @@ const AdminMobilePage = () => {
                 Professional Admin
               </Link>
               <Link to="/admin/vendors" className="rounded-md border border-gray-200 px-3 py-3 text-sm font-semibold text-brand-dark">
-                Marketplace Ops
+                Vendor Ops
               </Link>
               <Link to="/admin/commerce" className="rounded-md border border-gray-200 px-3 py-3 text-sm font-semibold text-brand-dark">
                 Commerce Ops

@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import { v2 as cloudinary } from 'cloudinary';
 
-const getProductImageFolder = () => process.env.CLOUDINARY_PRODUCT_FOLDER || 'apex-link/products';
+const getProductImageFolder = () => process.env.CLOUDINARY_PRODUCT_FOLDER || 'apex-fashion/products';
 
 const isCloudinaryConfigured = () =>
   Boolean(
@@ -79,7 +79,7 @@ const formatUploadResult = (result) => ({
 const uploadProductImageBuffer = async (buffer, { originalName = '' } = {}) => {
   const result = await uploadStream(buffer, {
     public_id: originalName ? originalName.replace(/\.[^.]+$/, '') : undefined,
-    tags: ['product', 'apex-link'],
+    tags: ['product', 'apex-fashion'],
   });
 
   return formatUploadResult(result);
@@ -95,7 +95,7 @@ const uploadProductImageUrl = async (sourceUrl) => {
     resource_type: 'image',
     overwrite: false,
     unique_filename: true,
-    tags: ['product', 'apex-link', 'remote-import'],
+    tags: ['product', 'apex-fashion', 'remote-import'],
   });
 
   return formatUploadResult(result);

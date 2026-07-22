@@ -25,12 +25,12 @@ const buildProductSeo = (product) => {
   const url = `${siteUrl}/product/${product._id}`;
 
   return {
-    title: product.seo?.title || `${product.name} | Apex Link Group`,
+    title: product.seo?.title || `${product.name} | Apex Fashion`,
     description:
       product.seo?.description ||
       product.shortDescription ||
       product.description?.slice(0, 160) ||
-      'Premium marketplace product from Apex Link Group.',
+      'Fashion product from Apex Fashion.',
     keywords: product.seo?.keywords || [product.category, product.brand, product.sku].filter(Boolean),
     canonicalUrl: product.seo?.canonicalUrl || url,
     ogImage: product.seo?.ogImage || product.image || `${siteUrl}/Apex Logo.jpg`,
@@ -45,7 +45,7 @@ const buildProductSeo = (product) => {
       sku: product.sku || product._id.toString(),
       brand: {
         '@type': 'Brand',
-        name: product.brand || 'Apex Link Group',
+        name: product.brand || 'Apex Fashion',
       },
       aggregateRating:
         Number(product.numReviews || 0) > 0
@@ -75,12 +75,12 @@ const buildCategorySeo = (category) => {
   const url = `${siteUrl}/category/${category.slug}`;
 
   return {
-    title: category.seo?.title || `${category.name} | Apex Link Group`,
+    title: category.seo?.title || `${category.name} | Apex Fashion`,
     description:
       category.seo?.description ||
       category.description ||
-      `Shop premium ${category.name} products from Apex Link Group.`,
-    keywords: category.seo?.keywords || [category.name, 'Apex Link Group', 'marketplace'],
+      `Shop ${category.name} products from Apex Fashion.`,
+    keywords: category.seo?.keywords || [category.name, 'Apex Fashion', 'fashion'],
     canonicalUrl: category.seo?.canonicalUrl || url,
     ogImage: category.seo?.ogImage || category.image || `${siteUrl}/Apex Logo.jpg`,
     url,

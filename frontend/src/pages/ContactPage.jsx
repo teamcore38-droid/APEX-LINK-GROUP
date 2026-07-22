@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import axios from 'axios';
 import { Loader2, Mail, MapPin, MessageSquareText, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { BUSINESS_INFO } from '../utils/businessInfo';
 
 const createInitialForm = (userInfo) => ({
   name: userInfo?.name || '',
@@ -24,18 +25,18 @@ const ContactPage = () => {
     () => [
       {
         icon: MapPin,
-        title: 'Studio & Dispatch',
-        body: '580/12, Moque Lane\nNawala, Rajagiriya\nSri Lanka',
+        title: 'Business Address',
+        body: `${BUSINESS_INFO.registeredAddress}\nDispatch/returns: ${BUSINESS_INFO.dispatchAddress}`,
       },
       {
         icon: Phone,
         title: 'Customer Care',
-        body: '+94 76 566 9961\nMonday to Saturday\n9:00 AM - 6:00 PM IST',
+        body: `${BUSINESS_INFO.phone}\n${BUSINESS_INFO.supportHours}`,
       },
       {
         icon: Mail,
         title: 'Email Support',
-        body: 'info@apexspices.lk',
+        body: BUSINESS_INFO.email,
       },
     ],
     []
@@ -115,14 +116,15 @@ const ContactPage = () => {
       <div className="container mx-auto max-w-6xl px-3 sm:px-4">
         <section className="rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Contact Us</p>
-          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Let’s make your next order effortless</h1>
-        </section>        <div className="mt-4 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Contact Apex Fashion customer care</h1>
+        </section>
+        <div className="mt-4 grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
           <aside className="space-y-4">
             <div className="rounded-[22px] bg-white p-4 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-5">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Customer Care</p>
               <h2 className="mt-1 font-serif text-2xl font-bold text-brand-dark sm:text-3xl">How we can help</h2>
               <p className="mt-2 text-xs leading-relaxed text-gray-600 sm:text-sm">
-                Use the form for order issues, shipping questions, gifting requests, and wholesale conversations. If your request is time-sensitive, include your order number in the message.
+                Use the form for order issues, shipping questions, returns, refunds, payment questions, size guidance, and product support. If your request is time-sensitive, include your order number in the message.
               </p>
             </div>
 
@@ -254,7 +256,7 @@ const ContactPage = () => {
                     className={`w-full rounded-xl border bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition ${
                       fieldErrors.subject ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
                     }`}
-                    placeholder="Order support, wholesale, gifting, product question..."
+                    placeholder="Order support, returns, refunds, payment question, product question..."
                   />
                   {fieldErrors.subject && (
                     <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.subject}</p>

@@ -277,7 +277,7 @@ const Header = () => {
                       onClick={() => setDesktopUserMenuOpen(false)}
                       className="flex items-center rounded-2xl px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-brand-light"
                     >
-                      <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Marketplace Ops
+                    <ShoppingBag size={16} className="mr-3 text-brand-accent" /> Vendor Ops
                     </Link>
                   )}
                   {userInfo.isAdmin && (
@@ -401,7 +401,7 @@ const Header = () => {
                       )}
                       {userInfo.isAdmin && (
                         <Link to="/admin/vendors" onClick={() => setMobileNavOpen(false)} className="block rounded-xl bg-white/5 px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em]">
-                          Marketplace Ops
+                          Vendor Ops
                         </Link>
                       )}
                       {userInfo.isAdmin && (

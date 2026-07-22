@@ -62,7 +62,7 @@ const RFQPage = () => {
       setRfqs(data);
     } catch (loadError) {
       console.error(loadError);
-      setError(loadError.response?.data?.message || 'Unable to load RFQs.');
+      setError(loadError.response?.data?.message || 'Unable to load quote requests.');
     } finally {
       setLoading(false);
     }
@@ -115,11 +115,11 @@ const RFQPage = () => {
         buyerEmail: userInfo.email || '',
         phone: userInfo.phone || '',
       });
-      setMessage('RFQ submitted.');
+      setMessage('Quote request submitted.');
       await loadRfqs();
     } catch (submitError) {
       console.error(submitError);
-      setError(submitError.response?.data?.message || 'Unable to submit RFQ.');
+      setError(submitError.response?.data?.message || 'Unable to submit quote request.');
     } finally {
       setSaving(false);
     }
@@ -141,7 +141,7 @@ const RFQPage = () => {
   return (
     <div className="container mx-auto px-4 pt-4 md:pt-6 pb-16">
       <div className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">B2B Buying</p>
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Bulk & Special Orders</p>
         <h1 className="mt-2 flex items-center text-3xl font-serif font-bold text-brand-dark">
           <SquarePen className="mr-3 text-brand-accent" /> Request a Quote
         </h1>
@@ -175,13 +175,13 @@ const RFQPage = () => {
           </div>
           <button type="submit" disabled={saving} className="mt-5 inline-flex items-center rounded-md bg-brand-primary px-5 py-3 text-sm font-bold uppercase tracking-[0.18em] text-white disabled:opacity-60">
             {saving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Send size={16} className="mr-2" />}
-            Submit RFQ
+            Submit Request
           </button>
         </form>
 
         <section className="rounded-lg bg-white p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-xl font-serif font-bold text-brand-dark">My RFQs</h2>
+            <h2 className="text-xl font-serif font-bold text-brand-dark">My Quote Requests</h2>
             {loading && <Loader2 size={18} className="animate-spin text-brand-primary" />}
           </div>
           <div className="space-y-4">
@@ -224,7 +224,7 @@ const RFQPage = () => {
                 )}
               </article>
             ))}
-            {rfqs.length === 0 && !loading && <p className="text-sm text-gray-500">No RFQs yet.</p>}
+            {rfqs.length === 0 && !loading && <p className="text-sm text-gray-500">No quote requests yet.</p>}
           </div>
         </section>
       </div>

@@ -229,7 +229,7 @@ const LoginPage = () => {
           )}
 
           <div className="mt-8 rounded-2xl bg-brand-light px-4 py-3 text-center text-sm text-gray-600">
-            New to Apex Link Group?{' '}
+            New to Apex Fashion?{' '}
             <Link
               to={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'}
               className="font-bold text-brand-primary transition-colors duration-200 hover:text-brand-dark"

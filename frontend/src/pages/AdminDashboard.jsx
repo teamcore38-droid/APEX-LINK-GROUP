@@ -148,7 +148,7 @@ const buildProductUpdatePayload = (product, overrides = {}) => ({
   description: product.description || '',
   origin: product.origin || '',
   ingredients: product.ingredients || '',
-  brand: product.brand || 'Apex Link Group',
+  brand: product.brand || 'Apex Fashion',
   sku: product.sku || '',
   isFeatured: Boolean(product.isFeatured),
   isActive: product.isActive ?? true,
@@ -589,7 +589,7 @@ const AdminDashboard = () => {
               onClick={() => navigate('/admin/vendors')}
               className="flex items-center rounded p-3 text-left font-medium transition-colors hover:bg-gray-100"
             >
-              <Store size={20} className="mr-3" /> Marketplace Ops
+              <Store size={20} className="mr-3" /> Vendor Ops
             </button>
             <button
               onClick={() => navigate('/admin/professional')}

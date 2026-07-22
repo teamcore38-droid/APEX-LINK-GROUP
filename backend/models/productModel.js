@@ -167,7 +167,7 @@ const productSchema = mongoose.Schema(
     },
     brand: {
       type: String,
-      default: 'Apex Link Group',
+      default: 'Apex Fashion',
       trim: true,
     },
     category: {

@@ -120,7 +120,7 @@ const CategoryPage = () => {
         applySeo({
           title: seoResponse?.data?.title || data.seo?.title || data.name,
           description: seoResponse?.data?.description || data.seo?.description || data.description,
-          keywords: seoResponse?.data?.keywords || data.seo?.keywords || [data.name, 'Apex Link Group'],
+          keywords: seoResponse?.data?.keywords || data.seo?.keywords || [data.name, 'Apex Fashion'],
           canonicalUrl: seoResponse?.data?.canonicalUrl || window.location.href,
           ogImage: seoResponse?.data?.ogImage || data.seo?.ogImage || data.image,
           type: 'website',
@@ -550,7 +550,7 @@ const CategoryPage = () => {
               <div className="rounded-3xl border border-dashed border-brand-accent/30 bg-[#f8efe6] px-6 py-14 text-center">
                 <p className="font-serif text-2xl font-bold text-brand-dark">No products found in this category</p>
                 <p className="mt-2 text-sm text-gray-500">
-                  Try adjusting your search or continue browsing the full marketplace.
+                  Try adjusting your search or continue browsing the full collection.
                 </p>
                 <div className="mt-8 flex flex-wrap justify-center gap-3">
                   <button

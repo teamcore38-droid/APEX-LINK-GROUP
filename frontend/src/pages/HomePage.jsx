@@ -140,10 +140,10 @@ const HomePage = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-70"></div>
         <div className="relative z-10 mx-auto max-w-4xl px-4 py-16 text-center md:py-0">
           <span className="mb-3 block text-[11px] font-bold uppercase tracking-[0.26em] text-brand-accent md:mb-4 md:text-sm md:tracking-[0.3em]">
-            One Marketplace. Every Industry.
+            Sri Lankan Fashion Store
           </span>
           <h1 className="mb-4 font-serif text-4xl font-bold leading-tight text-brand-light drop-shadow-lg sm:text-5xl md:mb-6 md:text-7xl">
-            The Premium Global <br /> Marketplace
+            Curated Fashion <br /> For Everyday Style
           </h1>
           <img
             src="/apex-fashion-mobile-hero.webp"
@@ -153,11 +153,11 @@ const HomePage = () => {
             className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
           />
           <p className="mx-auto mb-7 hidden max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:block md:text-xl">
-            Apex Link Group connects you with verified manufacturers and premium products across textiles, food, technology, industrial equipment, and beyond — with enterprise-grade quality assurance on every order.
+            Apex Fashion brings together clothing, footwear, accessories, and style essentials with clear prices, PayHere checkout, delivery updates, and customer-friendly support.
           </p>
           <div className="mx-auto flex w-full max-w-md flex-col justify-center gap-3 sm:max-w-none sm:flex-row sm:gap-4">
             <Link to="/products" className="btn-primary w-full px-6 py-3.5 text-base font-bold uppercase tracking-wider transition-transform hover:-translate-y-1 sm:w-auto sm:px-8 sm:py-4 sm:text-lg">
-              Explore Marketplace
+              Shop Fashion
             </Link>
             <Link to="/categories" className="w-full border-2 border-brand-accent/70 px-6 py-3.5 text-base font-bold uppercase tracking-wider text-brand-accent transition-all hover:bg-brand-accent hover:text-brand-dark sm:w-auto sm:px-8 sm:py-4 sm:text-lg">
               Browse Categories
@@ -171,9 +171,9 @@ const HomePage = () => {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {[
               { icon: Truck, title: 'Sri Lanka Wide Delivery', subtitle: 'All 25 Districts' },
-              { icon: Globe, title: 'Verified Suppliers', subtitle: 'Audited worldwide network' },
-              { icon: ShieldCheck, title: 'Quality Promise', subtitle: '30-day return policy' },
-              { icon: Award, title: 'Enterprise Grade', subtitle: 'Trusted by businesses' },
+              { icon: Globe, title: 'Clear Product Details', subtitle: 'Sizes, colors, and SKUs' },
+              { icon: ShieldCheck, title: 'Return Support', subtitle: 'Policy terms apply' },
+              { icon: Award, title: 'PayHere Checkout', subtitle: 'Verified payment status' },
             ].map((item, idx) => (
               <div
                 key={idx}
@@ -203,7 +203,7 @@ const HomePage = () => {
             <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Featured Collection</h2>
             <div className="mx-auto mt-5 h-px w-28 bg-gradient-to-r from-transparent via-brand-accent to-transparent"></div>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-gray-600 md:text-base">
-              A refined rotation of our most celebrated products across every industry, chosen for exceptional quality, verified provenance, and outstanding value.
+              A refined rotation of fashion products selected for everyday style, clear product details, and smooth checkout.
             </p>
           </div>
 
@@ -226,12 +226,12 @@ const HomePage = () => {
           ) : featuredProducts.length === 0 ? (
             <div className="rounded-xl border border-brand-accent/25 bg-[#f8eee5] px-6 py-10 text-center text-brand-primary">
               <p className="font-serif text-2xl font-bold text-brand-dark">No featured products yet</p>
-              <p className="mt-2 text-sm">Explore the full marketplace while our team curates featured highlights.</p>
+              <p className="mt-2 text-sm">Explore the full store while our team curates featured highlights.</p>
               <Link
                 to="/products"
                 className="mt-5 inline-flex items-center rounded-md border border-brand-primary px-5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
               >
-                Explore Marketplace
+                Explore Store
               </Link>
             </div>
           ) : (
@@ -247,7 +247,7 @@ const HomePage = () => {
                 to="/products"
                 className="inline-flex items-center rounded-md border border-brand-primary px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
               >
-                Explore Full Marketplace
+                Explore Full Collection
               </Link>
             </div>
           )}

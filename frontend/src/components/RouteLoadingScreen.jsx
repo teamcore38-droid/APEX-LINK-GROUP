@@ -12,7 +12,7 @@ const RouteLoadingScreen = ({ message = 'Preparing your experience' }) => (
         <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-[#d99a32]/70 bg-[#2a140e] p-3 shadow-[0_0_30px_rgba(217,154,50,0.25)]">
           <img
             src="/logo.webp"
-            alt="Apex Spices logo"
+            alt="Apex Fashion logo"
             width="80"
             height="80"
             decoding="async"
@@ -26,7 +26,7 @@ const RouteLoadingScreen = ({ message = 'Preparing your experience' }) => (
 
       {/* Brand Title */}
       <h2 className="font-serif text-xl font-bold uppercase tracking-[0.22em] text-[#d99a32] sm:text-2xl">
-        APEX SPICES
+        APEX FASHION
       </h2>
       <p className="mt-1 font-serif text-lg font-bold text-brand-dark sm:text-xl">
         {message}

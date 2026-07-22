@@ -157,9 +157,9 @@ const ProductsPage = () => {
 
   useEffect(() => {
     applySeo({
-      title: 'Shop Premium Products',
-      description: 'Browse Apex Link Group products across textiles, food, technology, industrial equipment, and more.',
-      keywords: ['global marketplace', 'premium products', 'Apex Link Group'],
+      title: 'Shop Apex Fashion Products',
+      description: 'Browse Apex Fashion clothing, footwear, accessories, and style essentials with clear product details and secure PayHere checkout.',
+      keywords: ['Apex Fashion', 'fashion Sri Lanka', 'clothing', 'footwear', 'accessories'],
       canonicalUrl: `${window.location.origin}/products`,
       type: 'website',
     });

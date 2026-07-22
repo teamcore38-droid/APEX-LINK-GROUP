@@ -290,7 +290,7 @@ const wrapTemplate = ({ title, preheader, body }) => `
   <div style="margin:0;padding:24px;background:#f2f5fa;font-family:Arial,sans-serif;color:#0b1f3a;">
     <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #dce4ef;">
       <div style="padding:32px 32px 24px;background:linear-gradient(135deg,#081729,#16365f,#c9a227);color:#ffffff;">
-        <div style="font-size:12px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:#ead9a0;">Apex Link Group</div>
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:#ead9a0;">Apex Fashion</div>
         <h1 style="margin:16px 0 8px;font-family:Georgia,serif;font-size:32px;line-height:1.2;">${title}</h1>
         <p style="margin:0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.82);">${preheader}</p>
       </div>
@@ -305,6 +305,9 @@ const summaryRow = (label, value) => `
     <td style="padding:10px 0;text-align:right;font-size:15px;font-weight:700;color:#0b1f3a;">${value}</td>
   </tr>
 `;
+
+const formatEmailCurrency = (amount, currency = 'LKR') =>
+  `${String(currency || 'LKR').toUpperCase()} ${Number(amount || 0).toFixed(2)}`;
 
 const buildOrderUrl = (orderId) => `${getFrontendUrl()}/orders/${orderId}`;
 const buildInvoiceUrl = (orderId) => `${getFrontendUrl()}/orders/${orderId}/invoice`;
@@ -337,7 +340,7 @@ const buildOrderHtml = ({ heading, copy, order, ctaLabel, ctaUrl }) => {
       <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">${copy}</p>
       <table style="width:100%;border-collapse:collapse;margin:24px 0;">
         ${summaryRow('Order ID', orderId)}
-        ${summaryRow('Total', `$${Number(order?.totalPrice || 0).toFixed(2)}`)}
+        ${summaryRow('Total', formatEmailCurrency(order?.totalPrice, order?.currency))}
         ${summaryRow('Order Status', order?.orderStatus || 'Processing')}
         ${summaryRow('Payment', getPaymentLabel(order))}
         ${summaryRow('Tracking', trackingNumber)}
@@ -364,11 +367,11 @@ const sendOrderConfirmationEmail = async (order) =>
   sendMailSafe({
     label: 'order-placed',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Order Placed - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Order Placed - ${order?._id?.toString?.() || ''}`,
     html: buildOrderHtml({
       heading: 'Your order has been placed',
       copy:
-        'Thank you for ordering from Apex Link Group. We have received your order and will keep you updated when payment or fulfillment is confirmed.',
+        'Thank you for ordering from Apex Fashion. We have received your order and will keep you updated when payment or fulfillment is confirmed.',
       order,
       ctaLabel: 'View Order',
       ctaUrl: buildOrderUrl(order?._id?.toString?.() || ''),
@@ -386,7 +389,7 @@ const sendOrderConfirmedEmail = async (order) =>
   sendMailSafe({
     label: 'order-confirmed',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Order Confirmed - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Order Confirmed - ${order?._id?.toString?.() || ''}`,
     html: buildOrderHtml({
       heading: 'Your order is confirmed',
       copy:
@@ -406,7 +409,7 @@ const sendOrderCancelledEmail = async (order) =>
   sendMailSafe({
     label: 'order-cancelled',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Order Cancelled - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Order Cancelled - ${order?._id?.toString?.() || ''}`,
     html: buildOrderHtml({
       heading: 'Your order was cancelled',
       copy:
@@ -426,11 +429,11 @@ const sendOrderDeliveredEmail = async (order) =>
   sendMailSafe({
     label: 'order-delivered',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Order Delivered - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Order Delivered - ${order?._id?.toString?.() || ''}`,
     html: buildOrderHtml({
       heading: 'Your order was delivered',
       copy:
-        'Your order has been marked as delivered. Thank you for shopping with Apex Link Group.',
+        'Your order has been marked as delivered. Thank you for shopping with Apex Fashion.',
       order,
       ctaLabel: 'View Order',
       ctaUrl: buildOrderUrl(order?._id?.toString?.() || ''),
@@ -446,7 +449,7 @@ const sendOrderStatusUpdateEmail = async (order) =>
   sendMailSafe({
     label: 'order-status-update',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Order Update - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Order Update - ${order?._id?.toString?.() || ''}`,
     html: buildOrderHtml({
       heading: 'Your order has a new update',
       copy:
@@ -465,10 +468,10 @@ const sendOrderStatusUpdateEmail = async (order) =>
 const sendPasswordResetEmail = async (user, resetUrl) => {
   const html = wrapTemplate({
     title: 'Reset your password',
-    preheader: 'Use the secure link below to set a new password for your Apex Link Group account.',
+    preheader: 'Use the secure link below to set a new password for your Apex Fashion account.',
     body: `
       <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
-        We received a request to reset the password for your Apex Link Group account. If this was you, use the secure link below.
+        We received a request to reset the password for your Apex Fashion account. If this was you, use the secure link below.
       </p>
       <a href="${resetUrl}" style="display:inline-block;margin-top:10px;padding:14px 22px;border-radius:12px;background:#16365f;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;">Reset Password</a>
       <p style="margin:20px 0 0;font-size:13px;line-height:1.8;color:#6b7a92;">
@@ -485,7 +488,7 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
   return sendMailSafe({
     label: 'password-reset',
     to: user?.email || '',
-    subject: 'Reset your Apex Link Group password',
+    subject: 'Reset your Apex Fashion password',
     html,
     developmentPayload,
   });
@@ -495,13 +498,13 @@ const sendAdminTwoFactorCodeEmail = async (user, code, expiresInMinutes = 10) =>
   sendMailSafe({
     label: 'admin-2fa-code',
     to: user?.email || '',
-    subject: 'Your Apex Link Group admin verification code',
+    subject: 'Your Apex Fashion admin verification code',
     html: wrapTemplate({
       title: 'Admin verification code',
       preheader: 'Use this code to complete your secure admin sign-in.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
-          Use the verification code below to complete your Apex Link Group admin sign-in. It expires in ${expiresInMinutes} minutes.
+          Use the verification code below to complete your Apex Fashion admin sign-in. It expires in ${expiresInMinutes} minutes.
         </p>
         <div style="display:inline-block;margin:12px 0;padding:18px 24px;border-radius:16px;background:#f5f8fc;border:1px solid #dce4ef;font-size:28px;font-weight:800;letter-spacing:0.3em;color:#0b1f3a;">
           ${code}
@@ -521,10 +524,10 @@ const sendSecurityAlertEmail = async (user, { title = 'Security alert', message 
   sendMailSafe({
     label: 'security-alert',
     to: user?.email || '',
-    subject: `Apex Link Group Security Alert - ${title}`,
+    subject: `Apex Fashion Security Alert - ${title}`,
     html: wrapTemplate({
       title,
-      preheader: 'A security-sensitive event occurred on your Apex Link Group account.',
+      preheader: 'A security-sensitive event occurred on your Apex Fashion account.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">${message}</p>
         <table style="width:100%;border-collapse:collapse;margin:24px 0;">
@@ -548,10 +551,10 @@ const sendContactMessageNotification = async (message) =>
   sendMailSafe({
     label: 'contact-notification',
     to: process.env.EMAIL_FROM || '',
-    subject: `New Contact Message - ${message?.subject || 'Apex Link Group'}`,
+    subject: `New Contact Message - ${message?.subject || 'Apex Fashion'}`,
     html: wrapTemplate({
       title: 'New customer message',
-      preheader: 'A new contact form message was submitted on the Apex Link Group storefront.',
+      preheader: 'A new contact form message was submitted on the Apex Fashion storefront.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
           <strong>Name:</strong> ${message?.name || 'Not provided'}<br />
@@ -574,13 +577,13 @@ const sendContactAutoReply = async (message) =>
   sendMailSafe({
     label: 'contact-auto-reply',
     to: message?.email || '',
-    subject: 'We received your message - Apex Link Group',
+    subject: 'We received your message - Apex Fashion',
     html: wrapTemplate({
-      title: 'Thank you for contacting Apex Link Group',
+      title: 'Thank you for contacting Apex Fashion',
       preheader: 'Our team has received your message and will get back to you shortly.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
-          Thank you for reaching out to Apex Link Group. We have received your message and will respond as soon as possible.
+          Thank you for reaching out to Apex Fashion. We have received your message and will respond as soon as possible.
         </p>
         <div style="padding:18px;background:#f5f8fc;border:1px solid #dce4ef;border-radius:18px;">
           <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:#a07c16;">Subject</div>
@@ -598,7 +601,7 @@ const sendInvoiceEmail = async (order) =>
   sendMailSafe({
     label: 'invoice-email',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Invoice - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Invoice - ${order?._id?.toString?.() || ''}`,
     html: wrapTemplate({
       title: 'Your invoice is ready',
       preheader: 'You can review or print your invoice from your order dashboard.',
@@ -607,7 +610,7 @@ const sendInvoiceEmail = async (order) =>
           Your invoice for order <strong>${order?._id?.toString?.() || ''}</strong> is ready.
         </p>
         <table style="width:100%;border-collapse:collapse;margin:24px 0;">
-          ${summaryRow('Total', `$${Number(order?.totalPrice || 0).toFixed(2)}`)}
+          ${summaryRow('Total', formatEmailCurrency(order?.totalPrice, order?.currency))}
           ${summaryRow('Payment', getPaymentLabel(order))}
           ${summaryRow('Order Status', order?.orderStatus || 'Processing')}
         </table>
@@ -624,7 +627,7 @@ const sendRefundConfirmationEmail = async (order, refund = {}) =>
   sendMailSafe({
     label: 'refund-confirmation',
     to: getSafeOrderRecipient(order),
-    subject: `Apex Link Group Refund Update - ${order?._id?.toString?.() || ''}`,
+    subject: `Apex Fashion Refund Update - ${order?._id?.toString?.() || ''}`,
     html: wrapTemplate({
       title: 'Your refund has been processed',
       preheader: 'A refund update is now available for your order.',
@@ -633,9 +636,9 @@ const sendRefundConfirmationEmail = async (order, refund = {}) =>
           We processed a refund update for order <strong>${order?._id?.toString?.() || ''}</strong>.
         </p>
         <table style="width:100%;border-collapse:collapse;margin:24px 0;">
-          ${summaryRow('Refund Amount', `$${Number(refund?.amount || 0).toFixed(2)}`)}
+          ${summaryRow('Refund Amount', formatEmailCurrency(refund?.amount, refund?.currency || order?.currency))}
           ${summaryRow('Refund Status', refund?.status || order?.refundStatus || 'Updated')}
-          ${summaryRow('Total Refunded', `$${Number(order?.refundedAmount || 0).toFixed(2)}`)}
+          ${summaryRow('Total Refunded', formatEmailCurrency(order?.refundedAmount, order?.currency))}
           ${summaryRow('Payment Status', getPaymentLabel(order))}
         </table>
         <a href="${buildOrderUrl(order?._id?.toString?.() || '')}" style="display:inline-block;margin-top:10px;padding:14px 22px;border-radius:12px;background:#16365f;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;">View Order</a>
@@ -653,13 +656,13 @@ const sendNewsletterWelcomeEmail = async (subscriber) =>
   sendMailSafe({
     label: 'newsletter-welcome',
     to: subscriber?.email || '',
-    subject: 'Welcome to Apex Link Group updates',
+    subject: 'Welcome to Apex Fashion updates',
     html: wrapTemplate({
       title: 'You are subscribed',
-      preheader: 'You will receive marketplace launches, sourcing updates, and offers from Apex Link Group.',
+      preheader: 'You will receive fashion product updates, store news, and offers from Apex Fashion.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
-          Thank you for subscribing to Apex Link Group. We will send curated product drops, marketplace news, and sourcing updates.
+          Thank you for subscribing to Apex Fashion. We will send curated product drops, store news, and offers.
         </p>
         <a href="${getFrontendUrl()}/products" style="display:inline-block;margin-top:10px;padding:14px 22px;border-radius:12px;background:#16365f;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;">Explore Products</a>
       `,
@@ -686,10 +689,10 @@ const sendAbandonedCartEmail = async (cart) => {
   return sendMailSafe({
     label: 'abandoned-cart',
     to: cart?.email || '',
-    subject: 'Your Apex Link Group cart is waiting',
+    subject: 'Your Apex Fashion cart is waiting',
     html: wrapTemplate({
       title: 'Still thinking it over?',
-      preheader: 'Your selected products are still waiting in your Apex Link Group cart.',
+      preheader: 'Your selected products are still waiting in your Apex Fashion cart.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
           You left a few products in your cart. Return to checkout whenever you are ready.
@@ -711,13 +714,13 @@ const sendTestEmail = async (to = process.env.EMAIL_TEST_TO || process.env.EMAIL
   sendMailSafe({
     label: 'smtp-test',
     to,
-    subject: 'Apex Link Group SMTP test',
+    subject: 'Apex Fashion SMTP test',
     html: wrapTemplate({
       title: 'SMTP is configured',
-      preheader: 'This confirms that the Apex Link Group backend can send email through your SMTP provider.',
+      preheader: 'This confirms that the Apex Fashion backend can send email through your SMTP provider.',
       body: `
         <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
-          This test email was sent by the Apex Link Group backend. If you received it, SMTP delivery is ready for password resets, order updates, invoices, refunds, contact messages, newsletters, and abandoned cart reminders.
+          This test email was sent by the Apex Fashion backend. If you received it, SMTP delivery is ready for password resets, order updates, invoices, refunds, contact messages, newsletters, and abandoned cart reminders.
         </p>
       `,
     }),

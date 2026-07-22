@@ -145,7 +145,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const [slugTouched, setSlugTouched] = useState(false);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [variantImageUrlInputs, setVariantImageUrlInputs] = useState({});
-  const [variantUploadStatus, setVariantUploadStatus] = useState({});
+  const [, setVariantUploadStatus] = useState({});
   const [uploadStatus, setUploadStatus] = useState('');
   const [persistedImagePublicIds, setPersistedImagePublicIds] = useState(new Set());
 
@@ -479,10 +479,6 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
         isActive: true,
       },
     ]);
-  };
-
-  const removeVariant = (variantIndex) => {
-    updateVariants((currentVariants) => currentVariants.filter((_, index) => index !== variantIndex));
   };
 
   const updateVariantField = (variantIndex, field, value) => {
@@ -833,27 +829,6 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
           String(variant.size || '').trim()
       )
       .map((variant) => variant.size);
-
-  const toggleColorForSize = (colorName, sizeName) => {
-    setForm((currentForm) => ({
-      ...currentForm,
-      sizes: (currentForm.sizes || []).map((sizeOption) => {
-        if (sizeOption.size !== sizeName) {
-          return sizeOption;
-        }
-
-        const currentColors = Array.isArray(sizeOption.colors) ? sizeOption.colors : [];
-        const hasColor = currentColors.some((color) => color.toLowerCase() === colorName.toLowerCase());
-
-        return {
-          ...sizeOption,
-          colors: hasColor
-            ? currentColors.filter((color) => color.toLowerCase() !== colorName.toLowerCase())
-            : [...currentColors, colorName],
-        };
-      }),
-    }));
-  };
 
   const submitHandler = async (event) => {
     event.preventDefault();

@@ -92,7 +92,11 @@ const AdminShippingPage = () => {
   };
 
   useEffect(() => {
-    fetchRates();
+    const timer = window.setTimeout(() => {
+      void fetchRates();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

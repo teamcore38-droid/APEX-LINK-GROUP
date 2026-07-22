@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -40,7 +40,7 @@ import {
 
 const TRUST_POINTS = [
   ['Verified Authentic', 'Every product checked against strict quality standards.'],
-  ['Premium Grade', 'Sourced from certified, audited manufacturers.'],
+  ['Product Details', 'Review size, color, SKU, price, and policy notes before checkout.'],
   ['Ethically Sourced', 'Chosen from trusted producers and origin partners.'],
   ['Fast Delivery', 'Packed with care and shipped promptly worldwide.'],
 ];
@@ -137,7 +137,7 @@ const ProductPage = () => {
         { token: userInfo?.token }
       );
 
-      const [seoResult, recentlyViewedResult, recommendationResult, reviewResult, relatedResult] = await Promise.allSettled([
+      const [seoResult, , recommendationResult, reviewResult, relatedResult] = await Promise.allSettled([
         axios.get(`/api/seo/product/${data._id}`),
         axios.post(
           '/api/customer/recently-viewed',
@@ -250,7 +250,7 @@ const ProductPage = () => {
 
       return product.variants.find((variant) => String(variant._id) === String(selectedVariantId)) || null;
     },
-    [product, selectedColor, selectedVariantId]
+    [product, selectedColor, selectedSize, selectedVariantId]
   );
   const selectedSizeObj = useMemo(
     () => (product?.hasSizes && selectedSize ? product.sizes?.find((s) => s.size === selectedSize) : null),
@@ -378,6 +378,21 @@ const ProductPage = () => {
     }
   };
 
+  const showGalleryImage = useCallback((image) => {
+    setSelectedImage(image);
+    setIsLightboxZoomed(false);
+  }, []);
+
+  const showPreviousImage = useCallback(() => {
+    const currentIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
+    showGalleryImage(productImages[(currentIndex - 1 + productImages.length) % productImages.length] || currentGalleryImage);
+  }, [currentGalleryImage, productImages, showGalleryImage]);
+
+  const showNextImage = useCallback(() => {
+    const currentIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
+    showGalleryImage(productImages[(currentIndex + 1) % productImages.length] || currentGalleryImage);
+  }, [currentGalleryImage, productImages, showGalleryImage]);
+
   useEffect(() => {
     if (!isLightboxOpen) {
       return undefined;
@@ -395,7 +410,7 @@ const ProductPage = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLightboxOpen, productImages]);
+  }, [isLightboxOpen, showNextImage, showPreviousImage]);
 
   if (loading) {
     return <RouteLoadingScreen message="Loading product details..." />;
@@ -417,21 +432,6 @@ const ProductPage = () => {
       </div>
     );
   }
-
-  const showGalleryImage = (image) => {
-    setSelectedImage(image);
-    setIsLightboxZoomed(false);
-  };
-
-  const showPreviousImage = () => {
-    const currentIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
-    showGalleryImage(productImages[(currentIndex - 1 + productImages.length) % productImages.length] || currentGalleryImage);
-  };
-
-  const showNextImage = () => {
-    const currentIndex = Math.max(0, productImages.indexOf(currentGalleryImage));
-    showGalleryImage(productImages[(currentIndex + 1) % productImages.length] || currentGalleryImage);
-  };
 
   const handleAddToCart = () => {
     if (product.hasSizes && product.sizes?.length > 0) {
@@ -1046,7 +1046,7 @@ const ProductPage = () => {
         <section className="mt-12 rounded-[28px] bg-white p-5 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-6">
           <div className="mb-5">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Trust & Quality</p>
-            <h2 className="mt-1 font-serif text-2xl font-bold text-brand-dark sm:text-3xl">Why customers choose Apex Link Group</h2>
+            <h2 className="mt-1 font-serif text-2xl font-bold text-brand-dark sm:text-3xl">Why customers choose Apex Fashion</h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

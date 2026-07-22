@@ -286,7 +286,7 @@ const createSupportTicket = async (req, res) => {
     guestEmail: String(req.body.guestEmail || req.user?.email || '').trim().toLowerCase(),
     name: String(req.body.name || req.user?.name || '').trim(),
     subject,
-    category: ['General', 'Order', 'Shipping', 'Return', 'Product', 'Payment', 'B2B'].includes(req.body.category)
+    category: ['General', 'Order', 'Shipping', 'Return', 'Product', 'Payment'].includes(req.body.category)
       ? req.body.category
       : 'General',
     priority: ['Low', 'Normal', 'High', 'Urgent'].includes(req.body.priority) ? req.body.priority : 'Normal',

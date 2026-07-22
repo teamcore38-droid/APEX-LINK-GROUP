@@ -51,7 +51,7 @@ const RegisterPage = () => {
         <div className="w-full max-w-xl rounded-[32px] bg-white p-8 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] border border-gray-100">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Create Your Account</p>
-            <h1 className="mt-4 font-serif text-4xl font-bold text-brand-dark">Join the Apex Link Group marketplace</h1>
+            <h1 className="mt-4 font-serif text-4xl font-bold text-brand-dark">Join Apex Fashion</h1>
             <p className="mt-3 text-sm leading-7 text-gray-500">
               Save delivery details, revisit orders, and enjoy a more refined shopping experience.
             </p>

@@ -48,7 +48,7 @@ const ResetPasswordPage = () => {
             <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-accent">Set a New Password</p>
             <h1 className="mt-4 font-serif text-4xl font-bold text-brand-dark">Reset your account password</h1>
             <p className="mt-3 text-sm leading-7 text-gray-500">
-              Choose a strong new password to regain access to your Apex Link Group account.
+              Choose a strong new password to regain access to your Apex Fashion account.
             </p>
           </div>
 

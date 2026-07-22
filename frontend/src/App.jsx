@@ -8,7 +8,7 @@ import CookieConsentBanner from './components/CookieConsentBanner'
 import ScrollToTop from './components/ScrollToTop'
 import SitePreloader from './components/SitePreloader'
 
-const CHUNK_RELOAD_KEY = 'apex-link-chunk-reload'
+const CHUNK_RELOAD_KEY = 'apex-fashion-chunk-reload'
 
 const lazyWithReload = (loader) =>
   lazy(() =>
@@ -48,6 +48,8 @@ const ContactPage = lazyWithReload(() => import('./pages/ContactPage'))
 const FAQPage = lazyWithReload(() => import('./pages/FAQPage'))
 const TermsPage = lazyWithReload(() => import('./pages/TermsPage'))
 const PrivacyPage = lazyWithReload(() => import('./pages/PrivacyPage'))
+const CookiePolicyPage = lazyWithReload(() => import('./pages/CookiePolicyPage'))
+const PaymentPolicyPage = lazyWithReload(() => import('./pages/PaymentPolicyPage'))
 const ReturnsPage = lazyWithReload(() => import('./pages/ReturnsPage'))
 const ShippingPage = lazyWithReload(() => import('./pages/ShippingPage'))
 const AdminDashboard = lazyWithReload(() => import('./pages/AdminDashboard'))
@@ -104,6 +106,8 @@ function App() {
             <Route path="/faq" element={<FAQPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/cookies" element={<CookiePolicyPage />} />
+            <Route path="/payment-policy" element={<PaymentPolicyPage />} />
             <Route path="/privacy-center" element={<PrivacyCenterPage />} />
             <Route path="/returns" element={<ReturnsPage />} />
             <Route path="/shipping" element={<ShippingPage />} />

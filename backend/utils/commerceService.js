@@ -113,7 +113,7 @@ const normalizeCartItems = async (cartItems = []) => {
     }
 
     if (product.approvalStatus && product.approvalStatus !== 'Approved') {
-      throw new Error(`${product.name} is awaiting marketplace approval`);
+      throw new Error(`${product.name} is awaiting catalog approval`);
     }
 
     const itemSize = String(item.size || '').trim();

@@ -482,7 +482,7 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       images: normalizeImageList(payload.images, payload.image, payload.imagePublicId),
       shortDescription: String(payload.shortDescription || '').trim(),
       description: String(payload.description || '').trim(),
-      brand: String(payload.brand || 'Apex Link Group').trim() || 'Apex Link Group',
+      brand: String(payload.brand || 'Apex Fashion').trim() || 'Apex Fashion',
       weight: String(payload.weight || '').trim(),
       origin: String(payload.origin || '').trim(),
       ingredients: String(payload.ingredients || '').trim(),

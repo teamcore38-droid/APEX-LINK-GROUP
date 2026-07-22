@@ -58,11 +58,14 @@ const seedCategories = async () => {
       if (catLower.includes('textiles') || catLower.includes('apparel') || catLower.includes('clothing') || catLower.includes('fashion')) {
         prod.category = 'Women';
         await prod.save();
-      } else if (catLower.includes('spice') || catLower.includes('food')) {
-        prod.category = 'Spices & Food Products';
+      } else if (catLower.includes('shoe') || catLower.includes('footwear')) {
+        prod.category = 'Shoes & Footwear';
         await prod.save();
       } else if (catLower.includes('electronics') || catLower.includes('it')) {
-        prod.category = 'IT Solutions & Electronics';
+        prod.category = 'Watches';
+        await prod.save();
+      } else if (catLower.includes('spice') || catLower.includes('food')) {
+        prod.category = 'Women';
         await prod.save();
       }
     }

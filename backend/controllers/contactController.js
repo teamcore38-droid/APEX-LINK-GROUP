@@ -55,7 +55,7 @@ const createContactMessage = async (req, res) => {
     ]);
 
     res.status(201).json({
-      message: 'Thank you for contacting Apex Link Group. Our team will get back to you shortly.',
+      message: 'Thank you for contacting Apex Fashion. Our team will get back to you shortly.',
     });
   } catch (error) {
     console.error(error);

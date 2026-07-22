@@ -326,7 +326,7 @@ const CustomerExperiencePage = () => {
                 {['Support Ticket', 'Live Chat', 'Email', 'WhatsApp'].map((channel) => <option key={channel}>{channel}</option>)}
               </select>
               <select value={ticketForm.category} onChange={(event) => setTicketForm((form) => ({ ...form, category: event.target.value }))} className="rounded-xl border border-gray-200 px-4 py-3 text-sm">
-                {['General', 'Order', 'Shipping', 'Return', 'Product', 'Payment', 'B2B'].map((category) => <option key={category}>{category}</option>)}
+                {['General', 'Order', 'Shipping', 'Return', 'Product', 'Payment'].map((category) => <option key={category}>{category}</option>)}
               </select>
               <textarea value={ticketForm.message} onChange={(event) => setTicketForm((form) => ({ ...form, message: event.target.value }))} placeholder="How can we help?" rows={4} className="md:col-span-2 rounded-xl border border-gray-200 px-4 py-3 text-sm" />
             </div>

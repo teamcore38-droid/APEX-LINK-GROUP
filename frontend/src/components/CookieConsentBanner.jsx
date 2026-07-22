@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Settings, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -64,7 +65,10 @@ const CookieConsentBanner = () => {
             <ShieldCheck size={18} className="mr-2 text-brand-accent" /> Privacy Preferences
           </p>
           <p className="mt-2 text-sm leading-6 text-gray-600">
-            Necessary cookies keep checkout and security working. You can choose analytics, marketing, and personalization preferences.
+            Necessary cookies keep checkout and security working. You can choose analytics, marketing, and personalization preferences.{' '}
+            <Link to="/cookies" className="font-semibold text-brand-primary underline">
+              Cookie Policy
+            </Link>
           </p>
           {expanded && (
             <div className="mt-3 grid gap-2 sm:grid-cols-3">

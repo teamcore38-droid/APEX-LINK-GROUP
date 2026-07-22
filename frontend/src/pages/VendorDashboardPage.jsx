@@ -175,7 +175,7 @@ const VendorDashboardPage = () => {
     <div className="container mx-auto px-4 pt-4 md:pt-6 pb-16">
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Marketplace</p>
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Vendor</p>
           <h1 className="mt-2 flex items-center text-3xl font-serif font-bold text-brand-dark">
             <Store className="mr-3 text-brand-accent" /> Vendor Dashboard
           </h1>
@@ -288,7 +288,7 @@ const VendorDashboardPage = () => {
           </section>
 
           <section className="rounded-lg bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-xl font-serif font-bold text-brand-dark">RFQ Queue</h2>
+            <h2 className="mb-4 text-xl font-serif font-bold text-brand-dark">Quote Request Queue</h2>
             <div className="space-y-4">
               {(dashboard?.rfqs || []).map((rfq) => {
                 const draft = quoteDrafts[rfq._id] || { amount: '', currency: rfq.targetCurrency || 'LKR', leadTimeDays: '', message: '' };
@@ -311,7 +311,7 @@ const VendorDashboardPage = () => {
                   </div>
                 );
               })}
-              {(dashboard?.rfqs || []).length === 0 && <p className="text-sm text-gray-500">No assigned RFQs.</p>}
+              {(dashboard?.rfqs || []).length === 0 && <p className="text-sm text-gray-500">No assigned quote requests.</p>}
             </div>
           </section>
         </div>

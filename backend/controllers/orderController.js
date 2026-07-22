@@ -186,7 +186,7 @@ const getBusinessInfoForDocuments = () => ({
   phone: process.env.BUSINESS_PHONE || '+94 76 566 9961',
   address:
     process.env.BUSINESS_ADDRESS ||
-    'Apex Fashion, Sri Lanka',
+    '[BUSINESS OWNER TO CONFIRM: registered business address in Sri Lanka]',
   website: process.env.BUSINESS_WEBSITE || process.env.FRONTEND_URL || 'https://apexfashion.lk',
 });
 

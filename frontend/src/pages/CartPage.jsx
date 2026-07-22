@@ -5,7 +5,6 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Trash2, ArrowLeft, MapPin, ChevronDown, Loader2, X, Plus, Minus } from 'lucide-react';
 import { formatCurrency } from '../utils/productUi';
-import CustomSelect from '../components/CustomSelect';
 
 const SL_DISTRICTS = [
   'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
@@ -43,26 +42,44 @@ const DistrictModal = ({ onClose, onConfirm, initialDistrict, cartItems }) => {
 
   // Fetch fee when district changes
   useEffect(() => {
-    if (!district) { setFee(null); return; }
-    setFetching(true);
-    setFeeError('');
-    axios
-      .post('/api/orders/shipping-rates', {
-        shippingAddress: { state: district, country: 'Sri Lanka' },
-        orderItems: cartItems,
-        currency: 'LKR',
-      })
-      .then(({ data }) => {
-        // The API returns an array directly, not an object with shippingOptions
-        const rate = Array.isArray(data) ? data[0] : data?.shippingOptions?.[0];
-        setFee(rate ? Number(rate.basePrice || rate.price) : 0);
-      })
-      .catch(() => {
-        setFeeError('Could not fetch shipping fee. Please try again.');
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (!district) {
         setFee(null);
-      })
-      .finally(() => setFetching(false));
-  }, [district]);
+        return;
+      }
+
+      setFetching(true);
+      setFeeError('');
+      axios
+        .post('/api/orders/shipping-rates', {
+          shippingAddress: { state: district, country: 'Sri Lanka' },
+          orderItems: cartItems,
+          currency: 'LKR',
+        })
+        .then(({ data }) => {
+          if (cancelled) return;
+          // The API returns an array directly, not an object with shippingOptions
+          const rate = Array.isArray(data) ? data[0] : data?.shippingOptions?.[0];
+          setFee(rate ? Number(rate.basePrice || rate.price) : 0);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setFeeError('Could not fetch shipping fee. Please try again.');
+          setFee(null);
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setFetching(false);
+          }
+        });
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [cartItems, district]);
 
   const handleSelect = (d) => {
     setDistrict(d);

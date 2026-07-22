@@ -59,7 +59,7 @@ const AdminVendorsPage = () => {
       setVendorOrders(orderRes.data);
     } catch (loadError) {
       console.error(loadError);
-      setError(loadError.response?.data?.message || 'Unable to load marketplace operations.');
+      setError(loadError.response?.data?.message || 'Unable to load vendor operations.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +88,7 @@ const AdminVendorsPage = () => {
       await loadMarketplace();
     } catch (actionError) {
       console.error(actionError);
-      setError(actionError.response?.data?.message || 'Marketplace action failed.');
+      setError(actionError.response?.data?.message || 'Vendor action failed.');
     } finally {
       setActionKey('');
     }
@@ -138,7 +138,7 @@ const AdminVendorsPage = () => {
           },
           config
         ),
-      'RFQ assignment updated.'
+      'Quote request assignment updated.'
     );
   };
 
@@ -179,7 +179,7 @@ const AdminVendorsPage = () => {
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Admin</p>
           <h1 className="mt-2 flex items-center text-3xl font-serif font-bold text-brand-dark">
-            <Building2 className="mr-3 text-brand-accent" /> Marketplace Operations
+            <Building2 className="mr-3 text-brand-accent" /> Vendor Operations
           </h1>
         </div>
         {loading && <Loader2 className="animate-spin text-brand-primary" />}
@@ -274,7 +274,7 @@ const AdminVendorsPage = () => {
 
         <section className="rounded-lg bg-white p-6 shadow-sm">
           <h2 className="mb-4 flex items-center text-xl font-serif font-bold text-brand-dark">
-            <Send className="mr-2 text-brand-accent" /> RFQ Management
+            <Send className="mr-2 text-brand-accent" /> Quote Request Management
           </h2>
           <div className="space-y-4">
             {rfqs.map((rfq) => (
@@ -310,7 +310,7 @@ const AdminVendorsPage = () => {
                 </div>
               </article>
             ))}
-            {rfqs.length === 0 && <p className="text-sm text-gray-500">No RFQs yet.</p>}
+            {rfqs.length === 0 && <p className="text-sm text-gray-500">No quote requests yet.</p>}
           </div>
         </section>
 

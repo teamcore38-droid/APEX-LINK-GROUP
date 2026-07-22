@@ -52,7 +52,7 @@ const updateAdminRfq = async (req, res) => {
   const rfq = await RFQ.findById(req.params.id);
 
   if (!rfq) {
-    return res.status(404).json({ message: 'RFQ not found' });
+    return res.status(404).json({ message: 'Quote request not found' });
   }
 
   const { status, assignedVendorIds = [], adminNote = '' } = req.body;
@@ -61,7 +61,7 @@ const updateAdminRfq = async (req, res) => {
     status !== undefined &&
     !['New', 'Sent to Vendors', 'Quoted', 'Negotiating', 'Accepted', 'Closed', 'Rejected'].includes(status)
   ) {
-    return res.status(400).json({ message: 'Invalid RFQ status' });
+    return res.status(400).json({ message: 'Invalid quote request status' });
   }
 
   if (Array.isArray(assignedVendorIds)) {
@@ -126,7 +126,7 @@ const submitVendorQuote = async (req, res) => {
   });
 
   if (!rfq) {
-    return res.status(404).json({ message: 'RFQ not found for this vendor' });
+    return res.status(404).json({ message: 'Quote request not found for this vendor' });
   }
 
   const amount = Number(req.body.amount || 0);
@@ -167,7 +167,7 @@ const acceptRfqQuote = async (req, res) => {
   const rfq = await RFQ.findOne({ _id: req.params.id, buyer: req.user._id });
 
   if (!rfq) {
-    return res.status(404).json({ message: 'RFQ not found' });
+    return res.status(404).json({ message: 'Quote request not found' });
   }
 
   const quote = rfq.quotes.id(req.params.quoteId);

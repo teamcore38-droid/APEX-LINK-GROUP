@@ -15,7 +15,7 @@ const getMobileConfig = (_req, res) => {
 
   res.json({
     apiVersion: 'v1',
-    appName: 'Apex Link Group',
+    appName: 'Apex Fashion',
     appScheme: 'apex',
     webBaseUrl: baseUrl,
     manifestUrl: `${baseUrl}/manifest.webmanifest`,

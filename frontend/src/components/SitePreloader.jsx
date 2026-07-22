@@ -91,7 +91,7 @@ const SitePreloader = () => {
           <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-[#d99a32]/70 bg-[#2a140e] p-3.5 shadow-[0_0_35px_rgba(217,154,50,0.35)]">
             <img
               src="/logo.webp"
-              alt="Apex Spices logo"
+              alt="Apex Fashion logo"
               width="96"
               height="96"
               decoding="async"
@@ -105,10 +105,10 @@ const SitePreloader = () => {
 
         {/* Brand Title */}
         <h2 className="font-serif text-2xl font-bold uppercase tracking-[0.22em] text-[#d99a32] sm:text-3xl">
-          APEX SPICES
+          APEX FASHION
         </h2>
         <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.32em] text-[#fff7ee]/85 sm:text-xs">
-          Global Marketplace &bull; Premium Quality
+          Sri Lankan Fashion Store
         </p>
 
         {/* Shimmer Progress Bar */}

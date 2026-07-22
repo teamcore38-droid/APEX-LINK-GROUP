@@ -130,7 +130,7 @@ const testWebhookSubscription = async (req, res) => {
     buildWebhookEnvelope(
       'webhook.test',
       {
-        message: 'This is a test event from Apex Link Group.',
+        message: 'This is a test event from Apex Fashion.',
         subscriptionId: subscription._id,
       },
       {

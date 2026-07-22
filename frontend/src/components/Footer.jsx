@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Globe } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import axios from 'axios';
+import { BUSINESS_INFO } from '../utils/businessInfo';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -32,15 +33,19 @@ const Footer = () => {
     <footer className="border-t border-brand-accent/20 bg-brand-dark py-12 text-brand-light">
       <div className="container mx-auto grid grid-cols-1 gap-8 px-4 md:grid-cols-4">
         <div>
-          <h3 className="mb-4 flex items-center text-xl font-serif font-bold text-brand-accent">
-            <Globe size={20} className="mr-2" /> APEX LINK GROUP
+          <h3 className="mb-3 flex items-center text-xl font-serif font-bold text-brand-accent">
+            <Mail size={20} className="mr-2" /> {BUSINESS_INFO.brandName}
           </h3>
           <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-brand-accent/70">
-            Global Marketplace
+            Sri Lankan Fashion Store
           </p>
-          <p className="text-sm leading-7 text-gray-300">
-            A premium multi-industry marketplace connecting trusted manufacturers and suppliers with customers worldwide — from textiles and food products to IT solutions and industrial equipment.
-          </p>
+          <div className="space-y-2 text-sm leading-7 text-gray-300">
+            <p>{BUSINESS_INFO.legalName}</p>
+            <p>{BUSINESS_INFO.registrationNumber}</p>
+            <p>{BUSINESS_INFO.registeredAddress}</p>
+            <p>{BUSINESS_INFO.email}</p>
+            <p>{BUSINESS_INFO.phone}</p>
+          </div>
         </div>
 
         <div>
@@ -58,12 +63,12 @@ const Footer = () => {
             </li>
             <li>
               <Link to="/shipping" className="transition-colors hover:text-brand-accent">
-                Shipping
+                Shipping & Delivery
               </Link>
             </li>
             <li>
               <Link to="/returns" className="transition-colors hover:text-brand-accent">
-                Returns
+                Refunds & Returns
               </Link>
             </li>
             <li>
@@ -75,7 +80,7 @@ const Footer = () => {
         </div>
 
         <div>
-          <h4 className="mb-4 font-semibold uppercase tracking-wider">Marketplace</h4>
+          <h4 className="mb-4 font-semibold uppercase tracking-wider">Shop</h4>
           <ul className="space-y-2 text-sm text-gray-300">
             <li>
               <Link to="/products" className="transition-colors hover:text-brand-accent">
@@ -84,27 +89,17 @@ const Footer = () => {
             </li>
             <li>
               <Link to="/categories" className="transition-colors hover:text-brand-accent">
-                All Industries
+                Categories
               </Link>
             </li>
             <li>
-              <Link to="/rfq" className="transition-colors hover:text-brand-accent">
-                Request a Quote
+              <Link to="/about" className="transition-colors hover:text-brand-accent">
+                About Apex Fashion
               </Link>
             </li>
             <li>
-              <Link to="/category/textiles-apparel" className="transition-colors hover:text-brand-accent">
-                Textiles &amp; Apparel
-              </Link>
-            </li>
-            <li>
-              <Link to="/category/it-solutions-electronics" className="transition-colors hover:text-brand-accent">
-                IT Solutions &amp; Electronics
-              </Link>
-            </li>
-            <li>
-              <Link to="/category/industrial-machinery" className="transition-colors hover:text-brand-accent">
-                Industrial &amp; Machinery
+              <Link to="/faq" className="transition-colors hover:text-brand-accent">
+                FAQs
               </Link>
             </li>
           </ul>
@@ -115,22 +110,27 @@ const Footer = () => {
           <ul className="space-y-2 text-sm text-gray-300">
             <li>
               <Link to="/privacy" className="transition-colors hover:text-brand-accent">
-                Privacy
+                Privacy Policy
+              </Link>
+            </li>
+            <li>
+              <Link to="/cookies" className="transition-colors hover:text-brand-accent">
+                Cookie Policy
               </Link>
             </li>
             <li>
               <Link to="/terms" className="transition-colors hover:text-brand-accent">
-                Terms
+                Terms & Conditions
               </Link>
             </li>
             <li>
-              <Link to="/faq" className="transition-colors hover:text-brand-accent">
-                FAQs
+              <Link to="/payment-policy" className="transition-colors hover:text-brand-accent">
+                Payment Policy
               </Link>
             </li>
             <li>
-              <Link to="/about" className="transition-colors hover:text-brand-accent">
-                About
+              <Link to="/returns" className="transition-colors hover:text-brand-accent">
+                Refund & Return Policy
               </Link>
             </li>
           </ul>
@@ -156,13 +156,17 @@ const Footer = () => {
                 Join
               </button>
             </div>
+            <p className="mt-2 text-xs leading-5 text-gray-400">
+              Marketing emails are optional. See our <Link to="/privacy" className="text-brand-accent">Privacy Policy</Link> and{' '}
+              <Link to="/cookies" className="text-brand-accent">Cookie Policy</Link>.
+            </p>
             {message && <p className="mt-2 text-xs text-gray-300">{message}</p>}
           </form>
         </div>
       </div>
 
       <div className="container mx-auto mt-12 border-t border-white/10 px-4 pt-8 text-center text-sm text-gray-400">
-        &copy; {new Date().getFullYear()} Apex Link Group — Global Marketplace. All rights reserved.
+        &copy; {new Date().getFullYear()} {BUSINESS_INFO.brandName}. All rights reserved.
       </div>
     </footer>
   );

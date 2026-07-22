@@ -16,6 +16,7 @@ const PolicyPageLayout = ({
         <section className="overflow-hidden rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">{eyebrow}</p>
           <h1 className="mt-1 max-w-4xl font-serif text-2xl font-bold sm:text-3xl">{title}</h1>
+          {intro && <p className="mt-3 max-w-4xl text-sm leading-7 text-white/80 sm:text-base">{intro}</p>}
 
           {relatedLinks.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -84,9 +85,9 @@ const PolicyPageLayout = ({
           <aside className="space-y-6">
             <div className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)]">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-accent">Need more help?</p>
-              <h2 className="mt-3 font-serif text-2xl font-bold text-brand-dark">Speak with the Apex Link Group team</h2>
+              <h2 className="mt-3 font-serif text-2xl font-bold text-brand-dark">Speak with Apex Fashion customer care</h2>
               <p className="mt-3 text-sm leading-7 text-gray-600">
-                If you need clarity on shipping, returns, privacy, or wholesale support, our team is happy to help.
+                If you need clarity on shipping, returns, privacy, payments, or an order issue, our team is happy to help.
               </p>
               <div className="mt-5 space-y-3">
                 <Link

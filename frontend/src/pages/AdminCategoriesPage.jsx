@@ -411,7 +411,7 @@ const AdminCategoriesPage = () => {
                   required
                   value={form.name}
                   onChange={handleChange}
-                  placeholder="e.g. Spices & Food Products"
+                  placeholder="e.g. Women's Clothing"
                   className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
                 />
               </div>

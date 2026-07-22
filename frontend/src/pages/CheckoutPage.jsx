@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -126,18 +126,22 @@ const CheckoutInner = () => {
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [payhereExpanded, setPayhereExpanded] = useState(false);
   const guestCheckoutEnabled = true;
-  const applySelectedDistrict = (address = {}) => ({
+  const applySelectedDistrict = useCallback((address = {}) => ({
     ...address,
     state: selectedDistrict || address.state || '',
     country: address.country || 'Sri Lanka',
-  });
+  }), [selectedDistrict]);
 
   // Auto-trigger quote on mount if district was pre-selected via cart modal
   useEffect(() => {
-    if (cartItems.length > 0 && (form.state || selectedDistrict)) {
-      const addr = applySelectedDistrict(form);
-      requestQuote(addr);
-    }
+    const timer = window.setTimeout(() => {
+      if (cartItems.length > 0 && (form.state || selectedDistrict)) {
+        const addr = applySelectedDistrict(form);
+        void requestQuote(addr);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -146,11 +150,15 @@ const CheckoutInner = () => {
       return;
     }
 
-    setForm((currentForm) => (
-      currentForm.state === selectedDistrict
-        ? currentForm
-        : { ...currentForm, state: selectedDistrict, country: currentForm.country || 'Sri Lanka' }
-    ));
+    const timer = window.setTimeout(() => {
+      setForm((currentForm) => (
+        currentForm.state === selectedDistrict
+          ? currentForm
+          : { ...currentForm, state: selectedDistrict, country: currentForm.country || 'Sri Lanka' }
+      ));
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [selectedDistrict]);
 
   useEffect(() => {
@@ -216,7 +224,7 @@ const CheckoutInner = () => {
     };
 
     loadAddresses();
-  }, [shippingAddress, userInfo]);
+  }, [applySelectedDistrict, shippingAddress, userInfo]);
 
   const itemsPrice = useMemo(
     () => cartItems.reduce((accumulator, item) => accumulator + item.price * item.qty, 0),
@@ -232,7 +240,7 @@ const CheckoutInner = () => {
   const displayTotalPrice = totalPrice;
   const displayCurrency = quote?.currency || currency;
 
-  const requestQuote = async (nextShippingAddress = form) => {
+  async function requestQuote(nextShippingAddress = form) {
     if (cartItems.length === 0) {
       return null;
     }
@@ -286,7 +294,7 @@ const CheckoutInner = () => {
     } finally {
       setQuoteLoading(false);
     }
-  };
+  }
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
@@ -579,7 +587,7 @@ const CheckoutInner = () => {
           </div>
           <h2 className="mt-6 font-serif text-4xl font-bold text-brand-dark">Order Placed Successfully!</h2>
           <p className="mt-3 text-lg text-gray-600">
-            Thank you for choosing Apex Link Group for your next order.
+            Thank you for choosing Apex Fashion for your next order.
           </p>
           <p className="mt-2 text-sm text-green-700">
             You will be redirected to your order confirmation page shortly.
@@ -907,7 +915,7 @@ const CheckoutInner = () => {
               )}
             </section>
 
-            {false && (
+            {import.meta.env.VITE_ENABLE_ADVANCED_CHECKOUT_PRICING === 'true' && (
             <section className="rounded-[28px] bg-white p-6 shadow-[0_18px_40px_rgba(53, 26, 17,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-light text-brand-primary">
@@ -1243,7 +1251,7 @@ const CheckoutInner = () => {
                   PayHere checkout
                 </p>
                 <p className="mt-3 text-sm leading-7 text-gray-600">
-                  After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Link Group never stores raw card details.
+                  After placing the order, you will be redirected to PayHere to complete the payment securely. Apex Fashion never stores raw card details.
                 </p>
                 <label className="mt-4 inline-flex items-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-brand-dark shadow-sm">
                   <input type="radio" checked readOnly className="mr-2" />

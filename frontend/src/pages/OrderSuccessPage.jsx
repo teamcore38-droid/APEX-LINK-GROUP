@@ -58,9 +58,12 @@ const OrderSuccessPage = () => {
     }
 
     if (!resolvedOrderId) {
-      setLoading(false);
-      setError('We could not determine which order PayHere returned.');
-      return;
+      const timer = window.setTimeout(() => {
+        setLoading(false);
+        setError('We could not determine which order PayHere returned.');
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
 
     const guestAccessToken = localStorage.getItem(`apexGuestOrder:${resolvedOrderId}`) || '';
@@ -126,6 +129,8 @@ const OrderSuccessPage = () => {
     return () => {
       isActive = false;
     };
+    // Avoid depending on order here; doing so restarts PayHere polling after each fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearCart, navigate, pathname, resolvedOrderId, userInfo?.token]);
 
   const isPayHereReturn = pathname === '/order-success';

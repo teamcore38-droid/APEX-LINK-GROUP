@@ -16,12 +16,12 @@ const buildOrderPushPayload = (order, event, details = {}) => {
   };
 
   return {
-    title: titleMap[event] || 'Apex Link Group update',
+    title: titleMap[event] || 'Apex Fashion update',
     body:
       details.message ||
       (orderLabel
         ? `Order ${orderLabel} is now ${order?.orderStatus || 'updated'}.`
-        : 'Your marketplace update is ready.'),
+        : 'Your Apex Fashion update is ready.'),
     url: `${getFrontendUrl()}/orders/${orderId}`,
     orderId,
     status: order?.orderStatus || '',

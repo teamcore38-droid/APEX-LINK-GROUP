@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Apex Link Group API",
+    "title": "Apex Fashion API",
     "version": "1.0.0",
     "description": "Public, customer, checkout, payment, privacy, mobile, and operations API documentation."
   },
