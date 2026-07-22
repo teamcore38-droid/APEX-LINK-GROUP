@@ -1,8 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /checkout
-Disallow: /profile
-Disallow: /account
+Disallow: /api/
+Disallow: /admin/
 
-Sitemap: /sitemap.xml
+Sitemap: https://www.apexfashion.lk/sitemap.xml

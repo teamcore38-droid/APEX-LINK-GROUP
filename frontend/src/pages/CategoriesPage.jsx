@@ -45,10 +45,10 @@ const CategoriesPage = () => {
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Browse by Collection</p>
               <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">
-                Find the right industry for every sourcing need
+                Shop Fashion by Category
               </h1>
               <p className="mt-1 hidden text-xs leading-5 text-white/80 sm:block sm:text-sm">
-                Explore curated collections and subcategories verified for premium quality.
+                Explore shoes, dresses, clothing, handbags, watches, fragrances, and accessories for women and men.
               </p>
             </div>
             <div className="flex shrink-0 gap-2.5">
@@ -79,7 +79,7 @@ const CategoriesPage = () => {
               <Sparkles size={36} className="mx-auto text-brand-accent" />
               <p className="mt-4 font-serif text-2xl font-bold text-brand-dark">No active categories available</p>
               <p className="mt-2 text-sm text-gray-500">
-                Check back soon as we continue expanding our industry collections.
+                Check back soon as we continue expanding our fashion collections.
               </p>
             </div>
           ) : (
@@ -93,7 +93,7 @@ const CategoriesPage = () => {
                     className="group flex flex-col justify-between overflow-hidden rounded-[28px] bg-white shadow-[0_20px_50px_rgba(53, 26, 17,0.08)] transition-all duration-300 hover:-translate-y-1"
                   >
                     <div>
-                      <Link to={`/products?category=${encodeURIComponent(category.name)}`} className="block relative h-72 overflow-hidden">
+                      <Link to={`/category/${category.slug}`} className="block relative h-72 overflow-hidden">
                         <img
                           src={getCategoryImage(category)}
                           alt={category.name}
@@ -128,7 +128,7 @@ const CategoriesPage = () => {
                               {subcategories.map((sub) => (
                                 <Link
                                   key={sub._id}
-                                  to={`/products?category=${encodeURIComponent(sub.name)}`}
+                                  to={`/category/${sub.slug}`}
                                   className="inline-flex items-center gap-1 rounded-full bg-[#fff7ee] border border-brand-accent/30 px-3 py-1 text-xs font-semibold text-brand-dark transition-all hover:bg-brand-primary hover:text-white hover:border-brand-primary"
                                 >
                                   <Tag size={10} className="text-brand-accent" />
@@ -143,7 +143,7 @@ const CategoriesPage = () => {
 
                     <div className="px-6 pb-6 pt-2">
                       <Link
-                        to={`/products?category=${encodeURIComponent(category.name)}`}
+                        to={`/category/${category.slug}`}
                         className="inline-flex items-center text-sm font-bold uppercase tracking-[0.2em] text-brand-primary hover:text-brand-dark transition-colors"
                       >
                         Explore All {category.name} <ArrowRight size={16} className="ml-2 transition-transform duration-200 group-hover:translate-x-1" />

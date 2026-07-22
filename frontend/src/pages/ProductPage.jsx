@@ -27,7 +27,13 @@ import { useAuth } from '../context/AuthContext';
 import Product from '../components/Product';
 import { slugifyCategoryName } from '../utils/categoryUi';
 import { trackEvent } from '../utils/analytics';
-import { applySeo, buildProductStructuredData } from '../utils/seo';
+import {
+  NOINDEX_ROBOTS,
+  applySeo,
+  buildBreadcrumbStructuredData,
+  buildProductStructuredData,
+} from '../utils/seo';
+import { buildCanonicalUrl } from '../utils/seoConfig';
 import {
   formatCurrency,
   getOptimizedImageUrl,
@@ -102,6 +108,7 @@ const ProductPage = () => {
     let isActive = true;
 
     const applyProductSeo = (data, seoData = null) => {
+      const canonicalUrl = buildCanonicalUrl(`/product/${data._id}`);
       applySeo({
         title: seoData?.title || data.seo?.title || data.name,
         description:
@@ -110,10 +117,18 @@ const ProductPage = () => {
           data.shortDescription ||
           data.description?.slice(0, 160),
         keywords: seoData?.keywords || data.seo?.keywords || [data.category, data.brand, data.sku].filter(Boolean),
-        canonicalUrl: seoData?.canonicalUrl || window.location.href,
+        canonicalUrl,
         ogImage: seoData?.ogImage || data.seo?.ogImage || data.image,
         type: 'product',
-        structuredData: seoData?.structuredData || buildProductStructuredData(data),
+        structuredData: [
+          seoData?.structuredData || buildProductStructuredData(data, canonicalUrl),
+          seoData?.breadcrumbs ||
+            buildBreadcrumbStructuredData([
+              { name: 'Home', url: '/' },
+              { name: 'Products', url: '/products' },
+              { name: data.name, url: canonicalUrl },
+            ]),
+        ],
       });
     };
 
@@ -223,6 +238,12 @@ const ProductPage = () => {
 
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load this product right now.');
+        applySeo({
+          title: 'Product Not Found',
+          description: 'This Apex Fashion product is unavailable or could not be found.',
+          canonicalUrl: buildCanonicalUrl(`/product/${id}`),
+          robots: NOINDEX_ROBOTS,
+        });
         setLoading(false);
       }
     };

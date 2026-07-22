@@ -1,4 +1,4 @@
-# Apex Link Group Deployment Guide
+# Apex Fashion Deployment Guide
 
 This guide prepares the MERN stack for staging and production without changing business features.
 
@@ -48,6 +48,10 @@ Recommended:
 
 - `VITE_API_URL` (deployed backend base URL, no trailing slash)
 - `VITE_APP_ENV` (optional display/debug label)
+- `SEO_API_URL` (optional server-only backend override for sitemap and metadata rendering)
+- `VITE_GA_MEASUREMENT_ID` (optional GA4 ID, format `G-XXXXXXXXXX`)
+- `VITE_GOOGLE_SITE_VERIFICATION` (Google Search Console HTML-tag token)
+- `VITE_BING_SITE_VERIFICATION` (Bing Webmaster Tools HTML-tag token)
 
 Security rules:
 
@@ -260,3 +264,18 @@ Production recommendation:
 7. Configure uptime checks against `/api/ops/uptime`.
 8. Schedule `npm run backup:create` or provider-native MongoDB Atlas backups.
 9. Run `npm run perf:checkout` against staging before traffic campaigns.
+
+## 12. Search and SEO Go-Live Checklist
+
+The production storefront uses `https://www.apexfashion.lk` as its canonical domain.
+
+1. Set `FRONTEND_URL=https://www.apexfashion.lk` on the backend.
+2. Set `VITE_API_URL` or `SEO_API_URL` on the frontend deployment so dynamic product metadata, the sitemap, and the product feed can reach the backend.
+3. Add the Google Search Console verification token as `VITE_GOOGLE_SITE_VERIFICATION` and redeploy.
+4. Add the Bing Webmaster Tools verification token as `VITE_BING_SITE_VERIFICATION` and redeploy.
+5. Submit `https://www.apexfashion.lk/sitemap.xml` in Google Search Console and Bing Webmaster Tools.
+6. Verify `https://www.apexfashion.lk/product-feed.xml`, then add it as a scheduled feed in Google Merchant Center.
+7. Create a GA4 web data stream and set `VITE_GA_MEASUREMENT_ID`. Analytics loads only after analytics consent.
+8. Confirm the IndexNow key file is reachable at `https://www.apexfashion.lk/1ef018ac3d1ac76bbd2ec0b7d79ce2ce.txt`.
+9. Test representative product and category URLs with Google Rich Results Test and Search Console URL Inspection after deployment.
+10. Keep product names, descriptions, images, prices, availability, categories, SKUs, sizes, and colors complete and accurate in the admin catalog.

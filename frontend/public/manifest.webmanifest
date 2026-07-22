@@ -1,7 +1,7 @@
 {
   "name": "Apex Fashion",
   "short_name": "Apex Fashion",
-  "description": "Curated modern fashion, footwear, beauty, and lifestyle essentials.",
+  "description": "Shop shoes, dresses, clothing, handbags, watches, fragrances, and fashion accessories online in Sri Lanka.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",

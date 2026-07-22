@@ -1,15 +1,28 @@
 export const BUSINESS_INFO = {
   brandName: 'Apex Fashion',
-  legalName: '[BUSINESS OWNER TO CONFIRM: registered legal entity name]',
+  legalName: 'Apex Link Import and Export pvt Lmt',
   registrationNumber: '[BUSINESS OWNER TO CONFIRM: business registration number]',
   taxStatus: '[BUSINESS OWNER TO CONFIRM: VAT/TIN status]',
-  registeredAddress: '[BUSINESS OWNER TO CONFIRM: registered business address in Sri Lanka]',
+  registeredAddress: '580/12, Mosque Lane, Nawala, Rajagiriya, Colombo, Sri Lanka',
   dispatchAddress: '[BUSINESS OWNER TO CONFIRM: dispatch and return address]',
   email: 'info@apexfashion.lk',
   phone: '+94 76 566 9961',
-  website: 'https://apexfashion.lk',
-  domain: 'apexfashion.lk',
-  supportHours: '[BUSINESS OWNER TO CONFIRM: customer support hours in Sri Lanka time]',
+  website: 'https://www.apexfashion.lk',
+  domain: 'www.apexfashion.lk',
+  supportHours: 'Monday to Saturday, 9:00 AM - 6:00 PM (Sri Lanka time)',
+  address: {
+    streetAddress: '580/12, Mosque Lane',
+    addressLocality: 'Nawala, Rajagiriya',
+    addressRegion: 'Colombo',
+    addressCountry: 'LK',
+  },
+  openingHours: [
+    {
+      days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      opens: '09:00',
+      closes: '18:00',
+    },
+  ],
   returnWindow: '[BUSINESS OWNER TO CONFIRM: return request window after delivery]',
   refundProcessingTime:
     '[BUSINESS OWNER TO CONFIRM: Apex Fashion internal refund approval and processing timeline]',

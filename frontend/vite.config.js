@@ -1,9 +1,28 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const verificationTags = [
+    env.VITE_GOOGLE_SITE_VERIFICATION
+      ? { tag: 'meta', attrs: { name: 'google-site-verification', content: env.VITE_GOOGLE_SITE_VERIFICATION } }
+      : null,
+    env.VITE_BING_SITE_VERIFICATION
+      ? { tag: 'meta', attrs: { name: 'msvalidate.01', content: env.VITE_BING_SITE_VERIFICATION } }
+      : null,
+  ].filter(Boolean)
+
+  return {
+  plugins: [
+    react(),
+    {
+      name: 'search-engine-verification',
+      transformIndexHtml() {
+        return verificationTags
+      },
+    },
+  ],
   server: {
     proxy: {
       '/api': {
@@ -46,4 +65,5 @@ export default defineConfig({
       },
     },
   },
+  }
 })

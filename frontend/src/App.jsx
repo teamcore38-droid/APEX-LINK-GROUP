@@ -7,6 +7,8 @@ import RouteLoadingScreen from './components/RouteLoadingScreen'
 import CookieConsentBanner from './components/CookieConsentBanner'
 import ScrollToTop from './components/ScrollToTop'
 import SitePreloader from './components/SitePreloader'
+import SeoRouteManager from './components/SeoRouteManager'
+import AnalyticsRouteTracker from './components/AnalyticsRouteTracker'
 
 const CHUNK_RELOAD_KEY = 'apex-fashion-chunk-reload'
 
@@ -77,6 +79,8 @@ function App() {
     <div className="flex flex-col min-h-screen">
       <SitePreloader />
       <ScrollToTop />
+      <SeoRouteManager />
+      <AnalyticsRouteTracker />
       <Header />
       <CategoryNavBar />
       <main className="flex-grow">

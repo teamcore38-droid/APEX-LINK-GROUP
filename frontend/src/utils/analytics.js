@@ -1,6 +1,16 @@
 import axios from 'axios';
 
 const SESSION_KEY = 'apexMarketingSessionId';
+const CONSENT_KEY = 'apexCookieConsent';
+const CONSENT_EVENT = 'apex-consent-updated';
+
+const getStoredConsent = () => {
+  try {
+    return JSON.parse(localStorage.getItem(CONSENT_KEY) || 'null');
+  } catch {
+    return null;
+  }
+};
 
 const getMarketingSessionId = () => {
   const existing = localStorage.getItem(SESSION_KEY);
@@ -28,34 +38,39 @@ const loadScript = (id, src, body) => {
 };
 
 const installAdTracking = () => {
+  const consent = getStoredConsent();
+  if (!consent) {
+    return;
+  }
+
   const gaId = import.meta.env.VITE_GA_MEASUREMENT_ID;
   const metaPixelId = import.meta.env.VITE_META_PIXEL_ID;
   const tiktokPixelId = import.meta.env.VITE_TIKTOK_PIXEL_ID;
   const linkedinPartnerId = import.meta.env.VITE_LINKEDIN_PARTNER_ID;
 
-  if (gaId) {
+  if (consent.analytics && /^G-[A-Z0-9]+$/i.test(gaId || '')) {
     loadScript('ga4-loader', `https://www.googletagmanager.com/gtag/js?id=${gaId}`);
     window.dataLayer = window.dataLayer || [];
     window.gtag = window.gtag || function gtag() { window.dataLayer.push(arguments); };
     window.gtag('js', new Date());
-    window.gtag('config', gaId);
+    window.gtag('config', gaId, { send_page_view: false, anonymize_ip: true });
   }
 
-  if (metaPixelId) {
+  if (consent.marketing && metaPixelId) {
     window.fbq = window.fbq || function fbq() { (window.fbq.queue = window.fbq.queue || []).push(arguments); };
     loadScript('meta-pixel-loader', 'https://connect.facebook.net/en_US/fbevents.js');
     window.fbq('init', metaPixelId);
     window.fbq('track', 'PageView');
   }
 
-  if (tiktokPixelId) {
+  if (consent.marketing && tiktokPixelId) {
     loadScript('tiktok-pixel-loader', 'https://analytics.tiktok.com/i18n/pixel/events.js');
     window.ttq = window.ttq || { track: () => {}, page: () => {}, load: () => {} };
     window.ttq.load?.(tiktokPixelId);
     window.ttq.page?.();
   }
 
-  if (linkedinPartnerId) {
+  if (consent.marketing && linkedinPartnerId) {
     window._linkedin_partner_id = linkedinPartnerId;
     window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
     window._linkedin_data_partner_ids.push(linkedinPartnerId);
@@ -64,11 +79,13 @@ const installAdTracking = () => {
 };
 
 const trackAdPlatforms = (eventName, properties = {}) => {
-  if (window.gtag) {
+  const consent = getStoredConsent();
+
+  if (consent?.analytics && window.gtag) {
     window.gtag('event', eventName, properties);
   }
 
-  if (window.fbq) {
+  if (consent?.marketing && window.fbq) {
     const metaMap = {
       product_view: 'ViewContent',
       add_to_cart: 'AddToCart',
@@ -78,12 +95,17 @@ const trackAdPlatforms = (eventName, properties = {}) => {
     window.fbq('track', metaMap[eventName] || eventName, properties);
   }
 
-  if (window.ttq?.track) {
+  if (consent?.marketing && window.ttq?.track) {
     window.ttq.track(eventName, properties);
   }
 };
 
 const trackEvent = async (eventName, properties = {}, options = {}) => {
+  const consent = getStoredConsent();
+  if (!consent?.analytics && !consent?.marketing) {
+    return;
+  }
+
   const payload = {
     eventName,
     sessionId: getMarketingSessionId(),
@@ -110,8 +132,28 @@ const trackEvent = async (eventName, properties = {}, options = {}) => {
   }
 };
 
+const trackPageView = (path = `${window.location.pathname}${window.location.search}`) => {
+  const consent = getStoredConsent();
+  if (!consent?.analytics) {
+    return;
+  }
+
+  installAdTracking();
+  if (window.gtag) {
+    window.gtag('event', 'page_view', {
+      page_location: window.location.href,
+      page_path: path,
+      page_title: document.title,
+    });
+  }
+};
+
 export {
+  CONSENT_EVENT,
+  CONSENT_KEY,
   getMarketingSessionId,
+  getStoredConsent,
   installAdTracking,
   trackEvent,
+  trackPageView,
 };

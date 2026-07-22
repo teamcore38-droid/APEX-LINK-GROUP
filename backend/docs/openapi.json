@@ -244,11 +244,37 @@
         }
       }
     },
+    "/api/seo/category/{slug}": {
+      "get": {
+        "summary": "Get category SEO metadata and JSON-LD",
+        "parameters": [{ "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "SEO metadata" },
+          "404": { "description": "Category not found" }
+        }
+      }
+    },
     "/sitemap.xml": {
       "get": {
         "summary": "Dynamic XML sitemap",
         "responses": {
           "200": { "description": "XML sitemap" }
+        }
+      }
+    },
+    "/product-feed.xml": {
+      "get": {
+        "summary": "Google Merchant compatible RSS product feed",
+        "responses": {
+          "200": { "description": "XML product feed" }
+        }
+      }
+    },
+    "/robots.txt": {
+      "get": {
+        "summary": "Search crawler directives",
+        "responses": {
+          "200": { "description": "Robots text file" }
         }
       }
     }

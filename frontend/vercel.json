@@ -1,8 +1,58 @@
 {
+  "redirects": [
+    { "source": "/shop", "destination": "/products", "permanent": true }
+  ],
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/product-feed.xml", "destination": "/api/product-feed" },
+    { "source": "/product/:id", "destination": "/api/render?type=product&id=:id" },
+    { "source": "/category/:slug", "destination": "/api/render?type=category&slug=:slug" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/products", "destination": "/products/index.html" },
+    { "source": "/categories", "destination": "/categories/index.html" },
+    { "source": "/about", "destination": "/about/index.html" },
+    { "source": "/contact", "destination": "/contact/index.html" },
+    { "source": "/faq", "destination": "/faq/index.html" },
+    { "source": "/shipping", "destination": "/shipping/index.html" },
+    { "source": "/returns", "destination": "/returns/index.html" },
+    { "source": "/payment-policy", "destination": "/payment-policy/index.html" },
+    { "source": "/privacy", "destination": "/privacy/index.html" },
+    { "source": "/cookies", "destination": "/cookies/index.html" },
+    { "source": "/terms", "destination": "/terms/index.html" },
+    { "source": "/(cart|checkout|login|register|forgot-password|profile|account|track-order|rfq|customer-experience|order-success|privacy-center)", "destination": "/index.html" },
+    { "source": "/reset-password/:token", "destination": "/index.html" },
+    { "source": "/vendor/(.*)", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/admin/(.*)", "destination": "/index.html" },
+    { "source": "/order/:id/confirm", "destination": "/index.html" },
+    { "source": "/orders/:id", "destination": "/index.html" },
+    { "source": "/orders/:id/(.*)", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/api/not-found" }
+  ],
+  "headers": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/api/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/admin",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/admin/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/(cart|checkout|login|register|forgot-password|profile|account|track-order|order-success|privacy-center|customer-experience|rfq)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/(reset-password|order|orders|vendor)/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     }
   ]
 }

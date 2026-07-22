@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Settings, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { CONSENT_EVENT, CONSENT_KEY } from '../utils/analytics';
 
 const getSessionId = () => {
   const key = 'apexConsentSessionId';
@@ -16,8 +17,6 @@ const getSessionId = () => {
   localStorage.setItem(key, next);
   return next;
 };
-
-const CONSENT_KEY = 'apexCookieConsent';
 
 const CookieConsentBanner = () => {
   const { userInfo } = useAuth();
@@ -39,6 +38,7 @@ const CookieConsentBanner = () => {
 
     localStorage.setItem(CONSENT_KEY, JSON.stringify(payload));
     setVisible(false);
+    window.dispatchEvent(new CustomEvent(CONSENT_EVENT, { detail: payload }));
 
     try {
       await axios.post('/api/privacy/consent', payload, {

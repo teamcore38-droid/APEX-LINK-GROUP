@@ -19,7 +19,13 @@ import {
   SHOP_STOCK_FILTER_OPTIONS,
   normalizeProductPayload,
 } from '../utils/productUi';
-import { applySeo, buildCategoryStructuredData } from '../utils/seo';
+import {
+  NOINDEX_ROBOTS,
+  applySeo,
+  buildBreadcrumbStructuredData,
+  buildCategoryStructuredData,
+} from '../utils/seo';
+import { buildCanonicalUrl } from '../utils/seoConfig';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { preloadProductGridImages } from '../utils/imagePreloader';
 
@@ -117,14 +123,23 @@ const CategoryPage = () => {
         const { data } = await axios.get(`/api/categories/${slug}`);
         setCategory(data);
         const seoResponse = await axios.get(`/api/seo/category/${data.slug}`).catch(() => null);
+        const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
         applySeo({
           title: seoResponse?.data?.title || data.seo?.title || data.name,
           description: seoResponse?.data?.description || data.seo?.description || data.description,
           keywords: seoResponse?.data?.keywords || data.seo?.keywords || [data.name, 'Apex Fashion'],
-          canonicalUrl: seoResponse?.data?.canonicalUrl || window.location.href,
+          canonicalUrl,
           ogImage: seoResponse?.data?.ogImage || data.seo?.ogImage || data.image,
           type: 'website',
-          structuredData: seoResponse?.data?.structuredData || buildCategoryStructuredData(data),
+          structuredData: [
+            seoResponse?.data?.structuredData || buildCategoryStructuredData(data, canonicalUrl),
+            seoResponse?.data?.breadcrumbs ||
+              buildBreadcrumbStructuredData([
+                { name: 'Home', url: '/' },
+                { name: 'Categories', url: '/categories' },
+                { name: data.name, url: canonicalUrl },
+              ]),
+          ],
         });
         setSearchInput('');
         setFilters(createCategoryFilters(data.name));
@@ -133,6 +148,12 @@ const CategoryPage = () => {
       } catch (fetchError) {
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load this category right now.');
+        applySeo({
+          title: 'Category Not Found',
+          description: 'This Apex Fashion category is unavailable or could not be found.',
+          canonicalUrl: buildCanonicalUrl(`/category/${slug}`),
+          robots: NOINDEX_ROBOTS,
+        });
       } finally {
         setLoadingCategory(false);
       }

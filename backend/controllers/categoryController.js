@@ -4,6 +4,7 @@ import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { destroyProductImage } from '../utils/cloudinaryService.js';
 import { setPublicCatalogCache } from '../utils/catalogPerformance.js';
+import { notifyIndexNow } from '../utils/indexNowService.js';
 
 const slugify = (value = '') =>
   value
@@ -177,6 +178,7 @@ const createCategory = async (req, res) => {
     await recordAuditLog(req, 'catalog.category.create', 'Category', createdCategory._id, {
       name: createdCategory.name,
     });
+    await notifyIndexNow([`/category/${createdCategory.slug}`, '/categories', '/sitemap.xml']);
     res.status(201).json(createdCategory);
   } catch (error) {
     console.error(error);
@@ -194,6 +196,8 @@ const updateCategory = async (req, res) => {
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
+
+    const previousSlug = category.slug;
 
     const {
       name = category.name,
@@ -262,6 +266,12 @@ const updateCategory = async (req, res) => {
     await recordAuditLog(req, 'catalog.category.update', 'Category', updatedCategory._id, {
       name: updatedCategory.name,
     });
+    await notifyIndexNow([
+      `/category/${previousSlug}`,
+      `/category/${updatedCategory.slug}`,
+      '/categories',
+      '/sitemap.xml',
+    ]);
     res.json(updatedCategory);
   } catch (error) {
     if (error.name === 'CastError') {
@@ -315,6 +325,7 @@ const deleteCategory = async (req, res) => {
     await recordAuditLog(req, 'catalog.category.delete', 'Category', category._id, {
       name: category.name,
     });
+    await notifyIndexNow([`/category/${category.slug}`, '/categories', '/sitemap.xml']);
     res.json({ message: 'Category removed' });
   } catch (error) {
     if (error.name === 'CastError') {

@@ -130,6 +130,7 @@ const ensureDatabaseConnected = async (req, res, next) => {
 
 app.get('/sitemap.xml', ensureDatabaseConnected, (req, res, next) => seoRoutes(req, res, next));
 app.get('/robots.txt', ensureDatabaseConnected, (req, res, next) => seoRoutes(req, res, next));
+app.get('/product-feed.xml', ensureDatabaseConnected, (req, res, next) => seoRoutes(req, res, next));
 
 app.use('/api', ensureDatabaseConnected);
 app.use('/api/categories', categoryRoutes);

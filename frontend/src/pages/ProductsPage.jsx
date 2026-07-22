@@ -18,7 +18,6 @@ import {
   SHOP_STOCK_FILTER_OPTIONS,
   normalizeProductPayload,
 } from '../utils/productUi';
-import { applySeo } from '../utils/seo';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { preloadProductGridImages } from '../utils/imagePreloader';
 import { getCategories } from '../utils/categoryApi';
@@ -156,14 +155,6 @@ const ProductsPage = () => {
   }, [mobilePanel]);
 
   useEffect(() => {
-    applySeo({
-      title: 'Shop Apex Fashion Products',
-      description: 'Browse Apex Fashion clothing, footwear, accessories, and style essentials with clear product details and secure PayHere checkout.',
-      keywords: ['Apex Fashion', 'fashion Sri Lanka', 'clothing', 'footwear', 'accessories'],
-      canonicalUrl: `${window.location.origin}/products`,
-      type: 'website',
-    });
-
     const fetchCategories = async () => {
       try {
         setCategories(await getCategories());

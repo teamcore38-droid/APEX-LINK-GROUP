@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apex-link-v3';
+const CACHE_NAME = 'apex-fashion-v4';
 const APP_SHELL = [
   '/offline.html',
   '/manifest.webmanifest',
@@ -63,9 +63,9 @@ self.addEventListener('fetch', (event) => {
 
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Apex Link Group';
+  const title = data.title || 'Apex Fashion';
   const options = {
-    body: data.body || 'You have a new marketplace update.',
+    body: data.body || 'You have a new Apex Fashion update.',
     icon: '/Apex Logo.jpg',
     badge: '/favicon.svg',
     data: {

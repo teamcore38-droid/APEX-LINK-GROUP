@@ -56,7 +56,7 @@ const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryCl
         setActiveDropdown(parent._id);
       }
     } else {
-      handleCategoryClick(parent.name);
+      handleCategoryClick(parent.slug);
     }
   };
 
@@ -124,7 +124,7 @@ const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryCl
           <div className="mb-2 border-b border-white/10 pb-2">
             <button
               type="button"
-              onClick={() => handleCategoryClick(parent.name)}
+              onClick={() => handleCategoryClick(parent.slug)}
               className="flex w-full items-center justify-between font-serif text-sm font-bold text-brand-accent hover:underline"
             >
               <span>All {parent.name}</span>
@@ -139,7 +139,7 @@ const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryCl
                 <div key={child._id} className="space-y-1">
                   <button
                     type="button"
-                    onClick={() => handleCategoryClick(child.name)}
+                    onClick={() => handleCategoryClick(child.slug)}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-left text-xs font-semibold text-[#fff7ee] transition-colors hover:bg-brand-accent/20 hover:text-brand-accent"
                   >
                     <span>{child.name}</span>
@@ -151,7 +151,7 @@ const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryCl
                         <button
                           key={subChild._id}
                           type="button"
-                          onClick={() => handleCategoryClick(subChild.name)}
+                          onClick={() => handleCategoryClick(subChild.slug)}
                           className="flex w-full items-center justify-between rounded-lg px-2 py-1 text-left text-[11px] text-[#fff7ee]/75 transition-colors hover:bg-brand-accent/15 hover:text-brand-accent"
                         >
                           <span>{subChild.name}</span>
@@ -249,9 +249,9 @@ const CategoryNavBar = () => {
     [childrenByParent]
   );
 
-  const handleCategoryClick = useCallback((categoryName) => {
+  const handleCategoryClick = useCallback((categorySlug) => {
     setActiveDropdown(null);
-    navigate(`/products?category=${encodeURIComponent(categoryName)}`);
+    navigate(`/category/${categorySlug}`);
   }, [navigate]);
 
   // Scroll checking logic
