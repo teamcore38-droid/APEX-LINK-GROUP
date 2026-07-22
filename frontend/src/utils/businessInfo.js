@@ -7,8 +7,8 @@ export const BUSINESS_INFO = {
   dispatchAddress: '[BUSINESS OWNER TO CONFIRM: dispatch and return address]',
   email: 'info@apexfashion.lk',
   phone: '+94 76 566 9961',
-  website: 'https://www.apexfashion.lk',
-  domain: 'www.apexfashion.lk',
+  website: 'https://apexfashion.lk',
+  domain: 'apexfashion.lk',
   supportHours: 'Monday to Saturday, 9:00 AM - 6:00 PM (Sri Lanka time)',
   address: {
     streetAddress: '580/12, Mosque Lane',

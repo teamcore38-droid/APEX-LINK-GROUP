@@ -9,8 +9,8 @@ test('IndexNow payload only includes canonical storefront URLs', () => {
     'https://malicious.example/product/456',
   ]);
 
-  assert.equal(payload.host, 'www.apexfashion.lk');
-  assert.deepEqual(payload.urlList, ['https://www.apexfashion.lk/product/123']);
+  assert.equal(payload.host, 'apexfashion.lk');
+  assert.deepEqual(payload.urlList, ['https://apexfashion.lk/product/123']);
   assert.equal(payload.keyLocation.endsWith(`/${payload.key}.txt`), true);
 });
 

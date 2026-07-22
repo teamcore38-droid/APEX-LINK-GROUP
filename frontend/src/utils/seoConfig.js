@@ -1,5 +1,5 @@
 const SITE_NAME = 'Apex Fashion';
-const SITE_URL = 'https://www.apexfashion.lk';
+const SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_IMAGE = '/hero/hero-bg-4.webp';
 const DEFAULT_DESCRIPTION =
   'Shop shoes, dresses, clothing, handbags, watches, fragrances, and fashion accessories online in Sri Lanka with Apex Fashion.';

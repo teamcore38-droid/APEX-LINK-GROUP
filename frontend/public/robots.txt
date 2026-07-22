@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://www.apexfashion.lk/sitemap.xml
+Sitemap: https://apexfashion.lk/sitemap.xml

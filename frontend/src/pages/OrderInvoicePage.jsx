@@ -16,7 +16,7 @@ const DEFAULT_BUSINESS_INFO = {
   email: 'info@apexfashion.lk',
   phone: '+94 76 566 9961',
   address: '[BUSINESS OWNER TO CONFIRM: registered business address in Sri Lanka]',
-  website: 'https://www.apexfashion.lk',
+  website: 'https://apexfashion.lk',
 };
 
 const LEGACY_BUSINESS_ADDRESS = '580/12, Moque Lane, Nawala, Rajagiriya, Sri Lanka';

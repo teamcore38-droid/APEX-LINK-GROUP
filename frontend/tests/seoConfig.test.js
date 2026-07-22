@@ -8,9 +8,9 @@ import {
 } from '../src/utils/seoConfig.js';
 import { injectSeoHead } from '../server/seoResponse.js';
 
-test('SEO routes use the canonical www storefront domain', () => {
-  assert.equal(buildCanonicalUrl('/'), 'https://www.apexfashion.lk/');
-  assert.equal(buildCanonicalUrl('/products/'), 'https://www.apexfashion.lk/products');
+test('SEO routes use the canonical apex storefront domain', () => {
+  assert.equal(buildCanonicalUrl('/'), 'https://apexfashion.lk/');
+  assert.equal(buildCanonicalUrl('/products/'), 'https://apexfashion.lk/products');
   assert.equal(getPublicRouteSeo('/products').title.includes('Shoes'), true);
   assert.equal(Object.keys(PUBLIC_ROUTE_SEO).includes('/shipping'), true);
 });
@@ -34,7 +34,7 @@ test('server-rendered metadata replaces generic head tags without duplicates', (
   });
 
   assert.match(html, /<title>Women Shoes in Sri Lanka \| Apex Fashion<\/title>/);
-  assert.match(html, /https:\/\/www\.apexfashion\.lk\/category\/women-shoes/);
+  assert.match(html, /https:\/\/apexfashion\.lk\/category\/women-shoes/);
   assert.match(html, /https:\/\/images\.example\/shoes\.jpg/);
   assert.equal((html.match(/rel="canonical"/g) || []).length, 1);
   assert.equal((html.match(/application\/ld\+json/g) || []).length, 1);

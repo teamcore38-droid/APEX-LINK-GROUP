@@ -24,9 +24,9 @@ test('buildProductSeo creates product structured data', () => {
 
   assert.equal(seo.structuredData['@type'], 'Product');
   assert.equal(seo.structuredData.offers.availability, 'https://schema.org/InStock');
-  assert.equal(seo.canonicalUrl, 'https://www.apexfashion.lk/product/product-id');
+  assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/product/product-id');
   assert.equal(seo.breadcrumbs['@type'], 'BreadcrumbList');
-  assert.equal(seo.structuredData.offers.seller['@id'], 'https://www.apexfashion.lk/#organization');
+  assert.equal(seo.structuredData.offers.seller['@id'], 'https://apexfashion.lk/#organization');
 });
 
 test('buildCategorySeo creates canonical collection metadata', () => {
@@ -38,7 +38,7 @@ test('buildCategorySeo creates canonical collection metadata', () => {
     seo: {},
   });
 
-  assert.equal(seo.canonicalUrl, 'https://www.apexfashion.lk/category/women-shoes');
+  assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/category/women-shoes');
   assert.equal(seo.structuredData['@type'], 'CollectionPage');
   assert.equal(seo.breadcrumbs.itemListElement.length, 3);
 });

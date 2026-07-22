@@ -1,4 +1,4 @@
-const DEFAULT_SITE_URL = 'https://www.apexfashion.lk';
+const DEFAULT_SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_INDEXNOW_KEY = '1ef018ac3d1ac76bbd2ec0b7d79ce2ce';
 const DEFAULT_ENDPOINT = 'https://api.indexnow.org/indexnow';
 
@@ -7,7 +7,7 @@ const getSiteUrl = () => {
 
   try {
     const url = new URL(configured);
-    if (url.hostname === 'apexfashion.lk') url.hostname = 'www.apexfashion.lk';
+    if (url.hostname === 'www.apexfashion.lk') url.hostname = 'apexfashion.lk';
     return url.href.replace(/\/+$/, '');
   } catch {
     return DEFAULT_SITE_URL;

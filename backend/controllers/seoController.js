@@ -1,7 +1,7 @@
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
 
-const DEFAULT_SITE_URL = 'https://www.apexfashion.lk';
+const DEFAULT_SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_IMAGE_PATH = '/hero/hero-bg-4.webp';
 const STORE_ID = `${DEFAULT_SITE_URL}/#organization`;
 
@@ -12,8 +12,8 @@ const getSiteUrl = () => {
 
   try {
     const url = new URL(configuredUrl);
-    if (url.hostname === 'apexfashion.lk') {
-      url.hostname = 'www.apexfashion.lk';
+    if (url.hostname === 'www.apexfashion.lk') {
+      url.hostname = 'apexfashion.lk';
     }
     return url.href.replace(/\/+$/, '');
   } catch {

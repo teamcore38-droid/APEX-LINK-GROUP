@@ -187,7 +187,7 @@ const getBusinessInfoForDocuments = () => ({
   address:
     process.env.BUSINESS_ADDRESS ||
     '[BUSINESS OWNER TO CONFIRM: registered business address in Sri Lanka]',
-  website: process.env.BUSINESS_WEBSITE || process.env.FRONTEND_URL || 'https://www.apexfashion.lk',
+  website: process.env.BUSINESS_WEBSITE || process.env.FRONTEND_URL || 'https://apexfashion.lk',
 });
 
 const buildInvoicePayload = (order) => ({

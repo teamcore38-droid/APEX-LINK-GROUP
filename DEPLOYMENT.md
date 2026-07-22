@@ -267,15 +267,16 @@ Production recommendation:
 
 ## 12. Search and SEO Go-Live Checklist
 
-The production storefront uses `https://www.apexfashion.lk` as its canonical domain.
+The production storefront uses `https://apexfashion.lk` as its canonical domain.
 
-1. Set `FRONTEND_URL=https://www.apexfashion.lk` on the backend.
-2. Set `VITE_API_URL` or `SEO_API_URL` on the frontend deployment so dynamic product metadata, the sitemap, and the product feed can reach the backend.
-3. Add the Google Search Console verification token as `VITE_GOOGLE_SITE_VERIFICATION` and redeploy.
-4. Add the Bing Webmaster Tools verification token as `VITE_BING_SITE_VERIFICATION` and redeploy.
-5. Submit `https://www.apexfashion.lk/sitemap.xml` in Google Search Console and Bing Webmaster Tools.
-6. Verify `https://www.apexfashion.lk/product-feed.xml`, then add it as a scheduled feed in Google Merchant Center.
-7. Create a GA4 web data stream and set `VITE_GA_MEASUREMENT_ID`. Analytics loads only after analytics consent.
-8. Confirm the IndexNow key file is reachable at `https://www.apexfashion.lk/1ef018ac3d1ac76bbd2ec0b7d79ce2ce.txt`.
-9. Test representative product and category URLs with Google Rich Results Test and Search Console URL Inspection after deployment.
-10. Keep product names, descriptions, images, prices, availability, categories, SKUs, sizes, and colors complete and accurate in the admin catalog.
+1. In Vercel Domains, make `apexfashion.lk` the primary production domain and configure `www.apexfashion.lk` to redirect permanently to it.
+2. Set `FRONTEND_URL=https://apexfashion.lk` on the backend.
+3. Set `VITE_API_URL` or `SEO_API_URL` on the frontend deployment so dynamic product metadata, the sitemap, and the product feed can reach the backend.
+4. Add the Google Search Console verification token as `VITE_GOOGLE_SITE_VERIFICATION` and redeploy.
+5. Add the Bing Webmaster Tools verification token as `VITE_BING_SITE_VERIFICATION` and redeploy.
+6. Submit `https://apexfashion.lk/sitemap.xml` in Google Search Console and Bing Webmaster Tools.
+7. Verify `https://apexfashion.lk/product-feed.xml`, then add it as a scheduled feed in Google Merchant Center.
+8. Create a GA4 web data stream and set `VITE_GA_MEASUREMENT_ID`. Analytics loads only after analytics consent.
+9. Confirm the IndexNow key file is reachable at `https://apexfashion.lk/1ef018ac3d1ac76bbd2ec0b7d79ce2ce.txt`.
+10. Test representative product and category URLs with Google Rich Results Test and Search Console URL Inspection after deployment.
+11. Keep product names, descriptions, images, prices, availability, categories, SKUs, sizes, and colors complete and accurate in the admin catalog.

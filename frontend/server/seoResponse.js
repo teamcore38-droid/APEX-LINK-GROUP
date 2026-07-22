@@ -1,4 +1,4 @@
-const SITE_URL = 'https://www.apexfashion.lk';
+const SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_IMAGE = `${SITE_URL}/hero/hero-bg-4.webp`;
 
 const getApiBaseUrl = () =>
@@ -6,7 +6,7 @@ const getApiBaseUrl = () =>
 
 const getRequestOrigin = (req) => {
   const forwardedProto = String(req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
-  const forwardedHost = String(req.headers['x-forwarded-host'] || req.headers.host || 'www.apexfashion.lk')
+  const forwardedHost = String(req.headers['x-forwarded-host'] || req.headers.host || 'apexfashion.lk')
     .split(',')[0]
     .trim();
   return `${forwardedProto}://${forwardedHost}`;
