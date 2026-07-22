@@ -8,6 +8,10 @@ import nodemailer from 'nodemailer';
   - EMAIL_PASS
   - EMAIL_FROM
   - FRONTEND_URL
+  Optional:
+  - EMAIL_REPLY_TO
+  - EMAIL_SEND_MAX_ATTEMPTS
+  - EMAIL_RETRY_DELAY_MS
 
   Development can run safely without them. In that case the service falls back
   to a no-op logger and the app flow continues without crashing.
@@ -15,16 +19,155 @@ import nodemailer from 'nodemailer';
 
 let transporter = null;
 
-const isEmailConfigured = () =>
-  Boolean(
-    process.env.EMAIL_HOST &&
-      process.env.EMAIL_PORT &&
-      process.env.EMAIL_USER &&
-      process.env.EMAIL_PASS &&
-      process.env.EMAIL_FROM
-  );
+const REQUIRED_EMAIL_ENV_VARS = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'EMAIL_FROM'];
+const TRANSIENT_SMTP_RESPONSE_CODES = new Set([421, 450, 451, 452, 454]);
+const RETRYABLE_NETWORK_ERROR_CODES = new Set([
+  'EAI_AGAIN',
+  'ECONNECTION',
+  'ECONNRESET',
+  'ESOCKET',
+  'ETIMEDOUT',
+]);
+
+let emailConfigurationWarningLogged = false;
+
+const trimEnv = (value) => String(value || '').trim();
+
+const parsePositiveInteger = (value, fallback, { min = 1, max = Number.MAX_SAFE_INTEGER } = {}) => {
+  const parsed = Number.parseInt(trimEnv(value), 10);
+
+  if (!Number.isInteger(parsed)) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(parsed, min), max);
+};
+
+const sleep = (ms) => new Promise((resolve) => {
+  setTimeout(resolve, ms);
+});
+
+const getEmailConfiguration = () => {
+  const host = trimEnv(process.env.EMAIL_HOST);
+  const rawPort = trimEnv(process.env.EMAIL_PORT);
+  const port = Number.parseInt(rawPort, 10);
+  const user = trimEnv(process.env.EMAIL_USER);
+  const pass = trimEnv(process.env.EMAIL_PASS);
+  const from = trimEnv(process.env.EMAIL_FROM);
+  const replyTo = trimEnv(process.env.EMAIL_REPLY_TO);
+
+  const missing = REQUIRED_EMAIL_ENV_VARS.filter((key) => !trimEnv(process.env[key]));
+  const invalid = [];
+
+  if (rawPort && (!Number.isInteger(port) || port < 1 || port > 65535)) {
+    invalid.push('EMAIL_PORT must be a number between 1 and 65535');
+  }
+
+  return {
+    configured: missing.length === 0 && invalid.length === 0,
+    host,
+    port,
+    user,
+    pass,
+    from,
+    replyTo,
+    secure: port === 465,
+    missing,
+    invalid,
+  };
+};
+
+const getEmailConfigurationStatus = () => {
+  const { configured, host, port, from, replyTo, secure, missing, invalid } = getEmailConfiguration();
+
+  return {
+    configured,
+    host,
+    port,
+    from,
+    replyTo,
+    secure,
+    missing,
+    invalid,
+  };
+};
+
+const isEmailConfigured = () => getEmailConfiguration().configured;
 
 const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
+
+const getEmailRetryOptions = () => ({
+  maxAttempts: parsePositiveInteger(process.env.EMAIL_SEND_MAX_ATTEMPTS, 3, { min: 1, max: 5 }),
+  retryDelayMs: parsePositiveInteger(process.env.EMAIL_RETRY_DELAY_MS, 750, { min: 100, max: 10000 }),
+});
+
+const getRetryDelay = (attempt, retryDelayMs) =>
+  retryDelayMs * 2 ** Math.max(attempt - 1, 0);
+
+const shouldRetryEmailError = (error) => {
+  if (error?.command === 'AUTH' || error?.code === 'EAUTH') {
+    return false;
+  }
+
+  const responseCode = Number(error?.responseCode);
+
+  if (Number.isInteger(responseCode)) {
+    return TRANSIENT_SMTP_RESPONSE_CODES.has(responseCode);
+  }
+
+  if (error?.code) {
+    return RETRYABLE_NETWORK_ERROR_CODES.has(error.code);
+  }
+
+  return true;
+};
+
+const maskEmailAddress = (value = '') => {
+  const email = trimEnv(value);
+  const atIndex = email.indexOf('@');
+
+  if (atIndex <= 1) {
+    return email ? '[redacted-email]' : '';
+  }
+
+  return `${email[0]}***${email.slice(atIndex)}`;
+};
+
+const sanitizeEmailErrorMessage = (message = '') => {
+  const emailConfig = getEmailConfiguration();
+
+  return [emailConfig.user, emailConfig.pass]
+    .filter(Boolean)
+    .reduce(
+      (safeMessage, secret) => safeMessage.split(secret).join('[redacted]'),
+      trimEnv(message)
+    );
+};
+
+const getEmailErrorLogContext = ({ label, to, attempt, maxAttempts, error }) => ({
+  label,
+  to: maskEmailAddress(to),
+  attempt,
+  maxAttempts,
+  code: error?.code,
+  responseCode: error?.responseCode,
+  command: error?.command,
+  message: sanitizeEmailErrorMessage(error?.message || error),
+});
+
+const logEmailConfigurationProblem = (label, emailConfig) => {
+  if (process.env.NODE_ENV !== 'production' || emailConfigurationWarningLogged) {
+    return;
+  }
+
+  emailConfigurationWarningLogged = true;
+  console.warn('[emailService:configuration]', {
+    label,
+    configured: false,
+    missing: emailConfig.missing,
+    invalid: emailConfig.invalid,
+  });
+};
 
 const getTransporter = () => {
   if (!isEmailConfigured()) {
@@ -32,13 +175,21 @@ const getTransporter = () => {
   }
 
   if (!transporter) {
+    const emailConfig = getEmailConfiguration();
+
     transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,
-      port: Number(process.env.EMAIL_PORT),
-      secure: Number(process.env.EMAIL_PORT) === 465,
+      host: emailConfig.host,
+      port: emailConfig.port,
+      secure: emailConfig.secure,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: emailConfig.user,
+        pass: emailConfig.pass,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      requireTLS: emailConfig.port === 587,
+      tls: {
+        minVersion: 'TLSv1.2',
       },
     });
   }
@@ -63,7 +214,11 @@ const sendMailSafe = async ({ label, to, subject, html, developmentPayload = {} 
     return logInDevelopment(`${label}:missing-recipient`, developmentPayload);
   }
 
-  if (!isEmailConfigured()) {
+  const emailConfig = getEmailConfiguration();
+
+  if (!emailConfig.configured) {
+    logEmailConfigurationProblem(label, emailConfig);
+
     return logInDevelopment(label, {
       to,
       subject,
@@ -71,31 +226,64 @@ const sendMailSafe = async ({ label, to, subject, html, developmentPayload = {} 
     });
   }
 
-  try {
-    const activeTransporter = getTransporter();
+  const { maxAttempts, retryDelayMs } = getEmailRetryOptions();
 
-    await activeTransporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to,
-      subject,
-      html,
-    });
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const activeTransporter = getTransporter();
 
-    return {
-      sent: true,
-      queued: false,
-      skipped: false,
-    };
-  } catch (error) {
-    console.error(`[emailService:${label}]`, error.message);
+      await activeTransporter.sendMail({
+        from: emailConfig.from,
+        to,
+        subject,
+        html,
+        ...(emailConfig.replyTo ? { replyTo: emailConfig.replyTo } : {}),
+      });
 
-    return {
-      sent: false,
-      queued: false,
-      skipped: false,
-      error: error.message,
-    };
+      if (attempt > 1) {
+        console.info('[emailService:retry-success]', {
+          label,
+          to: maskEmailAddress(to),
+          attempt,
+        });
+      }
+
+      return {
+        sent: true,
+        queued: false,
+        skipped: false,
+        attempts: attempt,
+      };
+    } catch (error) {
+      const retry = attempt < maxAttempts && shouldRetryEmailError(error);
+      const logContext = getEmailErrorLogContext({ label, to, attempt, maxAttempts, error });
+
+      if (retry) {
+        console.warn('[emailService:retry]', logContext);
+        transporter = null;
+        await sleep(getRetryDelay(attempt, retryDelayMs));
+        continue;
+      }
+
+      console.error(`[emailService:${label}]`, logContext);
+
+      return {
+        sent: false,
+        queued: false,
+        skipped: false,
+        attempts: attempt,
+        error: sanitizeEmailErrorMessage(error?.message || error),
+      };
+    }
   }
+
+  return {
+    sent: false,
+    queued: false,
+    skipped: false,
+    attempts: maxAttempts,
+    error: 'Email send failed after retry attempts',
+  };
 };
 
 const wrapTemplate = ({ title, preheader, body }) => `
@@ -457,7 +645,27 @@ const sendAbandonedCartEmail = async (cart) => {
   });
 };
 
+const sendTestEmail = async (to = process.env.EMAIL_TEST_TO || process.env.EMAIL_FROM) =>
+  sendMailSafe({
+    label: 'smtp-test',
+    to,
+    subject: 'Apex Link Group SMTP test',
+    html: wrapTemplate({
+      title: 'SMTP is configured',
+      preheader: 'This confirms that the Apex Link Group backend can send email through your SMTP provider.',
+      body: `
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.8;color:#3a4a63;">
+          This test email was sent by the Apex Link Group backend. If you received it, SMTP delivery is ready for password resets, order updates, invoices, refunds, contact messages, newsletters, and abandoned cart reminders.
+        </p>
+      `,
+    }),
+    developmentPayload: {
+      to,
+    },
+  });
+
 export {
+  getEmailConfigurationStatus,
   isEmailConfigured,
   sendOrderConfirmationEmail,
   sendOrderStatusUpdateEmail,
@@ -470,4 +678,5 @@ export {
   sendContactAutoReply,
   sendNewsletterWelcomeEmail,
   sendAbandonedCartEmail,
+  sendTestEmail,
 };

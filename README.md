@@ -14,7 +14,7 @@ Premium multi-industry marketplace (textiles, spices & food, IT solutions, indus
 - Node.js 18+
 - MongoDB (Atlas or local)
 - PayHere merchant account (sandbox for testing, live for production)
-- SMTP provider (for production email delivery)
+- Brevo SMTP account (for production email delivery)
 
 ## Local Setup
 
@@ -103,6 +103,10 @@ Optional:
 - `BUSINESS_PHONE`
 - `BUSINESS_ADDRESS`
 - `BUSINESS_WEBSITE`
+- `EMAIL_REPLY_TO`
+- `EMAIL_TEST_TO` (local SMTP test recipient)
+- `EMAIL_SEND_MAX_ATTEMPTS` (default `3`)
+- `EMAIL_RETRY_DELAY_MS` (default `750`)
 
 ### Frontend (`frontend/.env`)
 
@@ -150,6 +154,8 @@ ngrok http 5000
 
 - Production: SMTP sends password reset, order, status, invoice, refund, and contact emails.
 - Development: if SMTP is missing, the app falls back safely to non-crashing no-op/dev logging behavior.
+- Brevo SMTP: use `EMAIL_HOST=smtp-relay.brevo.com`, `EMAIL_PORT=587`, `EMAIL_USER` as your Brevo SMTP login, `EMAIL_PASS` as your Brevo SMTP key, and `EMAIL_FROM` as a verified sender such as `Apex Fashion <orders@apexfashion.lk>`.
+- Local SMTP smoke test: from `backend/`, run `npm run email:test -- you@example.com`.
 
 ## Seed and Data Safety
 

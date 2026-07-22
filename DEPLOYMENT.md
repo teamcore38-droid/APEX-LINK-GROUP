@@ -39,6 +39,10 @@ Recommended:
 - `BUSINESS_PHONE`
 - `BUSINESS_ADDRESS`
 - `BUSINESS_WEBSITE`
+- `EMAIL_REPLY_TO`
+- `EMAIL_TEST_TO`
+- `EMAIL_SEND_MAX_ATTEMPTS`
+- `EMAIL_RETRY_DELAY_MS`
 
 ### Frontend (`frontend/.env`)
 
@@ -125,20 +129,46 @@ Expected app behavior:
 
 ## 6. Email Production Setup
 
-SMTP env:
+### Brevo SMTP env
+
+Add these variables to the backend deployment environment. In Vercel, add them under your backend/API project: **Settings -> Environment Variables**.
+
+```env
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USER=<Brevo SMTP login>
+EMAIL_PASS=<Brevo SMTP key>
+EMAIL_FROM=Apex Fashion <orders@apexfashion.lk>
+EMAIL_REPLY_TO=support@apexfashion.lk
+EMAIL_SEND_MAX_ATTEMPTS=3
+EMAIL_RETRY_DELAY_MS=750
+```
+
+Brevo notes:
+
+- Use the Brevo SMTP key for `EMAIL_PASS`, not a Brevo API key.
+- `EMAIL_FROM` must use a sender/domain verified in Brevo.
+- Port `587` is recommended for STARTTLS. Port `465` can also be used for SSL.
+
+Local smoke test:
+
+```bash
+cd backend
+npm run email:test -- you@example.com
+```
+
+Redeploy the backend after changing production environment variables so the Node process receives the new SMTP settings.
+
+### SMTP env reference
 
 - `EMAIL_HOST`
 - `EMAIL_PORT`
 - `EMAIL_USER`
 - `EMAIL_PASS`
 - `EMAIL_FROM`
-
-Recommended providers:
-
-- SendGrid SMTP
-- Mailgun SMTP
-- Amazon SES SMTP
-- Gmail SMTP for development/testing only
+- `EMAIL_REPLY_TO` (optional)
+- `EMAIL_SEND_MAX_ATTEMPTS` (optional, default `3`)
+- `EMAIL_RETRY_DELAY_MS` (optional, default `750`)
 
 Email flows:
 

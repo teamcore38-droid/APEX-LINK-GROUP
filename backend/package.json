@@ -11,6 +11,7 @@
     "test:e2e": "node --test \"tests/e2e/*.test.js\"",
     "backup:create": "node scripts/backupDatabase.js create",
     "backup:restore": "node scripts/backupDatabase.js restore",
+    "email:test": "node scripts/sendTestEmail.js",
     "openapi:check": "node scripts/checkOpenApi.js",
     "perf:checkout": "node scripts/loadCheckoutQuote.js",
     "uptime:check": "node scripts/uptimeCheck.js",
