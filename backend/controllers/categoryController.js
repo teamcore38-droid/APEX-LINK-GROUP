@@ -363,7 +363,10 @@ const deleteCategory = async (req, res) => {
     }
 
     const assignedProducts = await Product.countDocuments({
-      category: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') },
+      $or: [
+        { category: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') } },
+        { categories: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') } },
+      ],
     });
 
     if (assignedProducts > 0) {

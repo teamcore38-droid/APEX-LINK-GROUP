@@ -40,6 +40,7 @@ export const createInitialProductForm = () => ({
   name: '',
   slug: '',
   category: '',
+  categories: [],
   price: '0',
   compareAtPrice: '',
   weight: '',
@@ -301,11 +302,20 @@ export const getProductStatusBadge = (product = {}) => {
 export const buildProductFormFromProduct = (product = {}) => {
   const gallery = getProductImageAssets(product);
   const [primaryImage = { url: product.image || '', publicId: product.imagePublicId || '' }, ...additionalImages] = gallery;
+  const categories = [
+    product.category,
+    ...(Array.isArray(product.categories) ? product.categories : []),
+  ]
+    .map((category) => String(category || '').trim())
+    .filter(Boolean);
+  const uniqueCategories = [...new Set(categories.map((category) => category.toLowerCase()))]
+    .map((lowerCategory) => categories.find((category) => category.toLowerCase() === lowerCategory));
 
   return {
     name: product.name || '',
     slug: product.slug || '',
     category: product.category || '',
+    categories: uniqueCategories,
     price: product.price ?? 0,
     compareAtPrice: product.compareAtPrice ?? '',
     weight: product.weight || '',
@@ -341,6 +351,14 @@ export const buildProductFormFromProduct = (product = {}) => {
 export const buildProductPayloadFromForm = (form) => {
   const gallery = getProductFormGalleryImages(form);
   const primaryImage = gallery[0] || { url: '', publicId: '' };
+  const categoryInputs = [
+    form.category,
+    ...(Array.isArray(form.categories) ? form.categories : []),
+  ]
+    .map((category) => String(category || '').trim())
+    .filter(Boolean);
+  const categories = [...new Set(categoryInputs.map((category) => category.toLowerCase()))]
+    .map((lowerCategory) => categoryInputs.find((category) => category.toLowerCase() === lowerCategory));
   const variants = JSON.parse(form.variantsJson || '[]').map((variant) => ({
     ...variant,
     price: Number(variant.price || 0),
@@ -367,6 +385,7 @@ export const buildProductPayloadFromForm = (form) => {
     name: form.name.trim(),
     slug: form.slug.trim(),
     category: form.category,
+    categories,
     price: Number(form.price),
     compareAtPrice: form.compareAtPrice === '' ? 0 : Number(form.compareAtPrice),
     weight: form.weight.trim(),

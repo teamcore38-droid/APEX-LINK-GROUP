@@ -104,3 +104,36 @@ test('variant gallery helpers preserve color-specific image ordering', () => {
     { url: 'legacy-black.jpg', publicId: '' },
   ]);
 });
+
+test('product payload preserves primary and additional categories', () => {
+  const payload = buildProductPayloadFromForm({
+    name: 'Evening Heel',
+    slug: 'evening-heel',
+    category: 'Shoes',
+    categories: ['Shoes', 'Women', 'Occasion Wear', 'Women'],
+    price: '1200',
+    compareAtPrice: '',
+    weight: '',
+    countInStock: '4',
+    lowStockThreshold: '2',
+    image: '',
+    imagePublicId: '',
+    imageList: '',
+    imageAssets: [],
+    variantsJson: '[]',
+    hasSizes: false,
+    sizes: [],
+    shortDescription: '',
+    description: 'Elegant evening heel with cushioned lining.',
+    origin: '',
+    ingredients: '',
+    brand: 'Apex Fashion',
+    sku: '',
+    isFeatured: false,
+    isActive: true,
+    isBestSeller: false,
+  });
+
+  assert.equal(payload.category, 'Shoes');
+  assert.deepEqual(payload.categories, ['Shoes', 'Women', 'Occasion Wear']);
+});

@@ -51,6 +51,13 @@ const getFormPublicIds = (form) => {
   return getPublicIds([...(form.imageAssets || []), ...variantImages]);
 };
 
+const getUniqueCategoryNames = (values = []) => {
+  const categoryNames = values.map((value) => String(value || '').trim()).filter(Boolean);
+
+  return [...new Set(categoryNames.map((value) => value.toLowerCase()))]
+    .map((lowerValue) => categoryNames.find((value) => value.toLowerCase() === lowerValue));
+};
+
 const validateForm = (form) => {
   if (!form.name.trim()) {
     return 'Product name is required.';
@@ -236,6 +243,30 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
     return map;
   }, [categories]);
+
+  const categorySelectOptions = useMemo(
+    () => [
+      { value: '', label: 'Select a category' },
+      ...categories.map((category) => {
+        const fullPath = categoryPathMap.get(category._id) || category.name;
+        return {
+          value: category.name,
+          label: `${fullPath}${category.isActive ? '' : ' (Inactive)'}`,
+        };
+      }),
+    ],
+    [categories, categoryPathMap]
+  );
+
+  const assignedCategoryNames = useMemo(
+    () => new Set(getUniqueCategoryNames([form.category, ...(form.categories || [])])),
+    [form.categories, form.category]
+  );
+
+  const additionalCategoryOptions = useMemo(
+    () => categories.filter((category) => category.name !== form.category),
+    [categories, form.category]
+  );
 
   const previewProduct = useMemo(() => {
     try {
@@ -984,19 +1015,78 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                       setForm((currentForm) => ({
                         ...currentForm,
                         category: nextValue,
+                        categories: getUniqueCategoryNames([
+                          nextValue,
+                          ...(currentForm.categories || []).filter((categoryName) => categoryName !== currentForm.category),
+                        ]),
                       }));
                     }}
-                    options={[
-                      { value: '', label: 'Select a category' },
-                      ...categories.map((category) => {
-                        const fullPath = categoryPathMap.get(category._id) || category.name;
-                        return {
-                          value: category.name,
-                          label: `${fullPath}${category.isActive ? '' : ' (Inactive)'}`,
-                        };
-                      }),
-                    ]}
+                    options={categorySelectOptions}
                   />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Primary category controls the product breadcrumb and main catalog label.
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <label className="block text-sm font-semibold text-brand-dark">
+                      Additional Categories
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      {Math.max(assignedCategoryNames.size - (form.category ? 1 : 0), 0)} extra selected
+                    </span>
+                  </div>
+                  <div className="grid gap-2 rounded-2xl border border-gray-200 bg-[#fff7ee] p-3 sm:grid-cols-2">
+                    {additionalCategoryOptions.length > 0 ? (
+                      additionalCategoryOptions.map((category) => {
+                        const isChecked = assignedCategoryNames.has(category.name);
+                        const fullPath = categoryPathMap.get(category._id) || category.name;
+
+                        return (
+                          <label
+                            key={category._id}
+                            className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                              isChecked
+                                ? 'border-brand-primary bg-white text-brand-dark'
+                                : 'border-transparent bg-white/50 text-gray-600 hover:border-brand-accent/40 hover:bg-white'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(event) => {
+                                setError('');
+                                setSuccess('');
+                                setForm((currentForm) => {
+                                  const currentCategories = getUniqueCategoryNames([
+                                    currentForm.category,
+                                    ...(currentForm.categories || []),
+                                  ]);
+                                  const nextCategories = event.target.checked
+                                    ? getUniqueCategoryNames([...currentCategories, category.name])
+                                    : currentCategories.filter((categoryName) => categoryName !== category.name);
+
+                                  return {
+                                    ...currentForm,
+                                    categories: nextCategories,
+                                  };
+                                });
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-accent"
+                            />
+                            <span className="min-w-0 flex-1 truncate">
+                              {fullPath}{category.isActive ? '' : ' (Inactive)'}
+                            </span>
+                          </label>
+                        );
+                      })
+                    ) : (
+                      <p className="rounded-xl bg-white px-3 py-4 text-sm text-gray-500">
+                        Add more categories first to attach this product to multiple places.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div>

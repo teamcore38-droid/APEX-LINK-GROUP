@@ -125,7 +125,8 @@ const buildSearchFilter = (query = {}, options = {}) => {
     const categoryPattern = (categoryNames.length > 0 ? categoryNames : [category])
       .map((categoryName) => `^${escapeRegex(categoryName)}$`)
       .join('|');
-    filters.push({ category: { $regex: new RegExp(categoryPattern, 'i') } });
+    const categoryRegex = new RegExp(categoryPattern, 'i');
+    filters.push({ $or: [{ category: categoryRegex }, { categories: categoryRegex }] });
   }
 
   if (brand) {
@@ -200,7 +201,22 @@ const getAdvancedSearch = async (req, res) => {
       {
         $facet: {
           metadata: [{ $count: 'total' }],
-          categories: [{ $group: { _id: '$category', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }],
+          categories: [
+            {
+              $project: {
+                assignedCategories: {
+                  $setUnion: [
+                    [{ $ifNull: ['$category', ''] }],
+                    { $ifNull: ['$categories', []] },
+                  ],
+                },
+              },
+            },
+            { $unwind: '$assignedCategories' },
+            { $match: { assignedCategories: { $ne: '' } } },
+            { $group: { _id: '$assignedCategories', count: { $sum: 1 } } },
+            { $sort: { count: -1, _id: 1 } },
+          ],
           brands: [{ $group: { _id: '$brand', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }],
           origins: [{ $group: { _id: '$origin', count: { $sum: 1 } } }, { $sort: { count: -1, _id: 1 } }],
           availability: [

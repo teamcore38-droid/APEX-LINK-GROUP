@@ -41,10 +41,12 @@ test('buildSearchFilter can match a parent category and active child categories'
     { categoryNames: ['Women', 'Dresses', 'Heels'] }
   );
 
-  const categoryFilter = filter.$and.find((entry) => entry.category)?.category;
+  const categoryFilter = filter.$and.find((entry) => entry.$or)?.$or;
 
   assert.equal(error, undefined);
-  assert.match(String(categoryFilter.$regex), /\^Women\$/);
-  assert.match(String(categoryFilter.$regex), /\^Dresses\$/);
-  assert.match(String(categoryFilter.$regex), /\^Heels\$/);
+  assert.equal(categoryFilter.length, 2);
+  assert.match(String(categoryFilter[0].category), /\^Women\$/);
+  assert.match(String(categoryFilter[0].category), /\^Dresses\$/);
+  assert.match(String(categoryFilter[0].category), /\^Heels\$/);
+  assert.match(String(categoryFilter[1].categories), /\^Dresses\$/);
 });

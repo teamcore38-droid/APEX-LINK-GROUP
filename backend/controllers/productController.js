@@ -264,6 +264,46 @@ const resolveCategoryName = async (value = '') => {
   return category?.name || trimmedValue;
 };
 
+const getCategoryInputs = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value.split(',');
+  }
+
+  return [];
+};
+
+const resolveProductCategoryNames = async ({ primaryCategory = '', categories = [] }) => {
+  const inputs = [primaryCategory, ...getCategoryInputs(categories)]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  const uniqueInputs = [...new Set(inputs.map((value) => value.toLowerCase()))]
+    .map((lowerValue) => inputs.find((value) => value.toLowerCase() === lowerValue));
+  const resolvedCategories = [];
+  const invalidCategories = [];
+
+  for (const input of uniqueInputs) {
+    const category = await findCategoryByValue(input);
+
+    if (!category) {
+      invalidCategories.push(input);
+      continue;
+    }
+
+    if (!resolvedCategories.some((name) => name.toLowerCase() === category.name.toLowerCase())) {
+      resolvedCategories.push(category.name);
+    }
+  }
+
+  return {
+    categories: resolvedCategories,
+    invalidCategories,
+  };
+};
+
 const findProductByIdWithVisibility = async (productId, reqUser) => {
   if (!mongoose.Types.ObjectId.isValid(productId)) {
     return null;
@@ -302,20 +342,18 @@ const buildCategoryFilter = async (categoryValue) => {
 
   const categoryDoc = await findCategoryByValue(trimmedCategory);
   if (!categoryDoc) {
+    const categoryRegex = new RegExp(`^${escapeRegex(trimmedCategory)}$`, 'i');
     return {
-      category: {
-        $regex: new RegExp(`^${escapeRegex(trimmedCategory)}$`, 'i'),
-      },
+      $or: [{ category: categoryRegex }, { categories: categoryRegex }],
     };
   }
 
   const categoryNames = await getAllDescendantCategoryNames(categoryDoc);
   const regexPattern = categoryNames.map((name) => `^${escapeRegex(name)}$`).join('|');
+  const categoryRegex = new RegExp(regexPattern, 'i');
 
   return {
-    category: {
-      $regex: new RegExp(regexPattern, 'i'),
-    },
+    $or: [{ category: categoryRegex }, { categories: categoryRegex }],
   };
 };
 
@@ -468,9 +506,15 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
     errors.push('Product slug already exists');
   }
 
-  const categoryDocument = categoryInput ? await findCategoryByValue(categoryInput) : null;
+  const {
+    categories: normalizedCategories,
+    invalidCategories,
+  } = await resolveProductCategoryNames({
+    primaryCategory: categoryInput,
+    categories: payload.categories,
+  });
 
-  if (!categoryDocument) {
+  if (invalidCategories.length > 0 || normalizedCategories.length === 0) {
     errors.push('Please choose a valid category');
   }
 
@@ -479,7 +523,8 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
     normalized: {
       name,
       slug,
-      category: categoryDocument?.name || '',
+      category: normalizedCategories[0] || '',
+      categories: normalizedCategories,
       price: Number.isNaN(price) ? 0 : price,
       compareAtPrice: Number.isNaN(compareAtPrice) ? 0 : compareAtPrice,
       countInStock: Number.isNaN(countInStock) ? 0 : countInStock,
@@ -830,6 +875,7 @@ const createProduct = async (req, res) => {
         normalized.shortDescription || normalized.description.slice(0, 160).trim(),
       brand: normalized.brand,
       category: normalized.category,
+      categories: normalized.categories,
       price: normalized.price,
       compareAtPrice: normalized.compareAtPrice,
       countInStock: normalized.countInStock,
@@ -896,6 +942,7 @@ const updateProduct = async (req, res) => {
     product.images = imagePayload.images;
     product.brand = normalized.brand;
     product.category = normalized.category;
+    product.categories = normalized.categories;
     product.price = normalized.price;
     product.compareAtPrice = normalized.compareAtPrice;
     product.countInStock = normalized.countInStock;

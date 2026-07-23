@@ -175,6 +175,10 @@ const productSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
+    categories: {
+      type: [String],
+      default: [],
+    },
     price: {
       type: Number,
       required: true,
@@ -271,6 +275,7 @@ const productSchema = mongoose.Schema(
 
 productSchema.index({ isActive: 1, approvalStatus: 1, isFeatured: -1, isBestSeller: -1, createdAt: -1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, category: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, categories: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, price: 1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, countInStock: 1 });
 productSchema.index({ sku: 1 }, { sparse: true });

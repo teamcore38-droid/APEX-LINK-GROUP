@@ -3,6 +3,7 @@ const PRODUCT_CARD_FIELDS = [
   'slug',
   'image',
   'category',
+  'categories',
   'brand',
   'origin',
   'price',
