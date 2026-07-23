@@ -277,6 +277,7 @@ const getCategoryInputs = (value) => {
 };
 
 const resolveProductCategoryNames = async ({ primaryCategory = '', categories = [] }) => {
+  const normalizedPrimaryCategory = String(primaryCategory || '').trim().toLowerCase();
   const inputs = [primaryCategory, ...getCategoryInputs(categories)]
     .map((value) => String(value || '').trim())
     .filter(Boolean);
@@ -300,7 +301,10 @@ const resolveProductCategoryNames = async ({ primaryCategory = '', categories = 
 
   return {
     categories: resolvedCategories,
-    invalidCategories,
+    invalidCategories: invalidCategories.filter(
+      (categoryName) =>
+        !(resolvedCategories.length > 0 && categoryName.toLowerCase() === normalizedPrimaryCategory)
+    ),
   };
 };
 

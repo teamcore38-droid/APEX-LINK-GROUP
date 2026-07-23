@@ -58,6 +58,36 @@ const getUniqueCategoryNames = (values = []) => {
     .map((lowerValue) => categoryNames.find((value) => value.toLowerCase() === lowerValue));
 };
 
+const reconcileProductCategorySelection = (productForm, categoryList = []) => {
+  const categoryByName = new Map(categoryList.map((category) => [category.name, category]));
+  const assignedCategories = getUniqueCategoryNames([
+    productForm.category,
+    ...(productForm.categories || []),
+  ]);
+  const validAssignedCategories = assignedCategories.filter((categoryName) => categoryByName.has(categoryName));
+
+  if (!productForm.category || categoryByName.has(productForm.category)) {
+    return {
+      form: {
+        ...productForm,
+        categories: assignedCategories,
+      },
+      replacedCategory: '',
+    };
+  }
+
+  const fallbackCategory = validAssignedCategories[validAssignedCategories.length - 1] || '';
+
+  return {
+    form: {
+      ...productForm,
+      category: fallbackCategory,
+      categories: fallbackCategory ? getUniqueCategoryNames([fallbackCategory, ...validAssignedCategories]) : validAssignedCategories,
+    },
+    replacedCategory: fallbackCategory ? productForm.category : '',
+  };
+};
+
 const validateForm = (form) => {
   if (!form.name.trim()) {
     return 'Product name is required.';
@@ -154,6 +184,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const [variantImageUrlInputs, setVariantImageUrlInputs] = useState({});
   const [, setVariantUploadStatus] = useState({});
   const [uploadStatus, setUploadStatus] = useState('');
+  const [categoryNotice, setCategoryNotice] = useState('');
   const [persistedImagePublicIds, setPersistedImagePublicIds] = useState(new Set());
 
   useEffect(() => {
@@ -198,15 +229,24 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
             }),
           ]);
 
-          const nextForm = buildProductFormFromProduct(productResponse.data);
+          const { form: nextForm, replacedCategory } = reconcileProductCategorySelection(
+            buildProductFormFromProduct(productResponse.data),
+            categoryResponse.data
+          );
           setCategories(categoryResponse.data);
           setForm(nextForm);
+          setCategoryNotice(
+            replacedCategory
+              ? `Saved primary category "${replacedCategory}" no longer exists, so a valid assigned category was selected.`
+              : ''
+          );
           setPersistedImagePublicIds(new Set(getFormPublicIds(nextForm)));
           setSlugTouched(Boolean(productResponse.data.slug));
         } else {
           const { data } = await categoryPromise;
           setCategories(data);
           setForm(createInitialProductForm());
+          setCategoryNotice('');
           setPersistedImagePublicIds(new Set());
           setSlugTouched(false);
         }
@@ -887,8 +927,16 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
       if (isEditMode) {
         const { data } = await axios.put(`/api/products/${id}`, payload, config);
-        const nextForm = buildProductFormFromProduct(data);
+        const { form: nextForm, replacedCategory } = reconcileProductCategorySelection(
+          buildProductFormFromProduct(data),
+          categories
+        );
         setForm(nextForm);
+        setCategoryNotice(
+          replacedCategory
+            ? `Saved primary category "${replacedCategory}" no longer exists, so a valid assigned category was selected.`
+            : ''
+        );
         setPersistedImagePublicIds(new Set(getFormPublicIds(nextForm)));
         setSuccess('Product updated successfully.');
       } else {
@@ -1012,6 +1060,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     onChange={(nextValue) => {
                       setError('');
                       setSuccess('');
+                      setCategoryNotice('');
                       setForm((currentForm) => ({
                         ...currentForm,
                         category: nextValue,
@@ -1026,6 +1075,11 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   <p className="mt-2 text-xs text-gray-500">
                     Primary category controls the product breadcrumb and main catalog label.
                   </p>
+                  {categoryNotice ? (
+                    <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      {categoryNotice}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="md:col-span-2">
