@@ -4,6 +4,7 @@ import axios from 'axios';
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   Edit,
   Eye,
   EyeOff,
@@ -42,6 +43,12 @@ import {
   getPaymentBadgeClass,
   getPaymentLabel,
 } from '../utils/orderStatus';
+import {
+  downloadCsv,
+  formatDateForExport,
+  formatYesNo,
+  joinExportList,
+} from '../utils/exportCsv';
 
 const INITIAL_PRODUCT_FILTERS = {
   keyword: '',
@@ -105,6 +112,144 @@ const OrdersTableSkeleton = () => (
 const getOrderItemCount = (order) =>
   order.orderItems?.reduce((total, item) => total + item.qty, 0) || 0;
 
+const getProductCategories = (product) =>
+  joinExportList([
+    product.category,
+    ...(Array.isArray(product.categories) ? product.categories : []),
+  ]);
+
+const summarizeProductVariants = (product) =>
+  joinExportList(
+    (product.variants || []).map((variant) =>
+      [
+        variant.label,
+        variant.sku ? `SKU: ${variant.sku}` : '',
+        variant.size ? `Size: ${variant.size}` : '',
+        variant.color ? `Color: ${variant.color}` : '',
+        `Stock: ${variant.countInStock ?? 0}`,
+        variant.price ? `Price: ${variant.price}` : '',
+      ]
+        .filter(Boolean)
+        .join(' - ')
+    )
+  );
+
+const summarizeOrderItems = (order) =>
+  joinExportList(
+    (order.orderItems || []).map((item) =>
+      [
+        item.name,
+        item.sku ? `SKU: ${item.sku}` : '',
+        item.variantLabel ? `Variant: ${item.variantLabel}` : '',
+        item.size ? `Size: ${item.size}` : '',
+        item.color ? `Color: ${item.color}` : '',
+        `Qty: ${item.qty}`,
+        `Price: ${item.price}`,
+      ]
+        .filter(Boolean)
+        .join(' - ')
+    )
+  );
+
+const formatShippingAddress = (address = {}) =>
+  joinExportList([
+    address.fullName,
+    address.phone,
+    address.email,
+    address.addressLine1 || address.address,
+    address.addressLine2,
+    address.city,
+    address.state,
+    address.postalCode,
+    address.country,
+  ]);
+
+const formatShippingRate = (shippingRate = {}) =>
+  joinExportList([
+    shippingRate.carrier,
+    shippingRate.service,
+    shippingRate.estimatedDaysMin || shippingRate.estimatedDaysMax
+      ? `${shippingRate.estimatedDaysMin || 0}-${shippingRate.estimatedDaysMax || 0} days`
+      : '',
+  ]);
+
+const getCustomerName = (order) =>
+  order.user?.name || order.shippingAddress?.fullName || order.guestCustomer?.name || 'Guest';
+
+const getCustomerEmail = (order) =>
+  order.user?.email || order.shippingAddress?.email || order.guestCustomer?.email || '';
+
+const getCustomerPhone = (order) =>
+  order.user?.phone || order.shippingAddress?.phone || order.guestCustomer?.phone || '';
+
+const PRODUCT_EXPORT_COLUMNS = [
+  { header: 'Product ID', accessor: (product) => product._id },
+  { header: 'Product Name', accessor: (product) => product.name },
+  { header: 'Slug', accessor: (product) => product.slug },
+  { header: 'SKU', accessor: (product) => product.sku },
+  { header: 'Brand', accessor: (product) => product.brand },
+  { header: 'Primary Category', accessor: (product) => product.category },
+  { header: 'All Categories', accessor: getProductCategories },
+  { header: 'Price', accessor: (product) => product.price },
+  { header: 'Compare At Price', accessor: (product) => product.compareAtPrice },
+  { header: 'Stock', accessor: (product) => product.countInStock },
+  { header: 'Reserved Stock', accessor: (product) => product.reservedStock },
+  { header: 'Low Stock Threshold', accessor: (product) => product.lowStockThreshold },
+  { header: 'Active', accessor: (product) => formatYesNo(product.isActive ?? true) },
+  { header: 'Featured', accessor: (product) => formatYesNo(product.isFeatured) },
+  { header: 'Best Seller', accessor: (product) => formatYesNo(product.isBestSeller) },
+  { header: 'Approval Status', accessor: (product) => product.approvalStatus },
+  { header: 'Rating', accessor: (product) => product.rating },
+  { header: 'Review Count', accessor: (product) => product.numReviews },
+  { header: 'Weight', accessor: (product) => product.weight },
+  { header: 'Origin', accessor: (product) => product.origin },
+  { header: 'Ingredients', accessor: (product) => product.ingredients },
+  { header: 'Short Description', accessor: (product) => product.shortDescription },
+  { header: 'Description', accessor: (product) => product.description },
+  { header: 'Primary Image URL', accessor: (product) => product.image },
+  { header: 'Image Count', accessor: (product) => product.images?.length || 0 },
+  { header: 'Variants', accessor: summarizeProductVariants },
+  { header: 'Created At', accessor: (product) => formatDateForExport(product.createdAt) },
+  { header: 'Updated At', accessor: (product) => formatDateForExport(product.updatedAt) },
+];
+
+const ORDER_EXPORT_COLUMNS = [
+  { header: 'Order ID', accessor: (order) => order._id },
+  { header: 'Created At', accessor: (order) => formatDateForExport(order.createdAt) },
+  { header: 'Updated At', accessor: (order) => formatDateForExport(order.updatedAt) },
+  { header: 'Customer Name', accessor: getCustomerName },
+  { header: 'Customer Email', accessor: getCustomerEmail },
+  { header: 'Customer Phone', accessor: getCustomerPhone },
+  { header: 'Guest Checkout', accessor: (order) => formatYesNo(order.guestCheckout) },
+  { header: 'Order Status', accessor: (order) => order.orderStatus || 'Processing' },
+  { header: 'Payment Status', accessor: (order) => getPaymentLabel(order) },
+  { header: 'Payment Method', accessor: (order) => order.paymentMethod },
+  { header: 'Payment Provider', accessor: (order) => order.paymentProvider },
+  { header: 'Payment Reference', accessor: (order) => order.paymentIntentId },
+  { header: 'Paid', accessor: (order) => formatYesNo(order.isPaid) },
+  { header: 'Paid At', accessor: (order) => formatDateForExport(order.paidAt) },
+  { header: 'Delivered', accessor: (order) => formatYesNo(order.isDelivered) },
+  { header: 'Delivered At', accessor: (order) => formatDateForExport(order.deliveredAt) },
+  { header: 'Delivery Label', accessor: (order) => getDeliveryLabel(order.isDelivered, order.orderStatus) },
+  { header: 'Tracking Number', accessor: (order) => order.trackingNumber },
+  { header: 'Delivery Note', accessor: (order) => order.deliveryNote },
+  { header: 'Shipping Rate', accessor: (order) => formatShippingRate(order.shippingRate) },
+  { header: 'Inventory Status', accessor: (order) => order.inventoryStatus },
+  { header: 'Refund Status', accessor: (order) => order.refundStatus },
+  { header: 'Refunded Amount', accessor: (order) => order.refundedAmount },
+  { header: 'Item Count', accessor: getOrderItemCount },
+  { header: 'Order Items', accessor: summarizeOrderItems },
+  { header: 'Shipping Address', accessor: (order) => formatShippingAddress(order.shippingAddress) },
+  { header: 'Currency', accessor: (order) => order.currency },
+  { header: 'Coupon Code', accessor: (order) => order.couponCode },
+  { header: 'Gift Card Code', accessor: (order) => order.giftCardCode },
+  { header: 'Items Price', accessor: (order) => order.itemsPrice },
+  { header: 'Shipping Price', accessor: (order) => order.shippingPrice },
+  { header: 'Discount Price', accessor: (order) => order.discountPrice },
+  { header: 'Gift Card Amount', accessor: (order) => order.giftCardAmount },
+  { header: 'Total Price', accessor: (order) => order.totalPrice },
+];
+
 const getQuickActionPayload = (order, nextStatus) => {
   const payload = {
     orderStatus: nextStatus,
@@ -140,6 +285,7 @@ const buildProductUpdatePayload = (product, overrides = {}) => ({
   weight: product.weight || '',
   countInStock: product.countInStock ?? 0,
   lowStockThreshold: product.lowStockThreshold ?? 10,
+  categories: Array.isArray(product.categories) ? product.categories : [],
   variants: Array.isArray(product.variants) ? product.variants : [],
   image: product.image || '',
   imagePublicId: product.imagePublicId || '',
@@ -196,6 +342,7 @@ const AdminDashboard = () => {
   });
   const [orderRefreshToken, setOrderRefreshToken] = useState(0);
   const [activeQuickAction, setActiveQuickAction] = useState('');
+  const [exportAction, setExportAction] = useState('');
   const canAccessAdmin = Boolean(userInfo?.isAdmin || userInfo?.isStaff || userInfo?.permissions?.length);
 
   useEffect(() => {
@@ -376,6 +523,51 @@ const AdminDashboard = () => {
     setProductPage(1);
   };
 
+  const exportProductsHandler = async () => {
+    if (!userInfo?.token || exportAction) {
+      return;
+    }
+
+    setExportAction('products');
+    setProductError('');
+    setProductSuccess('');
+
+    try {
+      const allProducts = [];
+      let pageToFetch = 1;
+      let totalPages = 1;
+
+      do {
+        const { data } = await axios.get('/api/products', {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+          },
+          params: {
+            ...productFilters,
+            page: pageToFetch,
+            limit: 48,
+          },
+        });
+        const payload = normalizeProductPayload(data);
+        allProducts.push(...payload.products);
+        totalPages = payload.totalPages || 1;
+        pageToFetch += 1;
+      } while (pageToFetch <= totalPages);
+
+      downloadCsv({
+        columns: PRODUCT_EXPORT_COLUMNS,
+        filename: `apex-products-${new Date().toISOString().slice(0, 10)}.csv`,
+        rows: allProducts,
+      });
+      setProductSuccess(`Exported ${allProducts.length} product${allProducts.length === 1 ? '' : 's'}.`);
+    } catch (error) {
+      console.error(error);
+      setProductError(error.response?.data?.message || 'Unable to export products right now.');
+    } finally {
+      setExportAction('');
+    }
+  };
+
   const navigateToAddProduct = () => {
     navigate('/admin/products/new');
   };
@@ -487,6 +679,51 @@ const AdminDashboard = () => {
     setOrderSearchInput('');
     setOrderFilters(INITIAL_ORDER_FILTERS);
     setOrderPage(1);
+  };
+
+  const exportOrdersHandler = async () => {
+    if (!userInfo?.token || exportAction) {
+      return;
+    }
+
+    setExportAction('orders');
+    setOrderSuccess('');
+    setOrderError('');
+
+    try {
+      const allOrders = [];
+      let pageToFetch = 1;
+      let totalPages = 1;
+
+      do {
+        const { data } = await axios.get('/api/orders/admin/all', {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+          },
+          params: {
+            ...orderFilters,
+            page: pageToFetch,
+            limit: 50,
+          },
+        });
+        const payload = data?.orders ? data : buildFallbackOrderPayload(data);
+        allOrders.push(...payload.orders);
+        totalPages = payload.totalPages || 1;
+        pageToFetch += 1;
+      } while (pageToFetch <= totalPages);
+
+      downloadCsv({
+        columns: ORDER_EXPORT_COLUMNS,
+        filename: `apex-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+        rows: allOrders,
+      });
+      setOrderSuccess(`Exported ${allOrders.length} order${allOrders.length === 1 ? '' : 's'}.`);
+    } catch (error) {
+      console.error(error);
+      setOrderError(error.response?.data?.message || 'Unable to export orders right now.');
+    } finally {
+      setExportAction('');
+    }
   };
 
   const quickActionHandler = async (order, nextStatus) => {
@@ -623,6 +860,20 @@ const AdminDashboard = () => {
                         </span>
                       )}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={exportProductsHandler}
+                      disabled={exportAction === 'products'}
+                      className="inline-flex items-center rounded-md border border-brand-primary/20 px-5 py-3 text-sm font-bold uppercase tracking-[0.2em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {exportAction === 'products' ? (
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                      ) : (
+                        <Download size={16} className="mr-2" />
+                      )}
+                      Export
+                    </button>
 
                     <button
                       type="button"
@@ -1051,14 +1302,30 @@ const AdminDashboard = () => {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-brand-accent/20 bg-brand-light px-4 py-3 text-sm">
-                    <span className="font-semibold text-brand-dark">{orderMeta.totalOrders}</span>{' '}
-                    <span className="text-gray-500">matching orders</span>
-                    {orderLoading && orders.length > 0 && (
-                      <span className="ml-3 inline-flex items-center font-medium text-brand-primary">
-                        <Loader2 size={14} className="mr-1 animate-spin" /> Refreshing
-                      </span>
-                    )}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="rounded-2xl border border-brand-accent/20 bg-brand-light px-4 py-3 text-sm">
+                      <span className="font-semibold text-brand-dark">{orderMeta.totalOrders}</span>{' '}
+                      <span className="text-gray-500">matching orders</span>
+                      {orderLoading && orders.length > 0 && (
+                        <span className="ml-3 inline-flex items-center font-medium text-brand-primary">
+                          <Loader2 size={14} className="mr-1 animate-spin" /> Refreshing
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={exportOrdersHandler}
+                      disabled={exportAction === 'orders'}
+                      className="inline-flex items-center rounded-md border border-brand-primary/20 px-5 py-3 text-sm font-bold uppercase tracking-[0.2em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {exportAction === 'orders' ? (
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                      ) : (
+                        <Download size={16} className="mr-2" />
+                      )}
+                      Export
+                    </button>
                   </div>
                 </div>
 

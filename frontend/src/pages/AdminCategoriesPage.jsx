@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft,
+  Download,
   Eye,
   EyeOff,
   Loader2,
@@ -17,6 +18,11 @@ import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 import { getCategoryImage, slugifyCategoryName } from '../utils/categoryUi';
 import { invalidateCategoriesCache } from '../utils/categoryApi';
+import {
+  downloadCsv,
+  formatDateForExport,
+  formatYesNo,
+} from '../utils/exportCsv';
 
 const INITIAL_FORM = {
   name: '',
@@ -34,6 +40,22 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'
 
 const getParentCategoryId = (category) =>
   category?.parentCategory?._id || category?.parentCategory || '';
+
+const CATEGORY_EXPORT_COLUMNS = [
+  { header: 'Category ID', accessor: (category) => category._id },
+  { header: 'Name', accessor: (category) => category.name },
+  { header: 'Slug', accessor: (category) => category.slug },
+  { header: 'Category Path', accessor: (category) => category.exportPath },
+  { header: 'Parent Category', accessor: (category) => category.exportParentName },
+  { header: 'Parent Category ID', accessor: (category) => getParentCategoryId(category) },
+  { header: 'Active', accessor: (category) => formatYesNo(category.isActive) },
+  { header: 'Display Order', accessor: (category) => category.displayOrder ?? 0 },
+  { header: 'Description', accessor: (category) => category.description },
+  { header: 'Image URL', accessor: (category) => category.image },
+  { header: 'Image Public ID', accessor: (category) => category.imagePublicId },
+  { header: 'Created At', accessor: (category) => formatDateForExport(category.createdAt) },
+  { header: 'Updated At', accessor: (category) => formatDateForExport(category.updatedAt) },
+];
 
 const AdminCategoriesPage = () => {
   const navigate = useNavigate();
@@ -387,6 +409,27 @@ const AdminCategoriesPage = () => {
     }
   };
 
+  const exportCategoriesHandler = () => {
+    const rows = categories.map((category) => {
+      const parentId = getParentCategoryId(category);
+      const parentCategory = categoryMap.get(parentId);
+
+      return {
+        ...category,
+        exportPath: categoryPathMap.get(category._id) || category.name,
+        exportParentName: parentCategory?.name || '',
+      };
+    });
+
+    downloadCsv({
+      columns: CATEGORY_EXPORT_COLUMNS,
+      filename: `apex-categories-${new Date().toISOString().slice(0, 10)}.csv`,
+      rows,
+    });
+    setError('');
+    setSuccess(`Exported ${rows.length} categor${rows.length === 1 ? 'y' : 'ies'}.`);
+  };
+
   return (
     <div className="min-h-screen bg-[#fff7ee] pt-4 md:pt-6 pb-16">
       <div className="container mx-auto max-w-7xl px-4">
@@ -397,9 +440,19 @@ const AdminCategoriesPage = () => {
           >
             <ArrowLeft size={16} className="mr-2" /> Back to Account
           </Link>
-          <span className="rounded-full bg-brand-light px-4 py-1.5 text-xs font-bold text-brand-dark">
-            {categories.length} Categories Total
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full bg-brand-light px-4 py-1.5 text-xs font-bold text-brand-dark">
+              {categories.length} Categories Total
+            </span>
+            <button
+              type="button"
+              onClick={exportCategoriesHandler}
+              disabled={loading}
+              className="inline-flex items-center rounded-full border border-brand-primary/20 bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Download size={14} className="mr-2" /> Export
+            </button>
+          </div>
         </div>
 
         <section className="mb-8 rounded-[28px] bg-brand-dark px-6 py-8 text-white shadow-xl sm:px-10">

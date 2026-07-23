@@ -66,7 +66,7 @@ const reconcileProductCategorySelection = (productForm, categoryList = []) => {
   ]);
   const validAssignedCategories = assignedCategories.filter((categoryName) => categoryByName.has(categoryName));
 
-  if (!productForm.category || categoryByName.has(productForm.category)) {
+  if (productForm.category && categoryByName.has(productForm.category)) {
     return {
       form: {
         ...productForm,
@@ -84,7 +84,7 @@ const reconcileProductCategorySelection = (productForm, categoryList = []) => {
       category: fallbackCategory,
       categories: fallbackCategory ? getUniqueCategoryNames([fallbackCategory, ...validAssignedCategories]) : validAssignedCategories,
     },
-    replacedCategory: fallbackCategory ? productForm.category : '',
+    replacedCategory: fallbackCategory ? productForm.category || 'missing primary category' : '',
   };
 };
 
@@ -237,7 +237,9 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
           setForm(nextForm);
           setCategoryNotice(
             replacedCategory
-              ? `Saved primary category "${replacedCategory}" no longer exists, so a valid assigned category was selected.`
+              ? replacedCategory === 'missing primary category'
+                ? 'Saved primary category was missing, so a valid assigned category was selected.'
+                : `Saved primary category "${replacedCategory}" no longer exists, so a valid assigned category was selected.`
               : ''
           );
           setPersistedImagePublicIds(new Set(getFormPublicIds(nextForm)));
@@ -934,7 +936,9 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
         setForm(nextForm);
         setCategoryNotice(
           replacedCategory
-            ? `Saved primary category "${replacedCategory}" no longer exists, so a valid assigned category was selected.`
+            ? replacedCategory === 'missing primary category'
+              ? 'Saved primary category was missing, so a valid assigned category was selected.'
+              : `Saved primary category "${replacedCategory}" no longer exists, so a valid assigned category was selected.`
             : ''
         );
         setPersistedImagePublicIds(new Set(getFormPublicIds(nextForm)));
