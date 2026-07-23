@@ -34,6 +34,7 @@ import {
 const MAX_GALLERY_IMAGES = 12;
 const MAX_VARIANT_IMAGES = 8;
 const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
+const NUMERIC_SHOE_SIZE_PRESET = ['36', '37', '38', '39', '40', '41'];
 const getAssetKey = (asset = {}) => asset.publicId || asset.url || getProductImageUrl(asset);
 const getPublicIds = (assets = []) =>
   assets.map((asset) => asset.publicId).filter(Boolean);
@@ -184,6 +185,16 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [variantImageUrlInputs, setVariantImageUrlInputs] = useState({});
   const [, setVariantUploadStatus] = useState({});
+  const [sharedVariantForm, setSharedVariantForm] = useState({
+    color: '',
+    sku: '',
+    price: '',
+    countInStock: '0',
+    selectedSizes: [],
+    images: [],
+    imageUrlInput: '',
+    status: '',
+  });
   const [uploadStatus, setUploadStatus] = useState('');
   const [categoryNotice, setCategoryNotice] = useState('');
   const [persistedImagePublicIds, setPersistedImagePublicIds] = useState(new Set());
@@ -555,6 +566,188 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     ]);
   };
 
+  const updateSharedVariantForm = (fields) => {
+    setError('');
+    setSuccess('');
+    setSharedVariantForm((currentForm) => ({
+      ...currentForm,
+      ...fields,
+    }));
+  };
+
+  const toggleSharedVariantSize = (sizeName) => {
+    updateSharedVariantForm({
+      selectedSizes: sharedVariantForm.selectedSizes.includes(sizeName)
+        ? sharedVariantForm.selectedSizes.filter((selectedSize) => selectedSize !== sizeName)
+        : [...sharedVariantForm.selectedSizes, sizeName],
+    });
+  };
+
+  const updateSharedVariantImages = (images) => {
+    updateSharedVariantForm({
+      images: images.slice(0, MAX_VARIANT_IMAGES),
+      status: '',
+    });
+  };
+
+  const handleSharedVariantImageUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const currentImages = sharedVariantForm.images || [];
+    const availableSlots = Math.max(0, MAX_VARIANT_IMAGES - currentImages.length);
+
+    if (availableSlots === 0) {
+      setError(`A shared color variant can have up to ${MAX_VARIANT_IMAGES} images.`);
+      return;
+    }
+
+    const selectedFiles = files.slice(0, availableSlots);
+    const invalidFile = selectedFiles.find((file) => !file.type.startsWith('image/') || file.size > MAX_UPLOAD_BYTES);
+
+    if (invalidFile) {
+      setError(
+        !invalidFile.type.startsWith('image/')
+          ? `${invalidFile.name} is not an image file.`
+          : `${invalidFile.name} is larger than 8MB.`
+      );
+      return;
+    }
+
+    updateSharedVariantForm({
+      status: `Uploading ${selectedFiles.length} shared image${selectedFiles.length === 1 ? '' : 's'}...`,
+    });
+
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach((file) => formData.append('images', file));
+      const { data } = await axios.post('/api/products/images', formData, {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const uploadedImages = data.images || [];
+
+      updateSharedVariantForm({
+        images: [...currentImages, ...uploadedImages].slice(0, MAX_VARIANT_IMAGES),
+        status: `Added ${uploadedImages.length} shared image${uploadedImages.length === 1 ? '' : 's'}.`,
+      });
+    } catch (uploadError) {
+      setError(uploadError.response?.data?.message || uploadError.message || 'Unable to upload shared variant images.');
+      updateSharedVariantForm({ status: '' });
+    }
+  };
+
+  const addSharedVariantImageUrl = async () => {
+    const nextUrl = String(sharedVariantForm.imageUrlInput || '').trim();
+
+    if (!nextUrl) {
+      return;
+    }
+
+    const currentImages = sharedVariantForm.images || [];
+
+    if (currentImages.length >= MAX_VARIANT_IMAGES) {
+      setError(`A shared color variant can have up to ${MAX_VARIANT_IMAGES} images.`);
+      return;
+    }
+
+    updateSharedVariantForm({ status: 'Importing shared image URL into Cloudinary...' });
+
+    try {
+      const { data } = await axios.post(
+        '/api/products/images',
+        { sourceUrl: nextUrl },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const [uploadedImage] = data.images || [];
+
+      if (uploadedImage) {
+        updateSharedVariantForm({
+          images: [...currentImages, uploadedImage].slice(0, MAX_VARIANT_IMAGES),
+          imageUrlInput: '',
+          status: 'Shared image URL imported to Cloudinary.',
+        });
+      }
+    } catch (uploadError) {
+      setError(uploadError.response?.data?.message || uploadError.message || 'Unable to import that shared image URL.');
+      updateSharedVariantForm({ status: '' });
+    }
+  };
+
+  const applySharedVariantToSelectedSizes = () => {
+    const colorName = String(sharedVariantForm.color || '').trim();
+    const availableSizes = (form.sizes || []).map((sizeOption) => String(sizeOption.size || '').trim()).filter(Boolean);
+    const selectedSizes = sharedVariantForm.selectedSizes.filter((sizeName) => availableSizes.includes(sizeName));
+
+    if (!colorName) {
+      setError('Enter a color name before applying it to sizes.');
+      return;
+    }
+
+    if (selectedSizes.length === 0) {
+      setError('Choose at least one size for the shared color variant.');
+      return;
+    }
+
+    const sharedImages = [...(sharedVariantForm.images || [])];
+    const existingCombinationKeys = new Set(
+      variants.map((variant) =>
+        `${String(variant.color || variant.label || '').trim().toLowerCase()}::${String(variant.size || '').trim().toLowerCase()}`
+      )
+    );
+    const variantsToCreate = selectedSizes
+      .filter((sizeName) => !existingCombinationKeys.has(`${colorName.toLowerCase()}::${sizeName.toLowerCase()}`))
+      .map((sizeName) => {
+        const sizeOption = getSizeOptionByName(sizeName);
+        const baseVariant = {
+          label: `${colorName} / ${sizeName}`,
+          color: colorName,
+          size: sizeName,
+          sku: sharedVariantForm.sku,
+          image: '',
+          imagePublicId: '',
+          images: [],
+          weight: '',
+          packaging: '',
+          price:
+            sharedVariantForm.price === ''
+              ? Number(sizeOption?.price || form.price || 0)
+              : Number(sharedVariantForm.price || 0),
+          priceAdjustment: 0,
+          countInStock: Math.max(0, Number(sharedVariantForm.countInStock || 0)),
+          reservedStock: 0,
+          lowStockThreshold: 5,
+          isActive: true,
+        };
+
+        return setVariantImageAssets(baseVariant, sharedImages);
+      });
+    const createdCount = variantsToCreate.length;
+    const skippedCount = selectedSizes.length - createdCount;
+
+    if (createdCount > 0) {
+      updateVariants((currentVariants) => [...currentVariants, ...variantsToCreate]);
+    }
+
+    setError('');
+    setSuccess(
+      createdCount > 0
+        ? `Applied ${colorName} to ${createdCount} size${createdCount === 1 ? '' : 's'}${skippedCount ? `; ${skippedCount} existing combination${skippedCount === 1 ? '' : 's'} left unchanged.` : '.'}`
+        : `${colorName} already exists for the selected size${selectedSizes.length === 1 ? '' : 's'}; existing combinations were left unchanged.`
+    );
+  };
+
   const updateVariantField = (variantIndex, field, value) => {
     updateVariants((currentVariants) =>
       currentVariants.map((variant, index) => (
@@ -887,12 +1080,21 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     setForm((currentForm) => ({
       ...currentForm,
       hasSizes: true,
-      sizes: sizes.map((size) => ({
-        size,
-        price: Number(currentForm.price || 0),
-        countInStock: 0,
-        colors: [],
-      })),
+      sizes: [
+        ...(currentForm.sizes || []),
+        ...sizes
+          .filter((size) =>
+            !(currentForm.sizes || []).some((sizeOption) =>
+              String(sizeOption.size || '').trim().toLowerCase() === String(size).toLowerCase()
+            )
+          )
+          .map((size) => ({
+            size,
+            price: Number(currentForm.price || 0),
+            countInStock: 0,
+            colors: [],
+          })),
+      ],
     }));
   };
 
@@ -1462,14 +1664,21 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                           onClick={() => setSizePreset(['S', 'M', 'L', 'XL', 'XXL'])}
                           className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
                         >
-                          Clothing (S - XXL)
+                          Add Clothing (S - XXL)
                         </button>
                         <button
                           type="button"
                           onClick={() => setSizePreset(['IND-4', 'IND-5', 'IND-6', 'IND-7', 'IND-8', 'IND-9'])}
                           className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
                         >
-                          Shoes (IND 4 - 9)
+                          Add Shoes (IND 4 - 9)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSizePreset(NUMERIC_SHOE_SIZE_PRESET)}
+                          className="rounded-full border border-brand-primary/30 bg-white px-3 py-1 text-xs font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition"
+                        >
+                          Add EU 36 - 41
                         </button>
                         <button
                           type="button"
@@ -1588,6 +1797,204 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                     Add Variant
                   </button>
                 </div>
+
+                {form.hasSizes && (
+                  <div className="mt-5 rounded-[20px] border border-brand-accent/20 bg-white p-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">
+                          Apply Color Variant to All Sizes
+                        </p>
+                        <p className="mt-1 text-xs leading-6 text-gray-500">
+                          Create one shared color and image set, then generate missing size-color rows automatically.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={applySharedVariantToSelectedSizes}
+                        className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-brand-dark"
+                      >
+                        Apply to Sizes
+                      </button>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 lg:grid-cols-[1.1fr_0.8fr_0.8fr_0.8fr]">
+                      <label className="block">
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                          Shared Color
+                        </span>
+                        <input
+                          type="text"
+                          value={sharedVariantForm.color}
+                          onChange={(event) => updateSharedVariantForm({ color: event.target.value })}
+                          placeholder="Pink, Black, Tan..."
+                          className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs text-brand-dark outline-none focus:border-brand-accent"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                          SKU
+                        </span>
+                        <input
+                          type="text"
+                          value={sharedVariantForm.sku}
+                          onChange={(event) => updateSharedVariantForm({ sku: event.target.value })}
+                          placeholder="Optional shared SKU"
+                          className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs text-brand-dark outline-none focus:border-brand-accent"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                          Price
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={sharedVariantForm.price}
+                          onChange={(event) => updateSharedVariantForm({ price: event.target.value })}
+                          placeholder="Use size price"
+                          className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                          Stock
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={sharedVariantForm.countInStock}
+                          onChange={(event) => updateSharedVariantForm({ countInStock: event.target.value })}
+                          className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs font-bold text-brand-dark outline-none focus:border-brand-accent"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-4">
+                      <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                        Choose Sizes
+                      </span>
+                      {(form.sizes || []).length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {(form.sizes || []).map((sizeOption) => {
+                            const sizeName = String(sizeOption.size || '').trim();
+                            const isSelected = sharedVariantForm.selectedSizes.includes(sizeName);
+
+                            if (!sizeName) {
+                              return null;
+                            }
+
+                            return (
+                              <button
+                                key={`shared-${sizeName}`}
+                                type="button"
+                                onClick={() => toggleSharedVariantSize(sizeName)}
+                                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                                  isSelected
+                                    ? 'border-brand-primary bg-brand-primary text-white'
+                                    : 'border-gray-200 bg-[#fff7ee] text-brand-dark hover:border-brand-primary'
+                                }`}
+                              >
+                                {sizeName}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="rounded-xl border border-dashed border-brand-accent/30 bg-[#fff7ee] px-4 py-3 text-xs text-gray-500">
+                          Add size options first, then choose where to apply this shared color.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center">
+                      <label className="inline-flex cursor-pointer items-center justify-center rounded-xl bg-brand-primary px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-brand-dark">
+                        <UploadCloud size={16} className="mr-2" />
+                        Upload Shared Images
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={(event) => void handleSharedVariantImageUpload(event)}
+                          className="sr-only"
+                        />
+                      </label>
+
+                      <input
+                        type="url"
+                        value={sharedVariantForm.imageUrlInput}
+                        onChange={(event) => updateSharedVariantForm({ imageUrlInput: event.target.value })}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            void addSharedVariantImageUrl();
+                          }
+                        }}
+                        placeholder="Paste one shared image URL"
+                        className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-3 py-2 text-xs text-brand-dark outline-none placeholder:text-gray-400 focus:border-brand-accent"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => void addSharedVariantImageUrl()}
+                        className="inline-flex items-center justify-center rounded-xl border border-brand-primary/20 px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+                      >
+                        <ImagePlus size={16} className="mr-2" />
+                        Add URL
+                      </button>
+                    </div>
+
+                    {sharedVariantForm.status && (
+                      <p className="mt-3 rounded-xl bg-[#f5e7da] px-4 py-2 text-xs font-semibold text-[#744126]">
+                        {sharedVariantForm.status}
+                      </p>
+                    )}
+
+                    {(sharedVariantForm.images || []).length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        {sharedVariantForm.images.map((image, imageIndex) => {
+                          const imageUrl = getProductImageUrl(image);
+                          const imageKey = getAssetKey(image);
+
+                          return (
+                            <div
+                              key={`shared-${imageKey}`}
+                              className="relative h-20 w-20 overflow-hidden rounded-2xl border border-[#ead6c6] bg-[#f4e7db]"
+                            >
+                              <img
+                                src={imageUrl}
+                                alt={`Shared variant image ${imageIndex + 1}`}
+                                loading="lazy"
+                                className="h-full w-full object-cover"
+                              />
+                              {imageIndex === 0 && (
+                                <span className="absolute left-1 top-1 rounded-full bg-brand-primary px-1.5 py-0.5 text-[8px] font-bold uppercase text-white">
+                                  Primary
+                                </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateSharedVariantImages(
+                                    sharedVariantForm.images.filter((sharedImage) => getAssetKey(sharedImage) !== imageKey)
+                                  )
+                                }
+                                className="absolute bottom-1 right-1 rounded-full bg-white/95 p-1 text-red-600 shadow"
+                                title="Remove shared image"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="mt-5 space-y-5">
                   {colorGroups.length === 0 ? (
