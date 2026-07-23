@@ -1,5 +1,6 @@
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
+import mongoose from 'mongoose';
 import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { destroyProductImage } from '../utils/cloudinaryService.js';
@@ -69,6 +70,52 @@ const findExistingCategoryConflict = async ({ name, slug, categoryId }) => {
       { $or: conflicts },
     ],
   });
+};
+
+const getParentCategoryId = (parentCategory) =>
+  parentCategory?._id || parentCategory || '';
+
+const validateParentCategory = async ({ parentCategory, categoryId = null }) => {
+  const parentCategoryId = String(getParentCategoryId(parentCategory)).trim();
+
+  if (!parentCategoryId) {
+    return { parentCategoryId: null };
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(parentCategoryId)) {
+    return { error: 'Valid parent category is required' };
+  }
+
+  const parent = await Category.findById(parentCategoryId).select('name parentCategory');
+
+  if (!parent) {
+    return { error: 'Parent category not found' };
+  }
+
+  if (categoryId) {
+    const currentCategoryId = String(categoryId);
+    const visited = new Set();
+    let current = parent;
+
+    while (current) {
+      const currentId = String(current._id);
+
+      if (currentId === currentCategoryId) {
+        return { error: 'A category cannot be nested under itself or one of its child categories' };
+      }
+
+      if (visited.has(currentId)) {
+        return { error: 'Category hierarchy contains a circular parent relationship' };
+      }
+
+      visited.add(currentId);
+      current = current.parentCategory
+        ? await Category.findById(current.parentCategory).select('parentCategory')
+        : null;
+    }
+  }
+
+  return { parentCategoryId: parent._id };
 };
 
 // @desc    Get categories
@@ -158,6 +205,14 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ message: 'Category name or slug already exists' });
     }
 
+    const { parentCategoryId, error: parentCategoryError } = await validateParentCategory({
+      parentCategory,
+    });
+
+    if (parentCategoryError) {
+      return res.status(400).json({ message: parentCategoryError });
+    }
+
     const category = new Category({
       name: trimmedName,
       slug: normalizedSlug,
@@ -166,7 +221,7 @@ const createCategory = async (req, res) => {
       imagePublicId: imagePublicId.trim(),
       isActive: normalizeBoolean(isActive, true),
       displayOrder: Number(displayOrder) || 0,
-      parentCategory: parentCategory || null,
+      parentCategory: parentCategoryId,
       seo: normalizeSeoPayload(seo, {
         title: trimmedName,
         description: description.trim(),
@@ -233,8 +288,13 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ message: 'Category name or slug already exists' });
     }
 
-    if (parentCategory && String(parentCategory) === String(category._id)) {
-      return res.status(400).json({ message: 'A category cannot be set as its own parent' });
+    const { parentCategoryId, error: parentCategoryError } = await validateParentCategory({
+      parentCategory,
+      categoryId: category._id,
+    });
+
+    if (parentCategoryError) {
+      return res.status(400).json({ message: parentCategoryError });
     }
 
     // Clean up old Cloudinary image if it was replaced or cleared
@@ -255,7 +315,7 @@ const updateCategory = async (req, res) => {
     category.imagePublicId = newPublicId;
     category.isActive = normalizeBoolean(isActive, category.isActive);
     category.displayOrder = Number(displayOrder) || 0;
-    category.parentCategory = parentCategory || null;
+    category.parentCategory = parentCategoryId;
     category.seo = normalizeSeoPayload(seo, {
       title: trimmedName,
       description: String(description).trim(),

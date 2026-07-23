@@ -34,3 +34,17 @@ test('buildSearchFilter rejects invalid price values', () => {
 
   assert.equal(error, 'Price filters must be valid numbers');
 });
+
+test('buildSearchFilter can match a parent category and active child categories', () => {
+  const { filter, error } = buildSearchFilter(
+    { category: 'Women' },
+    { categoryNames: ['Women', 'Dresses', 'Heels'] }
+  );
+
+  const categoryFilter = filter.$and.find((entry) => entry.category)?.category;
+
+  assert.equal(error, undefined);
+  assert.match(String(categoryFilter.$regex), /\^Women\$/);
+  assert.match(String(categoryFilter.$regex), /\^Dresses\$/);
+  assert.match(String(categoryFilter.$regex), /\^Heels\$/);
+});

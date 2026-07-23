@@ -39,3 +39,17 @@ test('server-rendered metadata replaces generic head tags without duplicates', (
   assert.equal((html.match(/rel="canonical"/g) || []).length, 1);
   assert.equal((html.match(/application\/ld\+json/g) || []).length, 1);
 });
+
+test('server-rendered metadata keeps apostrophes readable in descriptions', () => {
+  const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
+  const description =
+    'Shop women\'s and men\'s fashion, shoes, dresses, handbags, watches, perfumes, and accessories online across Sri Lanka at Apex Fashion.';
+  const html = injectSeoHead(source, {
+    title: 'Online Fashion Store Sri Lanka | Apex Fashion',
+    description,
+    canonicalUrl: '/',
+  });
+
+  assert.match(html, /<meta name="description" content="Shop women's and men's fashion/);
+  assert.doesNotMatch(html, /women(?:&#039;|&#39;|&apos;)s and men(?:&#039;|&#39;|&apos;)s/);
+});

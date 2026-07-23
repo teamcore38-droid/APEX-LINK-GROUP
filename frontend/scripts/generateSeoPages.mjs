@@ -20,8 +20,7 @@ const escapeHtml = (value = '') =>
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/"/g, '&quot;');
 
 const createStructuredData = (route, seo) => {
   const canonicalUrl = buildCanonicalUrl(route);

@@ -40,8 +40,7 @@ const escapeHtml = (value = '') =>
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/"/g, '&quot;');
 
 const removeHeadTag = (html, pattern) => html.replace(pattern, '');
 

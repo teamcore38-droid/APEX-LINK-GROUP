@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
 import RecentlyViewed from '../models/recentlyViewedModel.js';
 import SupportTicket from '../models/supportTicketModel.js';
@@ -38,9 +39,65 @@ const parseOptionalSearchNumber = (value) => {
   return Number.isFinite(parsedValue) ? parsedValue : Number.NaN;
 };
 
-const buildSearchFilter = (query = {}) => {
+const findCategoryByValue = async (value = '') => {
+  const trimmedValue = String(value).trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const normalizedSlug = trimmedValue
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return Category.findOne({
+    $or: [
+      { slug: normalizedSlug },
+      { name: { $regex: new RegExp(`^${escapeRegex(trimmedValue)}$`, 'i') } },
+    ],
+  });
+};
+
+const getDescendantCategoryNames = async (rootCategory) => {
+  const names = [rootCategory.name];
+  const queue = [rootCategory._id];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    const currentKey = String(currentId);
+
+    if (visited.has(currentKey)) {
+      continue;
+    }
+
+    visited.add(currentKey);
+
+    const children = await Category.find({ parentCategory: currentId, isActive: true }).select('name');
+    children.forEach((child) => {
+      names.push(child.name);
+      queue.push(child._id);
+    });
+  }
+
+  return names;
+};
+
+const resolveSearchCategoryNames = async (category = '') => {
+  const categoryDocument = await findCategoryByValue(category);
+
+  if (!categoryDocument) {
+    return [];
+  }
+
+  return getDescendantCategoryNames(categoryDocument);
+};
+
+const buildSearchFilter = (query = {}, options = {}) => {
   const keyword = String(getScalarQueryValue(query.keyword)).trim();
   const category = String(getScalarQueryValue(query.category)).trim();
+  const categoryNames = Array.isArray(options.categoryNames) ? options.categoryNames.filter(Boolean) : [];
   const brand = String(getScalarQueryValue(query.brand)).trim();
   const origin = String(getScalarQueryValue(query.origin)).trim();
   const minPrice = getScalarQueryValue(query.minPrice);
@@ -65,7 +122,10 @@ const buildSearchFilter = (query = {}) => {
   }
 
   if (category) {
-    filters.push({ category: { $regex: new RegExp(`^${escapeRegex(category)}$`, 'i') } });
+    const categoryPattern = (categoryNames.length > 0 ? categoryNames : [category])
+      .map((categoryName) => `^${escapeRegex(categoryName)}$`)
+      .join('|');
+    filters.push({ category: { $regex: new RegExp(categoryPattern, 'i') } });
   }
 
   if (brand) {
@@ -112,7 +172,9 @@ const getAdvancedSearch = async (req, res) => {
   const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 12, 1), 48);
   const sort = String(req.query.sort || '');
-  const { filter, error } = buildSearchFilter(req.query);
+  const category = String(getScalarQueryValue(req.query.category)).trim();
+  const categoryNames = category ? await resolveSearchCategoryNames(category) : [];
+  const { filter, error } = buildSearchFilter(req.query, { categoryNames });
 
   if (error) {
     return res.status(400).json({ message: error });
@@ -415,6 +477,7 @@ export {
   getRecommendations,
   getSupportTickets,
   recordRecentlyViewed,
+  resolveSearchCategoryNames,
   updateAdminSupportTicket,
   updateNotificationPreferences,
 };

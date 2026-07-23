@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import CustomSelect from '../components/CustomSelect';
 import { getCategoryImage, slugifyCategoryName } from '../utils/categoryUi';
 import { invalidateCategoriesCache } from '../utils/categoryApi';
 
@@ -30,6 +31,9 @@ const INITIAL_FORM = {
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+const getParentCategoryId = (category) =>
+  category?.parentCategory?._id || category?.parentCategory || '';
 
 const AdminCategoriesPage = () => {
   const navigate = useNavigate();
@@ -104,9 +108,9 @@ const AdminCategoriesPage = () => {
       visited.add(id);
       const cat = categoryMap.get(id);
       if (!cat) return '';
-      const parentId = cat.parentCategory?._id || cat.parentCategory;
+      const parentId = getParentCategoryId(cat);
       const parentPath = getPath(parentId, visited);
-      return parentPath ? `${parentPath} → ${cat.name}` : cat.name;
+      return parentPath ? `${parentPath} > ${cat.name}` : cat.name;
     };
 
     categories.forEach((c) => {
@@ -115,6 +119,46 @@ const AdminCategoriesPage = () => {
 
     return map;
   }, [categories, categoryMap]);
+
+  const descendantCategoryIds = useMemo(() => {
+    const descendants = new Set();
+
+    if (!editingId) {
+      return descendants;
+    }
+
+    const childrenByParent = new Map();
+    categories.forEach((category) => {
+      const parentId = getParentCategoryId(category);
+      if (!parentId) return;
+      const siblings = childrenByParent.get(parentId) || [];
+      siblings.push(category._id);
+      childrenByParent.set(parentId, siblings);
+    });
+
+    const queue = [...(childrenByParent.get(editingId) || [])];
+    while (queue.length > 0) {
+      const childId = queue.shift();
+      if (!childId || descendants.has(childId)) continue;
+      descendants.add(childId);
+      queue.push(...(childrenByParent.get(childId) || []));
+    }
+
+    return descendants;
+  }, [categories, editingId]);
+
+  const parentCategoryOptions = useMemo(
+    () => [
+      { value: '', label: 'No parent (top-level category)' },
+      ...categories
+        .filter((category) => category._id !== editingId && !descendantCategoryIds.has(category._id))
+        .map((category) => ({
+          value: category._id,
+          label: `${categoryPathMap.get(category._id) || category.name}${category.isActive ? '' : ' (Inactive)'}`,
+        })),
+    ],
+    [categories, categoryPathMap, descendantCategoryIds, editingId]
+  );
 
   const resetForm = () => {
     setEditingId('');
@@ -294,6 +338,7 @@ const AdminCategoriesPage = () => {
         `/api/categories/${category._id}`,
         {
           ...category,
+          parentCategory: getParentCategoryId(category),
           isActive: !category.isActive,
         },
         {
@@ -507,7 +552,9 @@ const AdminCategoriesPage = () => {
                     className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-brand-dark outline-none transition placeholder:text-gray-400 focus:border-brand-accent"
                   />
                 </div>
-              </div>              <div>
+              </div>
+
+              <div>
                 <label htmlFor="description" className="mb-2 block text-sm font-semibold text-brand-dark">
                   Description
                 </label>
@@ -520,6 +567,30 @@ const AdminCategoriesPage = () => {
                   placeholder="Describe this category..."
                   className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent"
                 />
+              </div>
+
+              <div>
+                <label htmlFor="parentCategory" className="mb-2 block text-sm font-semibold text-brand-dark">
+                  Parent Category
+                </label>
+                <CustomSelect
+                  id="parentCategory"
+                  value={form.parentCategory}
+                  onChange={(nextValue) => {
+                    setSuccess('');
+                    setError('');
+                    setForm((currentForm) => ({
+                      ...currentForm,
+                      parentCategory: nextValue,
+                    }));
+                  }}
+                  options={parentCategoryOptions}
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  {form.parentCategory
+                    ? `Child of ${categoryPathMap.get(form.parentCategory) || 'selected category'}`
+                    : 'This will be a top-level category.'}
+                </p>
               </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
