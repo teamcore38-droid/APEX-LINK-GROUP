@@ -5,6 +5,7 @@ import {
   getDatabaseProductDescription,
   getProductOptions,
 } from '../utils/productSeoContent.js';
+import { buildProductUrl } from '../utils/productUrls.js';
 
 const DEFAULT_SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_IMAGE_PATH = '/hero/hero-bg-4.webp';
@@ -97,7 +98,7 @@ const getSelectedProductOption = (product = {}, selection = {}) => {
 
 const buildProductSeo = (product, selection = {}) => {
   const siteUrl = getSiteUrl();
-  const url = `${siteUrl}/product/${product._id}`;
+  const url = buildProductUrl(product, siteUrl);
   const selectedOption = getSelectedProductOption(product, selection);
   const offerUrl = new URL(url);
   const selectedSize = cleanProductText(selectedOption?.size, 100);
@@ -259,7 +260,7 @@ const getSitemap = async (_req, res) => {
   const siteUrl = getSiteUrl();
   const [products, categories] = await Promise.all([
     Product.find(SEO_PRODUCT_FILTER)
-      .select('_id name image images updatedAt')
+      .select('_id name slug image images updatedAt')
       .lean(),
     Category.find({ isActive: true }).select('slug image updatedAt').lean(),
   ]);
@@ -272,7 +273,7 @@ const getSitemap = async (_req, res) => {
       images: category.image ? [{ loc: toAbsoluteUrl(category.image) }] : [],
     })),
     ...products.map((product) => ({
-      loc: `${siteUrl}/product/${product._id}`,
+      loc: buildProductUrl(product, siteUrl),
       lastmod: product.updatedAt?.toISOString?.(),
       images: getProductImageUrls(product).map((loc) => ({ loc, title: product.name })),
     })),
@@ -317,7 +318,7 @@ const buildFeedOptions = (product = {}) => {
 
 const buildFeedItem = (product, option = null, variantDimensions = []) => {
   const siteUrl = getSiteUrl();
-  const baseLink = `${siteUrl}/product/${product._id}`;
+  const baseLink = buildProductUrl(product, siteUrl);
   const description = getDatabaseProductDescription(product);
   const brand = cleanProductText(product.brand, 100);
   const size = cleanProductText(option?.size, 100);

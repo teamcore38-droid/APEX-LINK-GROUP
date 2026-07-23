@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildProductPayloadFromForm,
+  buildProductPath,
   formatCurrency,
+  getProductIdFromRouteParam,
   getOptimizedImageUrl,
   getProductFormGalleryImages,
   getVariantImageAssets,
@@ -136,4 +138,19 @@ test('product payload preserves primary and additional categories', () => {
 
   assert.equal(payload.category, 'Shoes');
   assert.deepEqual(payload.categories, ['Shoes', 'Women', 'Occasion Wear']);
+});
+
+test('product URL helpers build slugged paths and recover database IDs', () => {
+  const path = buildProductPath({
+    _id: '6a50f936edb8f74ee8e0c471',
+    slug: 'Unique Graceful Men Flip Flops',
+    name: 'Ignored fallback',
+  });
+
+  assert.equal(path, '/product/unique-graceful-men-flip-flops-6a50f936edb8f74ee8e0c471');
+  assert.equal(
+    getProductIdFromRouteParam('unique-graceful-men-flip-flops-6a50f936edb8f74ee8e0c471'),
+    '6a50f936edb8f74ee8e0c471'
+  );
+  assert.equal(getProductIdFromRouteParam('6a50f936edb8f74ee8e0c471'), '6a50f936edb8f74ee8e0c471');
 });

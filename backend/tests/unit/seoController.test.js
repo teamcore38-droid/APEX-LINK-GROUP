@@ -10,6 +10,7 @@ test('buildProductSeo creates product structured data', () => {
   const product = {
     _id: { toString: () => 'product-id' },
     name: 'Leather Walking Shoes',
+    slug: 'leather-walking-shoes',
     image: '/shoes.jpg',
     images: [],
     description: 'Comfortable walking shoes.',
@@ -28,7 +29,7 @@ test('buildProductSeo creates product structured data', () => {
 
   assert.equal(seo.structuredData['@type'], 'Product');
   assert.equal(seo.structuredData.offers.availability, 'https://schema.org/InStock');
-  assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/product/product-id');
+  assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/product/leather-walking-shoes-product-id');
   assert.equal(seo.breadcrumbs['@type'], 'BreadcrumbList');
   assert.equal(seo.structuredData.offers.seller['@id'], 'https://apexfashion.lk/#organization');
 });
@@ -37,6 +38,7 @@ test('buildProductSeo uses the selected database variant offer', () => {
   const product = {
     _id: { toString: () => 'product-id' },
     name: 'Walking Shoes',
+    slug: 'walking-shoes',
     image: '/shoes.jpg',
     description: 'Walking shoes with selectable size and color options.',
     brand: 'Apex Fashion',
@@ -69,6 +71,7 @@ test('Merchant feed emits distinct variant items with required fields', () => {
     {
       _id: '123456789012345678901234',
       name: 'Walking Shoes',
+      slug: 'walking-shoes',
       image: 'https://images.example/shoes.jpg',
       description: 'Walking shoes with selectable options.',
       brand: 'Apex Fashion',
@@ -99,6 +102,7 @@ test('Merchant feed emits distinct variant items with required fields', () => {
   assert.match(xml, /<g:name>size<\/g:name>\s*<g:value>M<\/g:value>/);
   assert.match(xml, /<g:name>color<\/g:name>\s*<g:value>Black<\/g:value>/);
   assert.match(xml, /variant=abcdefabcdefabcdefabcdef/);
+  assert.match(xml, /https:\/\/apexfashion\.lk\/product\/walking-shoes-123456789012345678901234/);
   assert.doesNotMatch(xml, /localhost|vercel\.app|www\.apexfashion\.lk/);
 });
 

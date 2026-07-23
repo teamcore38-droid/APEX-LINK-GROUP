@@ -4,6 +4,7 @@ import { ArrowRight, Lock, ShoppingCart, Star } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import {
   formatCurrency,
+  buildProductPath,
   getOptimizedImageUrl,
   getProductStatusBadge,
   getStockPresentation,
@@ -15,6 +16,7 @@ const Product = ({ product, priority = false }) => {
   const statusBadge = getProductStatusBadge(product);
   const stockBadge = getStockPresentation(product.countInStock);
   const showStockBadge = product.countInStock > 0;
+  const productPath = buildProductPath(product);
 
   const handleAddToCart = (event) => {
     event.preventDefault();
@@ -27,7 +29,7 @@ const Product = ({ product, priority = false }) => {
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#ead6c6] bg-white shadow-[0_12px_30px_rgba(53,26,17,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(53,26,17,0.14)]">
-      <Link to={`/product/${product._id}`} className="relative block">
+      <Link to={productPath} className="relative block">
         <div className="relative aspect-square overflow-hidden bg-[#f4e7db] sm:aspect-[4/3]">
           <img
             src={getOptimizedImageUrl(product.image, { width: 520, height: 520, crop: 'fill' })}
@@ -74,7 +76,7 @@ const Product = ({ product, priority = false }) => {
           )}
         </div>
 
-        <Link to={`/product/${product._id}`} className="block">
+        <Link to={productPath} className="block">
           <h3 className="line-clamp-2 min-h-10 break-words font-serif text-base font-bold leading-5 text-[#2a140e] transition-colors duration-200 group-hover:text-[#c9822b] sm:min-h-11 sm:text-lg sm:leading-6 xl:text-xl">
             {product.name}
           </h3>
@@ -115,7 +117,7 @@ const Product = ({ product, priority = false }) => {
 
           <div className="flex w-full flex-col items-stretch gap-2 xl:flex-row xl:items-center">
             <Link
-              to={`/product/${product._id}`}
+              to={productPath}
               className="inline-flex min-h-9 flex-1 items-center justify-center rounded-full border border-[#e0c3ae] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-[#744126] transition-colors duration-200 hover:border-[#744126] hover:bg-[#f5e9dd] sm:text-xs sm:tracking-[0.12em]"
             >
               View <ArrowRight size={13} className="ml-2" />

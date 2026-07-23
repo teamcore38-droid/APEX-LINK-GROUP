@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import RouteLoadingScreen from '../components/RouteLoadingScreen';
-import { formatCurrency } from '../utils/productUi';
+import { buildProductPath, formatCurrency } from '../utils/productUi';
 import { ACCOUNT_TABS, createInitialAddressForm, formatAddressLines } from '../utils/accountUi';
 import {
   getDeliveryBadgeClass,
@@ -1089,7 +1089,7 @@ const ProfilePage = () => {
                           <p className="mt-1 text-sm font-semibold text-brand-primary">{formatCurrency(item.product?.price || 0)}</p>
                           <div className="mt-4 flex flex-wrap gap-2">
                             <Link
-                              to={`/product/${item.product?._id}`}
+                              to={buildProductPath(item.product)}
                               className="rounded-full bg-brand-primary px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white"
                             >
                               View

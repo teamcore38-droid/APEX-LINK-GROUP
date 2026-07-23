@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Trash2, ArrowLeft, MapPin, ChevronDown, Loader2, X, Plus, Minus } from 'lucide-react';
-import { formatCurrency } from '../utils/productUi';
+import { buildProductPath, formatCurrency } from '../utils/productUi';
 
 const SL_DISTRICTS = [
   'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo',
@@ -288,7 +288,7 @@ const CartPage = () => {
                     <li key={`${item.product}-${item.variantId || 'default'}-${item.size || 'nosize'}-${item.color || 'nocolor'}`} className="p-6 flex flex-col md:grid md:grid-cols-5 items-center gap-4">
                       <div className="col-span-2 flex items-center w-full">
                         <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded" />
-                        <Link to={`/product/${item.product}`} className="ml-4 font-semibold text-brand-dark hover:text-brand-primary">
+                        <Link to={buildProductPath({ _id: item.product, slug: item.slug, name: item.name })} className="ml-4 font-semibold text-brand-dark hover:text-brand-primary">
                           {item.name}
                           {(item.variantLabel || item.size || item.color) && (
                             <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-gray-500">

@@ -162,6 +162,26 @@ export const slugifyProductName = (value = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+export const getProductUrlSlug = (product = {}) =>
+  slugifyProductName(product.slug || product.name || '') || 'product';
+
+export const buildProductPath = (productOrId = {}, slug = '') => {
+  const product =
+    productOrId && typeof productOrId === 'object'
+      ? productOrId
+      : { _id: productOrId, slug };
+  const productId = product._id || product.id || product.product || '';
+
+  return `/product/${getProductUrlSlug(product)}-${productId}`;
+};
+
+export const getProductIdFromRouteParam = (value = '') => {
+  const normalizedValue = String(value || '').trim();
+  const productIdMatch = normalizedValue.match(/[a-f0-9]{24}$/i);
+
+  return productIdMatch?.[0] || normalizedValue;
+};
+
 export const getProductImages = (product = {}) => {
   return getProductImageAssets(product).map((asset) => asset.url);
 };

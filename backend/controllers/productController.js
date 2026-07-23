@@ -7,6 +7,7 @@ import { recordAuditLog } from '../utils/auditService.js';
 import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
 import { notifyIndexNow } from '../utils/indexNowService.js';
 import { hasCopiedMarketplaceDescription } from '../utils/productSeoContent.js';
+import { buildProductPath } from '../utils/productUrls.js';
 import {
   destroyProductImage,
   destroyProductImages,
@@ -840,7 +841,7 @@ const deleteProduct = async (req, res) => {
         name: product.name,
         deletedImagePublicIds: publicIdsToDelete,
       });
-      await notifyIndexNow([`/product/${product._id}`, '/products', '/sitemap.xml']);
+      await notifyIndexNow([buildProductPath(product), '/products', '/sitemap.xml']);
       return res.json({ message: 'Product removed' });
     }
 
@@ -904,7 +905,7 @@ const createProduct = async (req, res) => {
     await recordAuditLog(req, 'catalog.product.create', 'Product', createdProduct._id, {
       name: createdProduct.name,
     });
-    await notifyIndexNow([`/product/${createdProduct._id}`, '/products', '/sitemap.xml']);
+    await notifyIndexNow([buildProductPath(createdProduct), '/products', '/sitemap.xml']);
     res.status(201).json(createdProduct);
   } catch (error) {
     console.error(error);
@@ -973,7 +974,12 @@ const updateProduct = async (req, res) => {
       name: updatedProduct.name,
       deletedImagePublicIds: removedImagePublicIds,
     });
-    await notifyIndexNow([`/product/${updatedProduct._id}`, '/products', '/sitemap.xml']);
+    await notifyIndexNow([
+      buildProductPath(previousProduct),
+      buildProductPath(updatedProduct),
+      '/products',
+      '/sitemap.xml',
+    ]);
     res.json(updatedProduct);
   } catch (error) {
     if (error.name === 'CastError') {

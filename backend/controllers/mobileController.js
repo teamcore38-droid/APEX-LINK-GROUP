@@ -6,6 +6,7 @@ import PushSubscription from '../models/pushSubscriptionModel.js';
 import SupportTicket from '../models/supportTicketModel.js';
 import { Banner, FAQItem, HomepageSection, PolicyPage } from '../models/cmsModel.js';
 import { activeProductFilter, getPersonalizedRecommendations } from '../utils/recommendationService.js';
+import { buildProductPath } from '../utils/productUrls.js';
 
 const getFrontendUrl = () =>
   String(process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
@@ -21,7 +22,7 @@ const getMobileConfig = (_req, res) => {
     manifestUrl: `${baseUrl}/manifest.webmanifest`,
     serviceWorkerUrl: `${baseUrl}/sw.js`,
     universalLinks: {
-      products: `${baseUrl}/product/:id`,
+      products: `${baseUrl}/product/:slugAndId`,
       orders: `${baseUrl}/orders/:id`,
       trackOrder: `${baseUrl}/track-order`,
     },
@@ -100,7 +101,7 @@ const resolveDeepLink = async (req, res) => {
       type,
       id,
       title: product.name,
-      webUrl: `${baseUrl}/product/${id}`,
+      webUrl: `${baseUrl}${buildProductPath(product)}`,
       appUrl: `apex://product/${id}`,
     });
   }

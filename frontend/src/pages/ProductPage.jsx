@@ -37,6 +37,8 @@ import {
 import { buildCanonicalUrl } from '../utils/seoConfig';
 import {
   formatCurrency,
+  buildProductPath,
+  getProductIdFromRouteParam,
   getOptimizedImageUrl,
   getProductImageUrl,
   getProductImages,
@@ -80,11 +82,12 @@ const getProductLightboxImageUrl = (image) =>
   getOptimizedImageUrl(image, { width: 1800, crop: 'limit', quality: 'auto:good' });
 
 const ProductPage = () => {
-  const { id } = useParams();
+  const { id: productRouteParam } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { userInfo } = useAuth();
+  const productId = getProductIdFromRouteParam(productRouteParam);
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -111,7 +114,8 @@ const ProductPage = () => {
     let isActive = true;
 
     const applyProductSeo = (data, seoData = null) => {
-      const canonicalUrl = buildCanonicalUrl(`/product/${data._id}`);
+      const canonicalPath = buildProductPath(data);
+      const canonicalUrl = buildCanonicalUrl(canonicalPath);
       applySeo({
         title: seoData?.title || data.seo?.title || data.name,
         description:
@@ -226,13 +230,17 @@ const ProductPage = () => {
       setCategorySlug('');
 
       try {
-        const { data } = await axios.get(`/api/products/${id}`);
+        const { data } = await axios.get(`/api/products/${productId}`);
         if (!isActive) {
           return;
         }
 
         setProduct(data);
         applyProductSeo(data);
+        const canonicalPath = buildProductPath(data);
+        if (location.pathname !== canonicalPath) {
+          navigate(`${canonicalPath}${location.search}`, { replace: true });
+        }
         const gallery = getProductImages(data);
         const requestedOptions = new URLSearchParams(location.search);
         const requestedVariantId = requestedOptions.get('variant') || '';
@@ -269,7 +277,7 @@ const ProductPage = () => {
         applySeo({
           title: 'Product Not Found',
           description: 'This Apex Fashion product is unavailable or could not be found.',
-          canonicalUrl: buildCanonicalUrl(`/product/${id}`),
+          canonicalUrl: buildCanonicalUrl(`/product/${productRouteParam}`),
           robots: NOINDEX_ROBOTS,
         });
         setLoading(false);
@@ -281,7 +289,7 @@ const ProductPage = () => {
     return () => {
       isActive = false;
     };
-  }, [id, location.search, userInfo?.token]);
+  }, [location.pathname, location.search, navigate, productId, productRouteParam, userInfo?.token]);
 
   const selectedVariant = useMemo(
     () => {
@@ -382,6 +390,7 @@ const ProductPage = () => {
 
   const stockPresentation = getStockPresentation(effectiveStock || 0);
   const displaySku = selectedVariant?.sku || product?.sku || '';
+  const currentProductPath = product ? buildProductPath(product) : `/product/${productRouteParam}`;
 
   const handleSelectSize = (sizeObj) => {
     const nextSize = sizeObj.size;
@@ -544,7 +553,7 @@ const ProductPage = () => {
 
   const addToWishlist = async () => {
     if (!userInfo?.token) {
-      navigate(`/login?redirect=/product/${id}`);
+      navigate(`/login?redirect=${encodeURIComponent(`${currentProductPath}${location.search}`)}`);
       return;
     }
 
@@ -572,7 +581,7 @@ const ProductPage = () => {
     event.preventDefault();
 
     if (!userInfo?.token) {
-      navigate(`/login?redirect=/product/${id}`);
+      navigate(`/login?redirect=${encodeURIComponent(`${currentProductPath}${location.search}`)}`);
       return;
     }
 

@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
 import {
   buildProductFormFromProduct,
+  buildProductPath,
   buildProductPayloadFromForm,
   createInitialProductForm,
   formatCurrency,
@@ -980,7 +981,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
 
           {isEditMode && (
             <Link
-              to={`/product/${id}`}
+              to={buildProductPath({ _id: id, slug: form.slug, name: form.name })}
               className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.16em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
             >
               View Public Product
