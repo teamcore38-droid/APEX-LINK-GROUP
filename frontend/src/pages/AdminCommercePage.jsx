@@ -39,6 +39,8 @@ const AdminCommercePage = () => {
   const [giftCardForm, setGiftCardForm] = useState({ code: '', balance: 100, currency: 'LKR', isActive: true });
   const [taxForm, setTaxForm] = useState({ country: 'LK', state: '', label: 'Sales Tax', rate: 0.15, isActive: true });
   const [shippingForm, setShippingForm] = useState({ carrier: 'Apex Logistics', service: 'Standard Delivery', country: '', state: '', basePrice: 10, freeShippingThreshold: 50, estimatedDaysMin: 3, estimatedDaysMax: 5, isActive: true });
+  const [settingsForm, setSettingsForm] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94770000000' });
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const config = userInfo?.token
     ? {
@@ -78,6 +80,7 @@ const AdminCommercePage = () => {
         giftCardResponse,
         taxResponse,
         shippingResponse,
+        settingsResponse,
       ] = await Promise.all([
         axios.get('/api/admin/commerce/inventory/low-stock', config),
         axios.get('/api/admin/commerce/inventory/events', config),
@@ -87,6 +90,7 @@ const AdminCommercePage = () => {
         axios.get('/api/admin/commerce/gift-cards', config),
         axios.get('/api/admin/commerce/tax-rules', config),
         axios.get('/api/admin/commerce/shipping-rates', config),
+        axios.get('/api/settings'),
       ]);
 
       setLowStock(lowStockResponse.data);
@@ -97,6 +101,12 @@ const AdminCommercePage = () => {
       setGiftCards(giftCardResponse.data);
       setTaxRules(taxResponse.data);
       setShippingRates(shippingResponse.data);
+      if (settingsResponse.data) {
+        setSettingsForm({
+          checkoutMode: settingsResponse.data.checkoutMode || 'whatsapp',
+          whatsappNumber: settingsResponse.data.whatsappNumber || '+94770000000',
+        });
+      }
     } catch (loadError) {
       console.error(loadError);
       setError(loadError.response?.data?.message || 'Unable to load commerce operations.');
@@ -142,6 +152,25 @@ const AdminCommercePage = () => {
     await loadCommerce();
   };
 
+  const saveSettings = async () => {
+    setError('');
+    setSuccess('');
+    setSettingsSaving(true);
+    try {
+      const { data } = await axios.put('/api/settings', settingsForm, config);
+      setSettingsForm({
+        checkoutMode: data.checkoutMode || 'whatsapp',
+        whatsappNumber: data.whatsappNumber || '+94770000000',
+      });
+      setSuccess('Checkout Mode & WhatsApp settings saved successfully.');
+    } catch (saveErr) {
+      console.error(saveErr);
+      setError(saveErr.response?.data?.message || 'Failed to save checkout settings.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -158,13 +187,86 @@ const AdminCommercePage = () => {
         </Link>
         <div className="mt-4 rounded-2xl bg-brand-dark px-5 py-4 text-white shadow-lg sm:px-8 sm:py-5">
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-brand-accent sm:text-xs">Commerce Operations</p>
-          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Promotions, Inventory, Reviews, Returns</h1>
+          <h1 className="mt-1 font-serif text-2xl font-bold sm:text-3xl">Settings, Promotions, Inventory, Reviews, Returns</h1>
         </div>
 
         {error && <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
         {success && <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{success}</div>}
 
         <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          {/* Checkout Mode & WhatsApp Configuration */}
+          <section className="rounded-[28px] bg-white p-6 shadow-sm border border-brand-primary/20 lg:col-span-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-accent">Store Settings</span>
+                <h2 className="font-serif text-2xl font-bold text-brand-dark">Checkout Mode & WhatsApp Configuration</h2>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-6 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-500">Checkout Mode</label>
+                <div className="space-y-3">
+                  <label className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition ${settingsForm.checkoutMode === 'whatsapp' ? 'border-brand-primary bg-brand-light' : 'border-gray-200 bg-[#fff7ee]'}`}>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="checkoutMode"
+                        value="whatsapp"
+                        checked={settingsForm.checkoutMode === 'whatsapp'}
+                        onChange={() => setSettingsForm((prev) => ({ ...prev, checkoutMode: 'whatsapp' }))}
+                        className="h-4 w-4 text-brand-primary"
+                      />
+                      <div>
+                        <span className="block font-bold text-brand-dark">WhatsApp Order</span>
+                        <span className="text-xs text-gray-500">Customers order directly via WhatsApp message</span>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-green-100 px-2.5 py-1 text-[10px] font-bold uppercase text-green-700">Default Mode</span>
+                  </label>
+
+                  <label className={`flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition ${settingsForm.checkoutMode === 'online' ? 'border-brand-primary bg-brand-light' : 'border-gray-200 bg-[#fff7ee]'}`}>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="checkoutMode"
+                        value="online"
+                        checked={settingsForm.checkoutMode === 'online'}
+                        onChange={() => setSettingsForm((prev) => ({ ...prev, checkoutMode: 'online' }))}
+                        className="h-4 w-4 text-brand-primary"
+                      />
+                      <div>
+                        <span className="block font-bold text-brand-dark">Online Checkout</span>
+                        <span className="text-xs text-gray-500">Standard web checkout & order processing flow</span>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-between">
+                <div>
+                  <Field
+                    label="WhatsApp Phone Number"
+                    value={settingsForm.whatsappNumber}
+                    onChange={(value) => setSettingsForm((prev) => ({ ...prev, whatsappNumber: value }))}
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Enter the phone number (e.g. +94770000000) that will receive WhatsApp orders. Editable at any time.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={settingsSaving}
+                  onClick={saveSettings}
+                  className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-primary px-5 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white transition hover:bg-brand-dark disabled:opacity-50"
+                >
+                  {settingsSaving ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Save size={16} className="mr-2" />}
+                  Save Checkout Settings
+                </button>
+              </div>
+            </div>
+          </section>
           <section className="rounded-[28px] bg-white p-6 shadow-sm">
             <h2 className="font-serif text-2xl font-bold text-brand-dark">Low Stock Alerts</h2>
             <div className="mt-4 space-y-3">

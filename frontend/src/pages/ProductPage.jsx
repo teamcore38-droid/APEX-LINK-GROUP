@@ -11,6 +11,7 @@ import {
   Info,
   Loader2,
   Maximize2,
+  MessageCircle,
   MessageSquare,
   Minus,
   Plus,
@@ -109,6 +110,25 @@ const ProductPage = () => {
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [categorySlug, setCategorySlug] = useState('');
+  const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94770000000' });
+
+  useEffect(() => {
+    let isMounted = true;
+    axios.get('/api/settings')
+      .then(({ data }) => {
+        if (isMounted && data) {
+          setStoreSettings({
+            checkoutMode: data.checkoutMode || 'whatsapp',
+            whatsappNumber: data.whatsappNumber || '+94770000000',
+          });
+        }
+      })
+      .catch((err) => console.error('Error fetching settings:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -527,6 +547,68 @@ const ProductPage = () => {
       qty
     );
     navigate('/cart');
+  };
+
+  const handleBuyNow = () => {
+    if (product.hasSizes && product.sizes?.length > 0) {
+      if (!selectedSize) {
+        setSizeError('Please select a size before proceeding.');
+        return;
+      }
+
+      if (availableColorsForSize.length > 0 && !selectedColor) {
+        setSizeError('Please select an available color for this size before proceeding.');
+        return;
+      }
+
+      if (availableColorsForSize.length > 0 && selectedColor && !availableColorsForSize.some((color) => color.name === selectedColor)) {
+        setSizeError('That color is not available for the selected size.');
+        return;
+      }
+    }
+
+    setSizeError('');
+
+    if (storeSettings.checkoutMode === 'whatsapp') {
+      const rawNumber = (storeSettings.whatsappNumber || '+94770000000').replace(/\D/g, '');
+      const unitPriceFormatted = formatCurrency(effectivePrice);
+      const totalPriceFormatted = formatCurrency(effectivePrice * qty);
+      const currentUrl = window.location.href;
+
+      const messageLines = [
+        `🛒 *NEW ORDER REQUEST*`,
+        ``,
+        `*Product:* ${product.name}`,
+        product.hasSizes && selectedSize ? `*Size:* ${selectedSize}` : null,
+        selectedColor ? `*Color:* ${selectedColor}` : null,
+        `*Quantity:* ${qty}`,
+        `*Unit Price:* ${unitPriceFormatted}`,
+        `*Total:* ${totalPriceFormatted}`,
+        ``,
+        `*Product Link:* ${currentUrl}`,
+        ``,
+        `Thank you!`,
+      ].filter((line) => line !== null).join('\n');
+
+      const whatsappUrl = `https://wa.me/${rawNumber}?text=${encodeURIComponent(messageLines)}`;
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      addToCart(
+        {
+          ...product,
+          image: selectedVariant?.image || currentGalleryImage || product.image,
+          price: effectivePrice,
+          countInStock: effectiveStock,
+          size: selectedSize || '',
+          color: selectedColor || '',
+          variantId: selectedVariant?._id || '',
+          variantLabel: selectedVariant?.label || '',
+          sku: selectedVariant?.sku || product.sku || '',
+        },
+        qty
+      );
+      navigate('/checkout');
+    }
   };
 
   const shareProduct = async () => {
@@ -1019,6 +1101,19 @@ const ProductPage = () => {
                     </button>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={effectiveStock === 0}
+                  className={`flex h-12 w-full items-center justify-center rounded-xl px-5 py-3 text-xs sm:text-sm font-bold uppercase tracking-[0.18em] transition-all duration-200 ${
+                    effectiveStock === 0
+                      ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                      : 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 hover:shadow-md'
+                  }`}
+                >
+                  <MessageCircle size={18} className="mr-2" /> Buy Now
+                </button>
 
                 <Link
                   to="/products"

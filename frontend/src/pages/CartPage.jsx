@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Trash2, ArrowLeft, MapPin, ChevronDown, Loader2, X, Plus, Minus } from 'lucide-react';
+import { Trash2, ArrowLeft, MapPin, ChevronDown, Loader2, X, Plus, Minus, MessageCircle } from 'lucide-react';
 import { buildProductPath, formatCurrency } from '../utils/productUi';
 
 const SL_DISTRICTS = [
@@ -232,11 +232,69 @@ const CartPage = () => {
   const { userInfo } = useAuth();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
+  const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94770000000' });
+
+  useEffect(() => {
+    let isMounted = true;
+    axios.get('/api/settings')
+      .then(({ data }) => {
+        if (isMounted && data) {
+          setStoreSettings({
+            checkoutMode: data.checkoutMode || 'whatsapp',
+            whatsappNumber: data.whatsappNumber || '+94770000000',
+          });
+        }
+      })
+      .catch((err) => console.error('Error fetching settings:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.qty * item.price, 0);
 
+  const handleWhatsAppCartOrder = () => {
+    const rawNumber = (storeSettings.whatsappNumber || '+94770000000').replace(/\D/g, '');
+
+    const itemLines = cartItems.map((item, index) => {
+      const options = [
+        item.size ? `Size: ${item.size}` : null,
+        item.color ? `Color: ${item.color}` : null,
+        item.variantLabel ? `Variant: ${item.variantLabel}` : null,
+      ].filter(Boolean).join(' | ');
+
+      return `${index + 1}. *${item.name}*` +
+        (options ? `\n   • ${options}` : '') +
+        `\n   • Qty: ${item.qty} × ${formatCurrency(item.price)} = ${formatCurrency(item.price * item.qty)}`;
+    }).join('\n\n');
+
+    const grandTotal = subtotal + (selectedDistrict && districtShippingFee ? districtShippingFee : 0);
+
+    const messageLines = [
+      `🛒 *NEW CART ORDER REQUEST*`,
+      ``,
+      `*Order Items:*`,
+      itemLines,
+      ``,
+      `*Subtotal:* ${formatCurrency(subtotal)}`,
+      selectedDistrict ? `*Delivery District:* ${selectedDistrict}` : null,
+      selectedDistrict && districtShippingFee !== undefined ? `*Delivery Fee:* ${formatCurrency(districtShippingFee)}` : null,
+      `*Cart Total:* ${formatCurrency(grandTotal)}`,
+      ``,
+      `Thank you!`,
+    ].filter((line) => line !== null).join('\n');
+
+    const whatsappUrl = `https://wa.me/${rawNumber}?text=${encodeURIComponent(messageLines)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const checkoutHandler = () => {
-    setShowModal(true);
+    if (storeSettings.checkoutMode === 'whatsapp') {
+      handleWhatsAppCartOrder();
+    } else {
+      setShowModal(true);
+    }
   };
 
   const handleModalConfirm = (district, fee) => {
@@ -386,9 +444,19 @@ const CartPage = () => {
                 
                 <button 
                   onClick={checkoutHandler}
-                  className="w-full btn-primary py-3 text-lg font-bold uppercase tracking-wider"
+                  className={`w-full py-3.5 text-base font-bold uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 ${
+                    storeSettings.checkoutMode === 'whatsapp'
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
+                      : 'bg-brand-primary text-white hover:bg-brand-dark shadow-md'
+                  }`}
                 >
-                  Proceed to Checkout
+                  {storeSettings.checkoutMode === 'whatsapp' ? (
+                    <>
+                      <MessageCircle size={20} /> Order via WhatsApp
+                    </>
+                  ) : (
+                    'Proceed to Checkout'
+                  )}
                 </button>
               </div>
             </div>
