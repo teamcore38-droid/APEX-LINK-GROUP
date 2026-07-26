@@ -232,7 +232,7 @@ const CartPage = () => {
   const { userInfo } = useAuth();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-  const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94770000000' });
+  const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94703690505' });
 
   useEffect(() => {
     let isMounted = true;
@@ -241,7 +241,7 @@ const CartPage = () => {
         if (isMounted && data) {
           setStoreSettings({
             checkoutMode: data.checkoutMode || 'whatsapp',
-            whatsappNumber: data.whatsappNumber || '+94770000000',
+            whatsappNumber: data.whatsappNumber || '+94703690505',
           });
         }
       })
@@ -255,7 +255,7 @@ const CartPage = () => {
   const subtotal = cartItems.reduce((acc, item) => acc + item.qty * item.price, 0);
 
   const handleWhatsAppCartOrder = () => {
-    const rawNumber = (storeSettings.whatsappNumber || '+94770000000').replace(/\D/g, '');
+    const rawNumber = (storeSettings.whatsappNumber || '+94703690505').replace(/\D/g, '');
 
     const itemLines = cartItems.map((item, index) => {
       const options = [

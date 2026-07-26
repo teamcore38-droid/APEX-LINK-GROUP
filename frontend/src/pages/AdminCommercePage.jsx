@@ -39,7 +39,7 @@ const AdminCommercePage = () => {
   const [giftCardForm, setGiftCardForm] = useState({ code: '', balance: 100, currency: 'LKR', isActive: true });
   const [taxForm, setTaxForm] = useState({ country: 'LK', state: '', label: 'Sales Tax', rate: 0.15, isActive: true });
   const [shippingForm, setShippingForm] = useState({ carrier: 'Apex Logistics', service: 'Standard Delivery', country: '', state: '', basePrice: 10, freeShippingThreshold: 50, estimatedDaysMin: 3, estimatedDaysMax: 5, isActive: true });
-  const [settingsForm, setSettingsForm] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94770000000' });
+  const [settingsForm, setSettingsForm] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94703690505' });
   const [settingsSaving, setSettingsSaving] = useState(false);
 
   const config = userInfo?.token
@@ -104,7 +104,7 @@ const AdminCommercePage = () => {
       if (settingsResponse.data) {
         setSettingsForm({
           checkoutMode: settingsResponse.data.checkoutMode || 'whatsapp',
-          whatsappNumber: settingsResponse.data.whatsappNumber || '+94770000000',
+          whatsappNumber: settingsResponse.data.whatsappNumber || '+94703690505',
         });
       }
     } catch (loadError) {
@@ -160,7 +160,7 @@ const AdminCommercePage = () => {
       const { data } = await axios.put('/api/settings', settingsForm, config);
       setSettingsForm({
         checkoutMode: data.checkoutMode || 'whatsapp',
-        whatsappNumber: data.whatsappNumber || '+94770000000',
+        whatsappNumber: data.whatsappNumber || '+94703690505',
       });
       setSuccess('Checkout Mode & WhatsApp settings saved successfully.');
     } catch (saveErr) {
@@ -251,7 +251,7 @@ const AdminCommercePage = () => {
                     onChange={(value) => setSettingsForm((prev) => ({ ...prev, whatsappNumber: value }))}
                   />
                   <p className="mt-2 text-xs text-gray-500">
-                    Enter the phone number (e.g. +94770000000) that will receive WhatsApp orders. Editable at any time.
+                    Enter the phone number (e.g. +94703690505) that will receive WhatsApp orders. Editable at any time.
                   </p>
                 </div>
 

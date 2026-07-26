@@ -110,7 +110,7 @@ const ProductPage = () => {
   const [wishlistSaving, setWishlistSaving] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [categorySlug, setCategorySlug] = useState('');
-  const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94770000000' });
+  const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94703690505' });
 
   useEffect(() => {
     let isMounted = true;
@@ -119,7 +119,7 @@ const ProductPage = () => {
         if (isMounted && data) {
           setStoreSettings({
             checkoutMode: data.checkoutMode || 'whatsapp',
-            whatsappNumber: data.whatsappNumber || '+94770000000',
+            whatsappNumber: data.whatsappNumber || '+94703690505',
           });
         }
       })
@@ -570,7 +570,7 @@ const ProductPage = () => {
     setSizeError('');
 
     if (storeSettings.checkoutMode === 'whatsapp') {
-      const rawNumber = (storeSettings.whatsappNumber || '+94770000000').replace(/\D/g, '');
+      const rawNumber = (storeSettings.whatsappNumber || '+94703690505').replace(/\D/g, '');
       const unitPriceFormatted = formatCurrency(effectivePrice);
       const totalPriceFormatted = formatCurrency(effectivePrice * qty);
       const currentUrl = window.location.href;

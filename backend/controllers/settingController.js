@@ -2,7 +2,7 @@ import Setting from '../models/settingModel.js';
 
 const DEFAULT_SETTINGS = {
   checkoutMode: 'whatsapp',
-  whatsappNumber: '+94770000000',
+  whatsappNumber: '+94703690505',
 };
 
 // @desc    Get site settings
