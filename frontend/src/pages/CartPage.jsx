@@ -271,7 +271,13 @@ const CartPage = () => {
 
     const grandTotal = subtotal + (selectedDistrict && districtShippingFee ? districtShippingFee : 0);
 
+    const firstItemUrl = cartItems[0]
+      ? `${window.location.origin}${buildProductPath({ _id: cartItems[0].product, slug: cartItems[0].slug, name: cartItems[0].name })}`
+      : window.location.href;
+
     const messageLines = [
+      firstItemUrl,
+      ``,
       `🛒 *NEW CART ORDER REQUEST*`,
       ``,
       `*Order Items:*`,

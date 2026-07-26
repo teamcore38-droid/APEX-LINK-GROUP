@@ -51,7 +51,15 @@ const toAbsoluteUrl = (value = '', siteUrl = getSiteUrl()) => {
     ) {
       throw new Error('Development or preview URL is not public');
     }
-    return url.href;
+    let href = url.href;
+    if (href.includes('/image/upload/')) {
+      if (!/\/image\/upload\/[^/]*f_jpg/.test(href)) {
+        href = href.replace('/image/upload/', '/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/');
+      }
+    } else if (href.endsWith('.webp')) {
+      href = href.replace(/\.webp$/i, '.jpg');
+    }
+    return href;
   } catch {
     return `${siteUrl}${DEFAULT_IMAGE_PATH}`;
   }

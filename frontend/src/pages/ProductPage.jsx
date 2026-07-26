@@ -576,6 +576,8 @@ const ProductPage = () => {
       const currentUrl = window.location.href;
 
       const messageLines = [
+        currentUrl,
+        ``,
         `🛒 *NEW ORDER REQUEST*`,
         ``,
         `*Product:* ${product.name}`,
@@ -584,8 +586,6 @@ const ProductPage = () => {
         `*Quantity:* ${qty}`,
         `*Unit Price:* ${unitPriceFormatted}`,
         `*Total:* ${totalPriceFormatted}`,
-        ``,
-        `*Product Link:* ${currentUrl}`,
         ``,
         `Thank you!`,
       ].filter((line) => line !== null).join('\n');

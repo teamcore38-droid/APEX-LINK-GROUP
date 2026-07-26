@@ -67,7 +67,15 @@ const setStructuredData = (structuredData) => {
 
 const toAbsoluteUrl = (value = DEFAULT_IMAGE) => {
   try {
-    return new URL(value || DEFAULT_IMAGE, SITE_URL).href;
+    let url = new URL(value || DEFAULT_IMAGE, SITE_URL).href;
+    if (url.includes('/image/upload/')) {
+      if (!/\/image\/upload\/[^/]*f_jpg/.test(url)) {
+        url = url.replace('/image/upload/', '/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/');
+      }
+    } else if (url.endsWith('.webp')) {
+      url = url.replace(/\.webp$/i, '.jpg');
+    }
+    return url;
   } catch {
     return new URL(DEFAULT_IMAGE, SITE_URL).href;
   }
@@ -114,6 +122,10 @@ const applySeo = ({
   setMetaTag({ property: 'og:type', content: type });
   setMetaTag({ property: 'og:url', content: absoluteUrl });
   setMetaTag({ property: 'og:image', content: absoluteImage });
+  setMetaTag({ property: 'og:image:secure_url', content: absoluteImage });
+  setMetaTag({ property: 'og:image:type', content: 'image/jpeg' });
+  setMetaTag({ property: 'og:image:width', content: '1200' });
+  setMetaTag({ property: 'og:image:height', content: '630' });
   setMetaTag({ property: 'og:image:alt', content: resolvedImageAlt });
   setMetaTag({ name: 'twitter:card', content: 'summary_large_image' });
   setMetaTag({ name: 'twitter:title', content: resolvedTitle });

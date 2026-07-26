@@ -23,7 +23,15 @@ const normalizeCanonicalUrl = (value = '/') => {
 
 const normalizeAssetUrl = (value = DEFAULT_IMAGE) => {
   try {
-    return new URL(value || DEFAULT_IMAGE, SITE_URL).href;
+    let url = new URL(value || DEFAULT_IMAGE, SITE_URL).href;
+    if (url.includes('/image/upload/')) {
+      if (!/\/image\/upload\/[^/]*f_jpg/.test(url)) {
+        url = url.replace('/image/upload/', '/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/');
+      }
+    } else if (url.endsWith('.webp')) {
+      url = url.replace(/\.webp$/i, '.jpg');
+    }
+    return url;
   } catch {
     return DEFAULT_IMAGE;
   }
@@ -83,11 +91,15 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
     <meta property="og:type" content="${seo.type === 'product' ? 'product' : 'website'}" />
     <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="${escapeHtml(title)}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />`;
     ${structuredData
       .map(
         (data) =>
