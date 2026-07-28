@@ -8,8 +8,8 @@ import {
   buildCanonicalUrl,
 } from './seoConfig';
 
-const INDEX_ROBOTS = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
-const NOINDEX_ROBOTS = 'noindex, nofollow, noarchive';
+const INDEX_ROBOTS = 'index,follow';
+const NOINDEX_ROBOTS = 'noindex,nofollow,noarchive';
 
 const ensureElement = (selector, create) => {
   let element = document.head.querySelector(selector);

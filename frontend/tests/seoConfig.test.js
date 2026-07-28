@@ -17,10 +17,31 @@ test('SEO routes use the canonical apex storefront domain', () => {
 
 test('private and transactional routes are noindex routes', () => {
   assert.equal(isNoIndexPath('/checkout'), true);
+  assert.equal(isNoIndexPath('/checkout/payment'), true);
   assert.equal(isNoIndexPath('/orders/abc/invoice'), true);
   assert.equal(isNoIndexPath('/admin/products/new'), true);
+  assert.equal(isNoIndexPath('/account/settings'), true);
+  assert.equal(isNoIndexPath('/cart'), true);
+  assert.equal(isNoIndexPath('/login'), true);
+  assert.equal(isNoIndexPath('/register'), true);
+});
+
+test('public SEO landing pages are indexable routes', () => {
+  assert.equal(isNoIndexPath('/'), false);
   assert.equal(isNoIndexPath('/products'), false);
+  assert.equal(isNoIndexPath('/product/example-123456789012345678901234'), false);
+  assert.equal(isNoIndexPath('/categories'), false);
   assert.equal(isNoIndexPath('/category/women'), false);
+  assert.equal(isNoIndexPath('/about'), false);
+  assert.equal(isNoIndexPath('/contact'), false);
+  assert.equal(isNoIndexPath('/faq'), false);
+  assert.equal(isNoIndexPath('/shipping'), false);
+  assert.equal(isNoIndexPath('/returns'), false);
+  assert.equal(isNoIndexPath('/payment-policy'), false);
+  assert.equal(isNoIndexPath('/privacy'), false);
+  assert.equal(isNoIndexPath('/cookies'), false);
+  assert.equal(isNoIndexPath('/terms'), false);
+  assert.equal(isNoIndexPath('/rfq'), false);
 });
 
 test('server-rendered metadata replaces generic head tags without duplicates', () => {
@@ -78,6 +99,19 @@ test('server-rendered category metadata includes breadcrumb and item list JSON-L
   assert.match(html, /"@type":"BreadcrumbList"/);
   assert.match(html, /"@type":"ItemList"/);
   assert.match(html, /"position":1/);
+});
+
+test('server-rendered public catalog metadata emits indexable robots tags', () => {
+  const source = `<!doctype html><html><head><title>Old</title><meta name="robots" content="noindex"></head><body><div id="root"></div></body></html>`;
+  const html = injectSeoHead(source, {
+    title: 'Women Online in Sri Lanka | Apex Fashion',
+    description: 'Shop Women online in Sri Lanka.',
+    canonicalUrl: '/category/women',
+  });
+
+  assert.match(html, /<meta name="robots" content="index,follow" \/>/);
+  assert.match(html, /<meta name="googlebot" content="index,follow" \/>/);
+  assert.doesNotMatch(html, /noindex/i);
 });
 
 test('server-rendered metadata keeps apostrophes readable in descriptions', () => {

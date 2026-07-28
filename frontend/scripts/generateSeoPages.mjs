@@ -93,8 +93,8 @@ const renderHtml = (route, seo) => {
   const tags = `
     <title>${escapeHtml(seo.title)}</title>
     <meta name="description" content="${escapeHtml(seo.description)}" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
     <link rel="canonical" href="${canonicalUrl}" />
     <link rel="alternate" hreflang="en-LK" href="${canonicalUrl}" />
     <link rel="alternate" hreflang="x-default" href="${canonicalUrl}" />

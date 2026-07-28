@@ -96,7 +96,6 @@ const NOINDEX_PREFIXES = [
   '/profile',
   '/register',
   '/reset-password',
-  '/rfq',
   '/track-order',
   '/vendor',
 ];

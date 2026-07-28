@@ -60,7 +60,7 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
   ).slice(0, 160);
   const canonicalUrl = normalizeCanonicalUrl(seo.canonicalUrl || '/');
   const image = normalizeAssetUrl(seo.ogImage || DEFAULT_IMAGE);
-  const robots = seo.robots || 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+  const robots = seo.robots || 'index,follow';
   const structuredData = [seo.structuredData, seo.breadcrumbs, seo.itemList].filter(Boolean);
 
   let html = sourceHtml;
