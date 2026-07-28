@@ -147,19 +147,6 @@ const Header = () => {
               ADMIN
             </Link>
           )}
-          {headerCategories.map((category) => (
-            <Link
-              key={`header-category-${category.slug}`}
-              to={`/category/${category.slug}`}
-              className={`whitespace-nowrap border-b-2 pb-1 font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
-                isActiveLink(`/category/${category.slug}`)
-                  ? 'border-brand-accent text-brand-accent'
-                  : 'border-transparent hover:text-brand-accent'
-              }`}
-            >
-              {category.name}
-            </Link>
-          ))}
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">

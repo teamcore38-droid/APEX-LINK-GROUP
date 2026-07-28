@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -71,13 +71,13 @@ const CategoryPage = () => {
   const [products, setProducts] = useState([]);
   const [loadingCategory, setLoadingCategory] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState(() => createCategoryFilters(''));
   const [mobilePanel, setMobilePanel] = useState(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [filterDraft, setFilterDraft] = useState(() => createCategoryFilters(''));
-  const [page, setPage] = useState(1);
   const [meta, setMeta] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -87,6 +87,9 @@ const CategoryPage = () => {
   });
   const [facets, setFacets] = useState({ categories: [], brands: [], origins: [], availability: [], priceRange: {} });
   const [productGridRef, productsVisible] = useScrollReveal();
+  const loaderRef = useRef(null);
+  const queryVersionRef = useRef(0);
+  const loadingMoreRef = useRef(false);
 
   const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
     const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
@@ -139,7 +142,6 @@ const CategoryPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setPage(1);
       setFilters((currentFilters) => ({
         ...currentFilters,
         keyword: searchInput.trim(),
@@ -192,7 +194,6 @@ const CategoryPage = () => {
         setSearchInput('');
         setFilters(createCategoryFilters(data.name));
         setFilterDraft(createCategoryFilters(data.name));
-        setPage(1);
       } catch (fetchError) {
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load this category right now.');
@@ -215,22 +216,38 @@ const CategoryPage = () => {
       return;
     }
 
+    const requestVersion = queryVersionRef.current + 1;
+    queryVersionRef.current = requestVersion;
+    const controller = new AbortController();
+
     const fetchProducts = async () => {
       setLoadingProducts(true);
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
       setError('');
+      setProducts([]);
 
       try {
         const { data } = await axios.get('/api/customer/search', {
           params: {
             ...filters,
             category: category.name,
-            page,
+            page: 1,
             limit: PRODUCT_PAGE_SIZE,
           },
+          signal: controller.signal,
         });
+
+        if (queryVersionRef.current !== requestVersion) {
+          return;
+        }
 
         const payload = normalizeProductPayload(data);
         await preloadProductGridImages(payload.products);
+
+        if (queryVersionRef.current !== requestVersion) {
+          return;
+        }
 
         setProducts(payload.products);
         applyCategorySeo(category, categorySeo, payload.products);
@@ -243,19 +260,122 @@ const CategoryPage = () => {
           hasPrevPage: payload.hasPrevPage,
         });
       } catch (fetchError) {
+        if (fetchError.name === 'CanceledError' || fetchError.code === 'ERR_CANCELED') {
+          return;
+        }
+
         console.error(fetchError);
         setError(fetchError.response?.data?.message || 'Unable to load category products right now.');
       } finally {
-        setLoadingProducts(false);
+        if (queryVersionRef.current === requestVersion) {
+          setLoadingProducts(false);
+        }
       }
     };
 
     fetchProducts();
-  }, [applyCategorySeo, category, categorySeo, filters, page]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [applyCategorySeo, category, categorySeo, filters]);
+
+  const loadMoreProducts = useCallback(async () => {
+    if (
+      loadingProducts ||
+      loadingMore ||
+      loadingMoreRef.current ||
+      !meta.hasNextPage ||
+      !category?.name
+    ) {
+      return;
+    }
+
+    const requestVersion = queryVersionRef.current;
+    const nextPage = meta.currentPage + 1;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setError('');
+
+    try {
+      const { data } = await axios.get('/api/customer/search', {
+        params: {
+          ...filters,
+          category: category.name,
+          page: nextPage,
+          limit: PRODUCT_PAGE_SIZE,
+        },
+      });
+
+      if (queryVersionRef.current !== requestVersion) {
+        return;
+      }
+
+      const payload = normalizeProductPayload(data);
+      await preloadProductGridImages(payload.products);
+
+      if (queryVersionRef.current !== requestVersion) {
+        return;
+      }
+
+      const seenProductIds = new Set(products.map((product) => product._id));
+      const nextProducts = payload.products.filter((product) => !seenProductIds.has(product._id));
+      const combinedProducts = [...products, ...nextProducts];
+
+      setProducts(combinedProducts);
+      applyCategorySeo(category, categorySeo, combinedProducts);
+      setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
+      setMeta({
+        currentPage: payload.currentPage,
+        totalPages: payload.totalPages,
+        totalProducts: payload.totalProducts,
+        hasNextPage: payload.hasNextPage,
+        hasPrevPage: payload.hasPrevPage,
+      });
+    } catch (fetchError) {
+      console.error(fetchError);
+      setError(fetchError.response?.data?.message || 'Unable to load more category products right now.');
+    } finally {
+      if (queryVersionRef.current === requestVersion) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    }
+  }, [
+    applyCategorySeo,
+    category,
+    categorySeo,
+    filters,
+    loadingMore,
+    loadingProducts,
+    meta.currentPage,
+    meta.hasNextPage,
+    products,
+  ]);
+
+  useEffect(() => {
+    const loaderElement = loaderRef.current;
+
+    if (!loaderElement || loadingProducts || !meta.hasNextPage) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadMoreProducts();
+        }
+      },
+      { root: null, rootMargin: '900px 0px 700px', threshold: 0 }
+    );
+
+    observer.observe(loaderElement);
+
+    return () => observer.disconnect();
+  }, [loadMoreProducts, loadingProducts, meta.hasNextPage]);
 
   const updateFilter = (key, value) => {
     setError('');
-    setPage(1);
     setFilters((currentFilters) => ({
       ...currentFilters,
       category: category?.name || currentFilters.category,
@@ -268,7 +388,6 @@ const CategoryPage = () => {
     setSearchInput('');
     setFilters(nextFilters);
     setFilterDraft(nextFilters);
-    setPage(1);
     setError('');
   };
 
@@ -298,7 +417,6 @@ const CategoryPage = () => {
 
   const applyMobileFilters = () => {
     setError('');
-    setPage(1);
     setFilters((currentFilters) => ({
       ...currentFilters,
       ...Object.fromEntries(MOBILE_FILTER_KEYS.map((key) => [key, filterDraft[key]])),
@@ -667,32 +785,30 @@ const CategoryPage = () => {
                       <Product product={product} priority={index < 4} />
                     </div>
                   ))}
+                  {loadingMore
+                    ? [...Array(4)].map((_, index) => (
+                        <div
+                          key={`loading-more-${index}`}
+                          className="h-[420px] animate-pulse rounded-[28px] bg-[#f8efe6]"
+                        />
+                      ))
+                    : null}
                 </div>
 
-                <div className="mt-8 flex flex-col gap-4 border-t border-[#ecd9ca] pt-6 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-gray-500">
-                    Page <span className="font-semibold text-brand-dark">{meta.currentPage}</span> of{' '}
-                    <span className="font-semibold text-brand-dark">{meta.totalPages}</span>
-                  </p>
+                <div ref={loaderRef} className="h-10" aria-hidden="true" />
 
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={!meta.hasPrevPage}
-                      onClick={() => setPage((currentPage) => Math.max(currentPage - 1, 1))}
-                      className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-brand-dark transition-colors duration-200 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!meta.hasNextPage}
-                      onClick={() => setPage((currentPage) => currentPage + 1)}
-                      className="rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Next Page
-                    </button>
-                  </div>
+                <div className="mt-6 flex flex-col items-center gap-3 border-t border-[#ecd9ca] pt-6 text-center">
+                  {meta.hasNextPage ? (
+                    <p className="text-sm text-gray-500">
+                      Showing <span className="font-semibold text-brand-dark">{products.length}</span> of{' '}
+                      <span className="font-semibold text-brand-dark">{meta.totalProducts}</span> products
+                      {loadingMore ? ' - loading more...' : ''}
+                    </p>
+                  ) : (
+                    <p className="text-sm font-semibold text-gray-500">
+                      All <span className="text-brand-dark">{meta.totalProducts}</span> products are loaded.
+                    </p>
+                  )}
                 </div>
               </>
             )}
