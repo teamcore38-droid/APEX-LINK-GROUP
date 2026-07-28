@@ -107,15 +107,39 @@ test('Merchant feed emits distinct variant items with required fields', () => {
 });
 
 test('buildCategorySeo creates canonical collection metadata', () => {
-  const seo = buildCategorySeo({
-    name: "Women's Shoes",
-    slug: 'women-shoes',
-    description: 'Heels, flats, sandals, and sneakers.',
-    image: '/women-shoes.jpg',
-    seo: {},
-  });
+  const seo = buildCategorySeo(
+    {
+      name: "Women's Shoes",
+      slug: 'women-shoes',
+      description: 'Heels, flats, sandals, and sneakers.',
+      image: '/women-shoes.jpg',
+      seo: {},
+    },
+    {
+      ancestors: [{ name: 'Women', slug: 'women' }],
+      products: [
+        {
+          _id: '123456789012345678901234',
+          name: 'Block Heel Sandals',
+          slug: 'block-heel-sandals',
+          image: '/heels.jpg',
+        },
+      ],
+    }
+  );
 
   assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/category/women-shoes');
+  assert.match(seo.title, /Women's Shoes/);
+  assert.match(seo.description, /Women's Shoes/);
   assert.equal(seo.structuredData['@type'], 'CollectionPage');
-  assert.equal(seo.breadcrumbs.itemListElement.length, 3);
+  assert.equal(seo.structuredData.mainEntity['@id'], 'https://apexfashion.lk/category/women-shoes#itemlist');
+  assert.equal(seo.breadcrumbs.itemListElement.length, 4);
+  assert.equal(seo.breadcrumbs.itemListElement[2].item, 'https://apexfashion.lk/category/women');
+  assert.equal(seo.itemList['@type'], 'ItemList');
+  assert.equal(seo.itemList.numberOfItems, 1);
+  assert.equal(seo.itemList.itemListElement[0].position, 1);
+  assert.equal(
+    seo.itemList.itemListElement[0].url,
+    'https://apexfashion.lk/product/block-heel-sandals-123456789012345678901234'
+  );
 });

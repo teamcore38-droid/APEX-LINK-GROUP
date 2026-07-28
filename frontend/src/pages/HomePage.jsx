@@ -3,8 +3,9 @@ import axios from 'axios';
 import Product from '../components/Product';
 import FeaturedProductCarousel from '../components/FeaturedProductCarousel';
 import { Link } from 'react-router-dom';
-import { Truck, ShieldCheck, Globe, Award } from 'lucide-react';
+import { ArrowRight, Award, Globe, ShieldCheck, Truck } from 'lucide-react';
 import { normalizeProductPayload } from '../utils/productUi';
+import { getCategories } from '../utils/categoryApi';
 import useScrollReveal from '../hooks/useScrollReveal';
 
 const heroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-bg-${index + 1}.webp`);
@@ -13,6 +14,7 @@ const mobileHeroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/her
 const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
+  const [homeCategories, setHomeCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
@@ -54,7 +56,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [featuredResult, bestSellersResult] = await Promise.allSettled([
+        const [featuredResult, bestSellersResult, categoriesResult] = await Promise.allSettled([
           axios.get('/api/products', {
             params: {
               featured: true,
@@ -67,6 +69,7 @@ const HomePage = () => {
               limit: 4,
             },
           }),
+          getCategories(),
         ]);
 
         let nextFeaturedProducts = [];
@@ -81,6 +84,10 @@ const HomePage = () => {
         if (bestSellersResult.status === 'fulfilled') {
           const bestSellerPayload = normalizeProductPayload(bestSellersResult.value.data);
           nextBestSellers = bestSellerPayload.products;
+        }
+
+        if (categoriesResult.status === 'fulfilled') {
+          setHomeCategories(categoriesResult.value.filter((category) => category.isActive !== false).slice(0, 8));
         }
 
         setFeaturedProducts(nextFeaturedProducts);
@@ -192,6 +199,45 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+
+      {homeCategories.length > 0 && (
+        <section className="bg-[#fff7ee] py-10 md:py-12" aria-labelledby="home-category-links-title">
+          <div className="container mx-auto px-4">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Shop by Category</p>
+                <h2 id="home-category-links-title" className="mt-2 font-serif text-3xl font-bold text-brand-dark">
+                  Popular Fashion Categories
+                </h2>
+              </div>
+              <Link
+                to="/categories"
+                className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+              >
+                View All Categories <ArrowRight size={14} className="ml-2" />
+              </Link>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {homeCategories.map((category) => (
+                <Link
+                  key={category.slug}
+                  to={`/category/${category.slug}`}
+                  className="group flex min-h-20 items-center justify-between rounded-2xl border border-[#ead6c6] bg-white px-4 py-4 text-brand-dark shadow-sm transition hover:border-brand-accent hover:shadow-md"
+                >
+                  <span>
+                    <span className="block font-serif text-lg font-bold">{category.name}</span>
+                    <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
+                      Shop {category.name}
+                    </span>
+                  </span>
+                  <ArrowRight size={18} className="text-brand-accent transition-transform group-hover:translate-x-1" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <div ref={featuredRef} className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-10 md:py-12">
         <div className="container mx-auto px-4">

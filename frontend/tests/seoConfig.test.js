@@ -40,6 +40,46 @@ test('server-rendered metadata replaces generic head tags without duplicates', (
   assert.equal((html.match(/application\/ld\+json/g) || []).length, 1);
 });
 
+test('server-rendered category metadata includes breadcrumb and item list JSON-LD', () => {
+  const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
+  const html = injectSeoHead(source, {
+    title: 'Women Shoes Online in Sri Lanka | Apex Fashion',
+    description: 'Shop Women Shoes online in Sri Lanka.',
+    canonicalUrl: '/category/women-shoes',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      '@id': 'https://apexfashion.lk/category/women-shoes#collection',
+    },
+    breadcrumbs: {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://apexfashion.lk/' },
+        { '@type': 'ListItem', position: 2, name: 'Women Shoes', item: 'https://apexfashion.lk/category/women-shoes' },
+      ],
+    },
+    itemList: {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Block Heel Sandals',
+          url: 'https://apexfashion.lk/product/block-heel-sandals-123456789012345678901234',
+        },
+      ],
+    },
+  });
+
+  assert.equal((html.match(/application\/ld\+json/g) || []).length, 3);
+  assert.match(html, /"@type":"CollectionPage"/);
+  assert.match(html, /"@type":"BreadcrumbList"/);
+  assert.match(html, /"@type":"ItemList"/);
+  assert.match(html, /"position":1/);
+});
+
 test('server-rendered metadata keeps apostrophes readable in descriptions', () => {
   const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
   const description =

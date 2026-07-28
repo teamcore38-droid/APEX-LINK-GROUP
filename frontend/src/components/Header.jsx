@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { getCategories } from '../utils/categoryApi';
 
 
 const PRIMARY_NAV_LINKS = [
@@ -12,6 +13,7 @@ const PRIMARY_NAV_LINKS = [
   ['TRACK ORDER', '/track-order'],
   ['CONTACT', '/contact'],
 ];
+const HEADER_CATEGORY_LIMIT = 3;
 
 const Header = () => {
   const { cartItems } = useCart();
@@ -21,6 +23,7 @@ const Header = () => {
 
   const [desktopUserMenuOpen, setDesktopUserMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [headerCategories, setHeaderCategories] = useState([]);
 
   const desktopUserMenuRef = useRef(null);
   const mobileNavRef = useRef(null);
@@ -38,6 +41,20 @@ const Header = () => {
 
   const isActiveLink = (path) =>
     location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
+
+  useEffect(() => {
+    getCategories()
+      .then((categories) => {
+        setHeaderCategories(
+          categories
+            .filter((category) => category.isActive !== false && !category.parentCategory)
+            .slice(0, HEADER_CATEGORY_LIMIT)
+        );
+      })
+      .catch((error) => {
+        console.error('Failed to load header category links', error);
+      });
+  }, []);
 
   // Close all open menus automatically on route change
   useEffect(() => {
@@ -109,7 +126,7 @@ const Header = () => {
             <Link
               key={path}
               to={path}
-              className={`whitespace-nowrap border-b-2 pb-1 font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
+              className={`max-w-[8rem] truncate whitespace-nowrap border-b-2 pb-1 font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
                 isActiveLink(path)
                   ? 'border-brand-accent text-brand-accent'
                   : 'border-transparent hover:text-brand-accent'
@@ -130,6 +147,19 @@ const Header = () => {
               ADMIN
             </Link>
           )}
+          {headerCategories.map((category) => (
+            <Link
+              key={`header-category-${category.slug}`}
+              to={`/category/${category.slug}`}
+              className={`whitespace-nowrap border-b-2 pb-1 font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
+                isActiveLink(`/category/${category.slug}`)
+                  ? 'border-brand-accent text-brand-accent'
+                  : 'border-transparent hover:text-brand-accent'
+              }`}
+            >
+              {category.name}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
@@ -346,6 +376,20 @@ const Header = () => {
                         }`}
                       >
                         {label}
+                      </Link>
+                    ))}
+                    {headerCategories.map((category) => (
+                      <Link
+                        key={`mobile-header-category-${category.slug}`}
+                        to={`/category/${category.slug}`}
+                        onClick={() => setMobileNavOpen(false)}
+                        className={`block rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
+                          isActiveLink(`/category/${category.slug}`)
+                            ? 'bg-brand-accent/20 text-brand-accent'
+                            : 'hover:bg-white/10'
+                        }`}
+                      >
+                        Shop {category.name}
                       </Link>
                     ))}
                   </div>

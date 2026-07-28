@@ -69,11 +69,6 @@ const Product = ({ product, priority = false }) => {
           <span className="min-w-0 truncate text-[9px] font-bold uppercase tracking-[0.14em] text-[#c9822b] sm:text-[10px] sm:tracking-[0.2em]">
             {product.category}
           </span>
-          {product.weight && (
-            <span className="hidden shrink-0 rounded-full bg-[#f5e9dd] px-2 py-1 text-[10px] font-semibold text-[#744126] sm:inline-flex">
-              {product.weight}
-            </span>
-          )}
         </div>
 
         <Link to={productPath} className="block">

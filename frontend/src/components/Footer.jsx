@@ -1,13 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail } from 'lucide-react';
 import axios from 'axios';
 import { BUSINESS_INFO } from '../utils/businessInfo';
+import { getCategories } from '../utils/categoryApi';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
+  const [footerCategories, setFooterCategories] = useState([]);
+
+  useEffect(() => {
+    getCategories()
+      .then((categories) => {
+        setFooterCategories(categories.filter((category) => category.isActive !== false).slice(0, 6));
+      })
+      .catch((error) => {
+        console.error('Failed to load footer category links', error);
+      });
+  }, []);
 
   const subscribe = async (event) => {
     event.preventDefault();
@@ -92,6 +104,13 @@ const Footer = () => {
                 Categories
               </Link>
             </li>
+            {footerCategories.map((category) => (
+              <li key={`footer-category-${category.slug}`}>
+                <Link to={`/category/${category.slug}`} className="transition-colors hover:text-brand-accent">
+                  {category.name}
+                </Link>
+              </li>
+            ))}
             <li>
               <Link to="/about" className="transition-colors hover:text-brand-accent">
                 About Apex Fashion

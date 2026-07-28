@@ -10,6 +10,8 @@ import { buildProductUrl } from '../utils/productUrls.js';
 const DEFAULT_SITE_URL = 'https://apexfashion.lk';
 const DEFAULT_IMAGE_PATH = '/hero/hero-bg-4.webp';
 const STORE_ID = `${DEFAULT_SITE_URL}/#organization`;
+const CATEGORY_ITEMLIST_LIMIT = 24;
+const RELATED_CATEGORY_LIMIT = 8;
 const PUBLIC_PRODUCT_FILTER = {
   $and: [
     { $or: [{ isActive: true }, { isActive: { $exists: false } }] },
@@ -35,6 +37,8 @@ const escapeXml = (value = '') =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+
+const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getImageUrl = (image = '') =>
   typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '').trim();
@@ -71,6 +75,139 @@ const getProductImageUrls = (product = {}) =>
     .filter(Boolean)
     .map((image) => toAbsoluteUrl(image))
     .filter((image, index, images) => images.indexOf(image) === index);
+
+const getCategoryDescription = (category) =>
+  cleanProductText(category.seo?.description, 160) ||
+  cleanProductText(category.description, 160) ||
+  `Shop ${category.name} online from Apex Fashion Sri Lanka.`;
+
+const getCategoryMetaTitle = (category) => {
+  const customTitle = cleanProductText(category.seo?.title, 110);
+  const categoryName = cleanProductText(category.name, 80);
+  const withSiteName = (title) =>
+    title.toLowerCase().includes('apex fashion') ? title : cleanProductText(`${title} | Apex Fashion`, 150);
+
+  if (customTitle && customTitle.toLowerCase().includes(categoryName.toLowerCase())) {
+    return withSiteName(customTitle);
+  }
+
+  if (customTitle) {
+    return withSiteName(cleanProductText(`${categoryName} | ${customTitle}`, 130));
+  }
+
+  return `${categoryName} Online in Sri Lanka | Apex Fashion`;
+};
+
+const getCategoryMetaDescription = (category, productCount = 0) => {
+  const categoryName = cleanProductText(category.name, 80);
+  const baseDescription = getCategoryDescription(category);
+  const productText = productCount > 0 ? ` Browse ${productCount} selected products.` : '';
+
+  if (baseDescription.toLowerCase().includes(categoryName.toLowerCase())) {
+    return cleanProductText(`${baseDescription}${productText}`, 160);
+  }
+
+  return cleanProductText(`Shop ${categoryName} online in Sri Lanka. ${baseDescription}${productText}`, 160);
+};
+
+const getCategoryImageUrl = (category = {}) => toAbsoluteUrl(category.seo?.ogImage || category.image);
+
+const getCategoryUrl = (category, siteUrl = getSiteUrl()) => `${siteUrl}/category/${category.slug}`;
+
+const getCategoryProductFilter = (categoryNames = []) => {
+  const categoryPatterns = categoryNames
+    .map((name) => cleanProductText(name, 100))
+    .filter(Boolean)
+    .map((name) => new RegExp(`^${escapeRegex(name)}$`, 'i'));
+
+  return {
+    ...SEO_PRODUCT_FILTER,
+    ...(categoryPatterns.length > 0
+      ? {
+          $or: [
+            { category: { $in: categoryPatterns } },
+            { categories: { $in: categoryPatterns } },
+          ],
+        }
+      : {}),
+  };
+};
+
+const getDescendantCategoryNames = async (category) => {
+  const names = [category.name];
+  const queue = [category._id];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    const currentKey = String(currentId);
+
+    if (visited.has(currentKey)) {
+      continue;
+    }
+
+    visited.add(currentKey);
+
+    const children = await Category.find({ parentCategory: currentId, isActive: true }).select('_id name').lean();
+    children.forEach((child) => {
+      names.push(child.name);
+      queue.push(child._id);
+    });
+  }
+
+  return names;
+};
+
+const getCategoryAncestors = async (category) => {
+  const ancestors = [];
+  const visited = new Set();
+  let parentId = category.parentCategory?._id || category.parentCategory;
+
+  while (parentId) {
+    const parentKey = String(parentId);
+    if (visited.has(parentKey)) break;
+    visited.add(parentKey);
+
+    const parent = await Category.findOne({ _id: parentId, isActive: true })
+      .select('_id name slug parentCategory')
+      .lean();
+
+    if (!parent) break;
+    ancestors.unshift(parent);
+    parentId = parent.parentCategory?._id || parent.parentCategory;
+  }
+
+  return ancestors;
+};
+
+const getRelatedCategories = async (category) => {
+  const parentId = category.parentCategory?._id || category.parentCategory || null;
+  const relatedFilter = parentId
+    ? { parentCategory: parentId, _id: { $ne: category._id }, isActive: true }
+    : { parentCategory: category._id, isActive: true };
+
+  let related = await Category.find(relatedFilter)
+    .select('name slug description image updatedAt')
+    .sort({ displayOrder: 1, name: 1 })
+    .limit(RELATED_CATEGORY_LIMIT)
+    .lean();
+
+  if (related.length === 0 && parentId) {
+    related = await Category.find({ parentCategory: category._id, isActive: true })
+      .select('name slug description image updatedAt')
+      .sort({ displayOrder: 1, name: 1 })
+      .limit(RELATED_CATEGORY_LIMIT)
+      .lean();
+  }
+
+  return related.map((relatedCategory) => ({
+    name: relatedCategory.name,
+    slug: relatedCategory.slug,
+    url: getCategoryUrl(relatedCategory),
+    description: getCategoryDescription(relatedCategory),
+    image: toAbsoluteUrl(relatedCategory.image),
+  }));
+};
 
 const buildBreadcrumbs = (items) => ({
   '@context': 'https://schema.org',
@@ -186,23 +323,49 @@ const buildProductSeo = (product, selection = {}) => {
   };
 };
 
-const buildCategorySeo = (category) => {
-  const siteUrl = getSiteUrl();
-  const url = `${siteUrl}/category/${category.slug}`;
-  const description =
-    cleanProductText(category.seo?.description, 160) ||
-    cleanProductText(category.description, 160) ||
-    `Shop ${category.name} online from Apex Fashion Sri Lanka.`;
+const buildCategoryItemList = (category, products = [], siteUrl = getSiteUrl()) => {
+  const url = getCategoryUrl(category, siteUrl);
 
   return {
-    title: category.seo?.title || `${category.name} in Sri Lanka | Apex Fashion`,
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    '@id': `${url}#itemlist`,
+    name: `${category.name} products`,
+    itemListOrder: 'https://schema.org/ItemListOrderAscending',
+    numberOfItems: products.length,
+    itemListElement: products.map((product, index) => {
+      const productUrl = buildProductUrl(product, siteUrl);
+
+      return {
+        '@type': 'ListItem',
+        position: index + 1,
+        name: cleanProductText(product.name, 150),
+        url: productUrl,
+      };
+    }),
+  };
+};
+
+const buildCategorySeo = (category, { products = [], ancestors = [], relatedCategories = [] } = {}) => {
+  const siteUrl = getSiteUrl();
+  const url = getCategoryUrl(category, siteUrl);
+  const description = getCategoryMetaDescription(category, products.length);
+  const breadcrumbItems = [
+    { name: 'Home', url: '/' },
+    { name: 'Categories', url: '/categories' },
+    ...ancestors.map((ancestor) => ({ name: ancestor.name, url: getCategoryUrl(ancestor, siteUrl) })),
+    { name: category.name, url },
+  ];
+
+  return {
+    title: getCategoryMetaTitle(category),
     description,
     keywords:
       category.seo?.keywords?.length > 0
         ? category.seo.keywords
         : [category.name, `${category.name} Sri Lanka`, 'Apex Fashion'],
     canonicalUrl: url,
-    ogImage: toAbsoluteUrl(category.seo?.ogImage || category.image),
+    ogImage: getCategoryImageUrl(category),
     url,
     type: 'website',
     structuredData: {
@@ -211,16 +374,15 @@ const buildCategorySeo = (category) => {
       '@id': `${url}#collection`,
       name: category.name,
       description,
-      image: toAbsoluteUrl(category.image),
+      image: getCategoryImageUrl(category),
       url,
       inLanguage: 'en-LK',
       isPartOf: { '@id': `${siteUrl}/#website` },
+      mainEntity: { '@id': `${url}#itemlist` },
     },
-    breadcrumbs: buildBreadcrumbs([
-      { name: 'Home', url: '/' },
-      { name: 'Categories', url: '/categories' },
-      { name: category.name, url },
-    ]),
+    breadcrumbs: buildBreadcrumbs(breadcrumbItems),
+    itemList: buildCategoryItemList(category, products, siteUrl),
+    relatedCategories,
   };
 };
 
@@ -239,14 +401,25 @@ const getCategorySeo = async (req, res) => {
   const category = await Category.findOne({
     slug: req.params.slug,
     isActive: true,
-  });
+  }).lean();
 
   if (!category) {
     return res.status(404).json({ message: 'Category not found' });
   }
 
+  const [categoryNames, ancestors, relatedCategories] = await Promise.all([
+    getDescendantCategoryNames(category),
+    getCategoryAncestors(category),
+    getRelatedCategories(category),
+  ]);
+  const products = await Product.find(getCategoryProductFilter(categoryNames))
+    .select('_id name slug image images updatedAt')
+    .sort({ isFeatured: -1, isBestSeller: -1, createdAt: -1 })
+    .limit(CATEGORY_ITEMLIST_LIMIT)
+    .lean();
+
   res.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=600');
-  return res.json(buildCategorySeo(category));
+  return res.json(buildCategorySeo(category, { products, ancestors, relatedCategories }));
 };
 
 const INDEXABLE_STATIC_PATHS = [

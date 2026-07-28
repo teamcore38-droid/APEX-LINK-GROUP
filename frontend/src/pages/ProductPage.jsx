@@ -875,11 +875,6 @@ const ProductPage = () => {
               <p className="font-serif text-4xl font-bold text-brand-dark">
                 {formatCurrency(effectivePrice)}
               </p>
-              {product.weight && (
-                <span className="rounded-full bg-[#f5e9dd] px-3 py-1 text-sm font-semibold text-[#744126]">
-                  {product.weight}
-                </span>
-              )}
               {displaySku && (
                 <span className="rounded-full border border-[#ead6c6] bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-gray-600">
                   SKU {displaySku}

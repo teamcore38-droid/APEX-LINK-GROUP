@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -23,9 +23,11 @@ import {
   NOINDEX_ROBOTS,
   applySeo,
   buildBreadcrumbStructuredData,
+  buildCategoryItemListStructuredData,
   buildCategoryStructuredData,
 } from '../utils/seo';
 import { buildCanonicalUrl } from '../utils/seoConfig';
+import { getCategories } from '../utils/categoryApi';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { preloadProductGridImages } from '../utils/imagePreloader';
 
@@ -56,10 +58,16 @@ const RATING_OPTIONS = [
   { value: '3', label: '3+ Stars' },
 ];
 
+const getCategoryId = (category) => String(category?._id || '');
+const getParentCategoryId = (category) =>
+  String(category?.parentCategory?._id || category?.parentCategory || '');
+
 const CategoryPage = () => {
   const { slug } = useParams();
 
   const [category, setCategory] = useState(null);
+  const [categorySeo, setCategorySeo] = useState(null);
+  const [allCategories, setAllCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loadingCategory, setLoadingCategory] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -79,6 +87,55 @@ const CategoryPage = () => {
   });
   const [facets, setFacets] = useState({ categories: [], brands: [], origins: [], availability: [], priceRange: {} });
   const [productGridRef, productsVisible] = useScrollReveal();
+
+  const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
+    const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
+    const itemList =
+      itemListProducts.length > 0
+        ? buildCategoryItemListStructuredData(data, itemListProducts, canonicalUrl)
+        : seoData?.itemList;
+
+    applySeo({
+      title: seoData?.title || data.seo?.title || `${data.name} Online in Sri Lanka`,
+      description: seoData?.description || data.seo?.description || data.description,
+      keywords: seoData?.keywords || data.seo?.keywords || [data.name, 'Apex Fashion'],
+      canonicalUrl,
+      ogImage: seoData?.ogImage || data.seo?.ogImage || data.image,
+      type: 'website',
+      structuredData: [
+        seoData?.structuredData || buildCategoryStructuredData(data, canonicalUrl),
+        seoData?.breadcrumbs ||
+          buildBreadcrumbStructuredData([
+            { name: 'Home', url: '/' },
+            { name: 'Categories', url: '/categories' },
+            { name: data.name, url: canonicalUrl },
+          ]),
+        itemList,
+      ].filter(Boolean),
+    });
+  }, []);
+
+  const getRelatedCategories = () => {
+    if (categorySeo?.relatedCategories?.length > 0) {
+      return categorySeo.relatedCategories.slice(0, 8);
+    }
+
+    if (!category || allCategories.length === 0) {
+      return [];
+    }
+
+    const categoryId = getCategoryId(category);
+    const parentId = getParentCategoryId(category);
+    const children = allCategories.filter((item) => getParentCategoryId(item) === categoryId);
+    const siblings = parentId
+      ? allCategories.filter((item) => getParentCategoryId(item) === parentId && getCategoryId(item) !== categoryId)
+      : [];
+
+    return [...children, ...siblings]
+      .filter((item, index, items) => items.findIndex((candidate) => candidate.slug === item.slug) === index)
+      .slice(0, 8);
+  };
+  const relatedCategories = getRelatedCategories();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -122,25 +179,16 @@ const CategoryPage = () => {
       try {
         const { data } = await axios.get(`/api/categories/${slug}`);
         setCategory(data);
-        const seoResponse = await axios.get(`/api/seo/category/${data.slug}`).catch(() => null);
-        const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
-        applySeo({
-          title: seoResponse?.data?.title || data.seo?.title || data.name,
-          description: seoResponse?.data?.description || data.seo?.description || data.description,
-          keywords: seoResponse?.data?.keywords || data.seo?.keywords || [data.name, 'Apex Fashion'],
-          canonicalUrl,
-          ogImage: seoResponse?.data?.ogImage || data.seo?.ogImage || data.image,
-          type: 'website',
-          structuredData: [
-            seoResponse?.data?.structuredData || buildCategoryStructuredData(data, canonicalUrl),
-            seoResponse?.data?.breadcrumbs ||
-              buildBreadcrumbStructuredData([
-                { name: 'Home', url: '/' },
-                { name: 'Categories', url: '/categories' },
-                { name: data.name, url: canonicalUrl },
-              ]),
-          ],
-        });
+        const [seoResult, categoriesResult] = await Promise.allSettled([
+          axios.get(`/api/seo/category/${data.slug}`),
+          getCategories(),
+        ]);
+        const seoData = seoResult.status === 'fulfilled' ? seoResult.value.data : null;
+        setCategorySeo(seoData);
+        if (categoriesResult.status === 'fulfilled') {
+          setAllCategories(categoriesResult.value);
+        }
+        applyCategorySeo(data, seoData);
         setSearchInput('');
         setFilters(createCategoryFilters(data.name));
         setFilterDraft(createCategoryFilters(data.name));
@@ -160,7 +208,7 @@ const CategoryPage = () => {
     };
 
     fetchCategory();
-  }, [slug]);
+  }, [applyCategorySeo, slug]);
 
   useEffect(() => {
     if (!category?.name) {
@@ -185,6 +233,7 @@ const CategoryPage = () => {
         await preloadProductGridImages(payload.products);
 
         setProducts(payload.products);
+        applyCategorySeo(category, categorySeo, payload.products);
         setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
         setMeta({
           currentPage: payload.currentPage,
@@ -202,7 +251,7 @@ const CategoryPage = () => {
     };
 
     fetchProducts();
-  }, [category?.name, filters, page]);
+  }, [applyCategorySeo, category, categorySeo, filters, page]);
 
   const updateFilter = (key, value) => {
     setError('');
@@ -543,6 +592,23 @@ const CategoryPage = () => {
             <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               {error}
             </div>
+          )}
+
+          {relatedCategories.length > 0 && (
+            <nav aria-label="Related categories" className="mt-6 border-y border-[#ecd9ca] py-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Related Categories</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {relatedCategories.map((relatedCategory) => (
+                  <Link
+                    key={relatedCategory.slug}
+                    to={`/category/${relatedCategory.slug}`}
+                    className="rounded-full border border-brand-primary/20 bg-[#fff7ee] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+                  >
+                    {relatedCategory.name}
+                  </Link>
+                ))}
+              </div>
+            </nav>
           )}
 
           <div className="mt-8">

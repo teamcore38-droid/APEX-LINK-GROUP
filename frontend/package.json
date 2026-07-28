@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/generateSeoPages.mjs",
+    "build": "npm run functions:check && vite build && node scripts/generateSeoPages.mjs",
+    "functions:check": "node scripts/checkServerlessSyntax.mjs",
     "lint": "eslint .",
     "seo:audit:live": "node scripts/auditLiveSeo.mjs",
-    "test": "node --test \"tests/*.test.js\"",
+    "test": "npm run functions:check && node --test \"tests/*.test.js\"",
     "preview": "vite preview"
   },
   "dependencies": {

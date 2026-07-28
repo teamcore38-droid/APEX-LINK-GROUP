@@ -61,7 +61,7 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
   const canonicalUrl = normalizeCanonicalUrl(seo.canonicalUrl || '/');
   const image = normalizeAssetUrl(seo.ogImage || DEFAULT_IMAGE);
   const robots = seo.robots || 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
-  const structuredData = [seo.structuredData, seo.breadcrumbs].filter(Boolean);
+  const structuredData = [seo.structuredData, seo.breadcrumbs, seo.itemList].filter(Boolean);
 
   let html = sourceHtml;
   html = removeHeadTag(html, /\s*<title>[\s\S]*?<\/title>/i);
@@ -75,6 +75,13 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
     html,
     /\s*<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi
   );
+
+  const structuredDataTags = structuredData
+    .map(
+      (data) =>
+        `<script type="application/ld+json" data-seo-prerendered="true">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`
+    )
+    .join('\n    ');
 
   const tags = `
     <title>${escapeHtml(title)}</title>
@@ -99,13 +106,8 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${escapeHtml(image)}" />`;
-    ${structuredData
-      .map(
-        (data) =>
-          `<script type="application/ld+json" data-seo-prerendered="true">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`
-      )
-      .join('\n    ')}
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    ${structuredDataTags}
   `;
 
   return html.replace('</head>', `${tags}</head>`);

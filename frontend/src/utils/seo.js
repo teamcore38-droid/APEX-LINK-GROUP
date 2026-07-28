@@ -1,4 +1,5 @@
 import { BUSINESS_INFO } from './businessInfo';
+import { buildProductPath } from './productUi';
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_IMAGE,
@@ -272,6 +273,29 @@ const buildCategoryStructuredData = (category, url = buildCanonicalUrl(window.lo
   isPartOf: { '@id': `${SITE_URL}/#website` },
 });
 
+const buildCategoryItemListStructuredData = (
+  category,
+  products = [],
+  url = buildCanonicalUrl(window.location.pathname)
+) => {
+  const absoluteUrl = toAbsoluteUrl(url);
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    '@id': `${absoluteUrl}#itemlist`,
+    name: `${category?.name || 'Category'} products`,
+    itemListOrder: 'https://schema.org/ItemListOrderAscending',
+    numberOfItems: products.length,
+    itemListElement: products.map((product, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: product.name,
+      url: toAbsoluteUrl(buildProductPath(product)),
+    })),
+  };
+};
+
 export {
   DEFAULT_DESCRIPTION,
   DEFAULT_IMAGE,
@@ -281,6 +305,7 @@ export {
   SITE_URL,
   applySeo,
   buildBreadcrumbStructuredData,
+  buildCategoryItemListStructuredData,
   buildCategoryStructuredData,
   buildProductStructuredData,
   buildStoreStructuredData,
