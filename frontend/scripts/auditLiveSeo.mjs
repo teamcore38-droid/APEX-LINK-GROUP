@@ -18,6 +18,9 @@ const getXmlValues = (xml, tag) => [
 
 const getXmlValue = (xml, tag) => getXmlValues(xml, tag)[0] || '';
 
+const getSitemapPageUrls = (xml = '') =>
+  [...String(xml).matchAll(/<url>\s*<loc>([\s\S]*?)<\/loc>/gi)].map((match) => decodeXml(match[1].trim()));
+
 const getMeta = (html, attribute, value) => {
   const pattern = new RegExp(
     `<meta[^>]+${attribute}=["']${value}["'][^>]+content=["']([^"']*)`,
@@ -108,7 +111,7 @@ if (!robotsResult.text.includes(`Sitemap: ${sitemapUrl}`)) {
   endpointIssues.push('robots.txt does not advertise the canonical sitemap URL');
 }
 
-const sitemapUrls = getXmlValues(sitemapResult.text, 'loc');
+const sitemapUrls = getSitemapPageUrls(sitemapResult.text);
 const duplicateSitemapUrls = sitemapUrls.filter((url, index) => sitemapUrls.indexOf(url) !== index);
 if (duplicateSitemapUrls.length > 0) endpointIssues.push('sitemap.xml contains duplicate URLs');
 
