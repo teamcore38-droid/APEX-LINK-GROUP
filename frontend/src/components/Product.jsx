@@ -6,16 +6,13 @@ import {
   formatCurrency,
   buildProductPath,
   getOptimizedImageUrl,
-  getProductStatusBadge,
-  getStockPresentation,
+  getProductBadges,
 } from '../utils/productUi';
 
 const Product = ({ product, priority = false }) => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
-  const statusBadge = getProductStatusBadge(product);
-  const stockBadge = getStockPresentation(product.countInStock);
-  const showStockBadge = product.countInStock > 0;
+  const badges = getProductBadges(product);
   const productPath = buildProductPath(product);
 
   const handleAddToCart = (event) => {
@@ -44,22 +41,21 @@ const Product = ({ product, priority = false }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
 
-          <div className="absolute inset-x-1.5 top-1.5 flex flex-row flex-wrap items-center justify-between gap-1 sm:inset-x-3 sm:top-3">
-            {statusBadge && (
+          <div className="absolute left-1.5 top-1.5 z-10 flex max-w-[calc(100%-0.75rem)] flex-nowrap items-center gap-1 overflow-hidden sm:left-3 sm:top-3 sm:max-w-[calc(100%-1.5rem)] sm:gap-1.5">
+            {badges.map((badge) => (
               <span
-                className={`inline-flex max-w-full rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.04em] shadow-lg sm:px-3 sm:py-1 sm:text-[10px] sm:tracking-[0.12em] ${statusBadge.className}`}
+                key={badge.key}
+                aria-label={badge.key === 'best-seller' ? badge.label : undefined}
+                title={badge.key === 'best-seller' ? badge.label : undefined}
+                className={`inline-flex h-5 shrink-0 items-center justify-center rounded-full px-2 text-[8px] font-bold uppercase leading-none tracking-[0.04em] shadow-lg sm:h-6 sm:px-2.5 sm:text-[9px] sm:tracking-[0.08em] ${badge.className}`}
               >
-                {statusBadge.label}
+                {badge.key === 'best-seller' ? (
+                  <Star size={12} fill="currentColor" strokeWidth={2.5} aria-hidden="true" />
+                ) : (
+                  badge.label
+                )}
               </span>
-            )}
-
-            {showStockBadge && (
-              <span
-                className={`inline-flex max-w-full rounded-full border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.04em] sm:px-3 sm:py-1 sm:text-[10px] sm:tracking-[0.12em] ${stockBadge.className}`}
-              >
-                {stockBadge.label}
-              </span>
-            )}
+            ))}
           </div>
         </div>
       </Link>

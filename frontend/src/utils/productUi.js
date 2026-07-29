@@ -319,6 +319,49 @@ export const getProductStatusBadge = (product = {}) => {
   return null;
 };
 
+export const getProductBadges = (product = {}) => {
+  const countInStock = Number(product.countInStock || 0);
+  const badges = [];
+
+  if (product.isBestSeller) {
+    badges.push({
+      key: 'best-seller',
+      label: 'Best Seller',
+      className: 'bg-[#8c3b2a] text-white',
+    });
+  }
+
+  if (product.isFeatured) {
+    badges.push({
+      key: 'featured',
+      label: 'Featured',
+      className: 'bg-[#d99a32] text-[#2a140e]',
+    });
+  }
+
+  if (countInStock <= 0) {
+    badges.push({
+      key: 'out-of-stock',
+      label: 'Out of Stock',
+      className: 'bg-gray-500 text-white',
+    });
+  } else if (countInStock <= 10) {
+    badges.push({
+      key: 'low-stock',
+      label: `Low Stock (${countInStock})`,
+      className: 'bg-[#d99a32] text-[#2a140e]',
+    });
+  } else {
+    badges.push({
+      key: 'in-stock',
+      label: 'In Stock',
+      className: 'bg-[#3f8b62] text-white',
+    });
+  }
+
+  return badges.slice(0, 2);
+};
+
 export const buildProductFormFromProduct = (product = {}) => {
   const gallery = getProductImageAssets(product);
   const [primaryImage = { url: product.image || '', publicId: product.imagePublicId || '' }, ...additionalImages] = gallery;

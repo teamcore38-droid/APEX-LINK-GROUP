@@ -5,6 +5,7 @@ import {
   buildProductPath,
   formatCurrency,
   getProductIdFromRouteParam,
+  getProductBadges,
   getOptimizedImageUrl,
   getProductFormGalleryImages,
   getVariantImageAssets,
@@ -23,6 +24,27 @@ test('getStockPresentation distinguishes out of stock', () => {
   const result = getStockPresentation(0);
   assert.equal(result.label, 'Out of Stock');
   assert.match(result.className, /red/);
+});
+
+test('getProductBadges applies priority and caps badges at two', () => {
+  const badges = getProductBadges({ isBestSeller: true, isFeatured: true, countInStock: 5 });
+
+  assert.deepEqual(badges.map((badge) => badge.key), ['best-seller', 'featured']);
+  assert.equal(badges[0].label, 'Best Seller');
+});
+
+test('getProductBadges includes the current low-stock quantity', () => {
+  const badges = getProductBadges({ countInStock: 5 });
+
+  assert.equal(badges[0].label, 'Low Stock (5)');
+  assert.match(badges[0].className, /d99a32/);
+});
+
+test('getProductBadges renders out-of-stock as the fallback stock badge', () => {
+  const badges = getProductBadges({ countInStock: 0 });
+
+  assert.deepEqual(badges.map((badge) => badge.key), ['out-of-stock']);
+  assert.equal(badges[0].label, 'Out of Stock');
 });
 
 test('getOptimizedImageUrl adds lightweight Cloudinary transforms', () => {
