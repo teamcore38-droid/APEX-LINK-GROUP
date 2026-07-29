@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   ArrowLeft,
   BadgeCheck,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
   MessageSquare,
   Minus,
   Plus,
+  Ruler,
   ShieldCheck,
   Sparkles,
   Star,
@@ -110,6 +112,49 @@ const ProductPage = () => {
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [categorySlug, setCategorySlug] = useState('');
   const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94703690505' });
+  const sizeScrollRef = useRef(null);
+  const [sizeScrollState, setSizeScrollState] = useState({ canScrollLeft: false, canScrollRight: false });
+
+  const updateSizeScrollState = useCallback(() => {
+    const element = sizeScrollRef.current;
+    if (!element) return;
+
+    const maxScrollLeft = Math.max(element.scrollWidth - element.clientWidth, 0);
+    setSizeScrollState({
+      canScrollLeft: element.scrollLeft > 6,
+      canScrollRight: element.scrollLeft < maxScrollLeft - 6,
+    });
+  }, []);
+
+  useEffect(() => {
+    const element = sizeScrollRef.current;
+    if (!element) return undefined;
+
+    updateSizeScrollState();
+    element.addEventListener('scroll', updateSizeScrollState, { passive: true });
+    window.addEventListener('resize', updateSizeScrollState);
+
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(updateSizeScrollState)
+      : null;
+    resizeObserver?.observe(element);
+
+    return () => {
+      element.removeEventListener('scroll', updateSizeScrollState);
+      window.removeEventListener('resize', updateSizeScrollState);
+      resizeObserver?.disconnect();
+    };
+  }, [product?.sizes?.length, updateSizeScrollState]);
+
+  const scrollSizes = (direction) => {
+    const element = sizeScrollRef.current;
+    if (!element) return;
+
+    element.scrollBy({
+      left: direction === 'left' ? -element.clientWidth * 0.72 : element.clientWidth * 0.72,
+      behavior: 'smooth',
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -930,16 +975,55 @@ const ProductPage = () => {
 
             {/* Standalone Size & Color Selection Component */}
             {product?.hasSizes && product?.sizes?.length > 0 && (
-              <div className="mt-6 rounded-[24px] border border-[#ecd9ca] bg-white p-5 shadow-xs space-y-5">
+              <div className="mt-6 space-y-4 rounded-[24px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
                 {/* 1. Size Selection */}
                 <div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <h3 className="font-serif text-base font-bold text-brand-dark">1. Select Size</h3>
-                    {selectedSize && (
-                      <span className="text-xs font-semibold text-brand-primary">Selected Size: {selectedSize}</span>
-                    )}
+                    <Link
+                      to="/faq"
+                      className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-brand-primary transition-colors hover:text-brand-accent"
+                    >
+                      Size Guide <Ruler size={14} aria-hidden="true" />
+                    </Link>
                   </div>
-                  <div className="mx-auto mt-3 flex w-full flex-wrap justify-center gap-2.5">
+
+                  <div className="relative mt-3">
+                    <div
+                      className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-7 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 sm:w-9 ${
+                        sizeScrollState.canScrollLeft ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <div
+                      className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-7 bg-gradient-to-l from-white to-transparent transition-opacity duration-200 sm:w-9 ${
+                        sizeScrollState.canScrollRight ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => scrollSizes('left')}
+                      disabled={!sizeScrollState.canScrollLeft}
+                      aria-label="Previous sizes"
+                      className="absolute left-0 top-1/2 z-20 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[#ecd9ca] bg-white text-brand-primary shadow-sm transition hover:border-brand-accent hover:text-brand-accent disabled:pointer-events-none disabled:opacity-0 md:flex"
+                    >
+                      <ChevronLeft size={15} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollSizes('right')}
+                      disabled={!sizeScrollState.canScrollRight}
+                      aria-label="Next sizes"
+                      className="absolute right-0 top-1/2 z-20 hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[#ecd9ca] bg-white text-brand-primary shadow-sm transition hover:border-brand-accent hover:text-brand-accent disabled:pointer-events-none disabled:opacity-0 md:flex"
+                    >
+                      <ChevronRight size={15} aria-hidden="true" />
+                    </button>
+
+                    <div
+                      ref={sizeScrollRef}
+                      className="flex touch-pan-x snap-x snap-mandatory gap-2 overflow-x-auto px-0.5 py-1 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:px-9"
+                    >
                     {product.sizes.map((sizeObj) => {
                       const comboStock = (product.variants || [])
                         .filter((variant) =>
@@ -961,7 +1045,7 @@ const ProductPage = () => {
                           type="button"
                           disabled={isOutOfStock}
                           onClick={() => handleSelectSize(sizeObj)}
-                          className={`group relative flex min-w-[76px] flex-col items-center justify-center rounded-2xl border px-4 py-2.5 text-xs font-bold transition-all duration-200 ${
+                          className={`group relative flex h-[54px] min-w-[76px] shrink-0 snap-start flex-col items-center justify-center rounded-xl border px-3 py-1.5 text-xs font-bold transition-all duration-200 ${
                             isOutOfStock
                               ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
                               : isSelected
@@ -969,6 +1053,11 @@ const ProductPage = () => {
                                 : 'border-gray-300 bg-white text-brand-dark hover:border-brand-primary hover:bg-[#fff7ee]'
                           }`}
                         >
+                          {isSelected && (
+                            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-brand-accent text-brand-dark shadow-sm">
+                              <Check size={10} strokeWidth={3} aria-hidden="true" />
+                            </span>
+                          )}
                           <span className="text-sm">{sizeObj.size}</span>
                           {isOutOfStock ? (
                             <span className="text-[9px] font-semibold text-red-500 uppercase tracking-tighter">Out of Stock</span>
@@ -980,12 +1069,13 @@ const ProductPage = () => {
                         </button>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
 
                 {/* 2. Color Selection (Filtered by selected size) */}
                 {!selectedSize && (
-                  <div className="rounded-2xl border border-dashed border-brand-accent/30 bg-[#fff7ee] px-4 py-4 text-sm font-medium text-gray-600">
+                  <div className="rounded-2xl border border-dashed border-brand-accent/30 bg-[#fff7ee] px-4 py-3 text-sm font-medium text-gray-600">
                     Select a size to see available colors.
                   </div>
                 )}
