@@ -189,7 +189,7 @@ const ProductPage = () => {
           data.description?.slice(0, 160),
         keywords: seoData?.keywords || data.seo?.keywords || [data.category, data.brand, data.sku].filter(Boolean),
         canonicalUrl,
-        ogImage: seoData?.ogImage || data.seo?.ogImage || data.image,
+        ogImage: seoData?.ogImage || data.seo?.ogImage || data.image || '/Apex Logo.jpg',
         type: 'product',
         structuredData: [
           seoData?.structuredData || buildProductStructuredData(data, canonicalUrl),
@@ -880,7 +880,7 @@ const ProductPage = () => {
               )}
             </div>
 
-            <h1 className="mt-3 min-w-0 max-w-full font-serif text-2xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-4xl">{product.name}</h1>
+            <h1 className="mt-3 min-w-0 max-w-full font-serif text-xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-3xl">{product.name}</h1>
 
             <button
               type="button"

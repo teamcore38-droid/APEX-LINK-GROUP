@@ -74,6 +74,38 @@ test('server-rendered metadata replaces generic head tags without duplicates', (
   assert.equal((html.match(/application\/ld\+json/g) || []).length, 1);
 });
 
+test('server-rendered product metadata includes rich social preview tags', () => {
+  const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
+  const html = injectSeoHead(source, {
+    title: 'Apex Walking Shoes | Apex Fashion',
+    description: 'Comfortable walking shoes with cushioned support for everyday use in Sri Lanka.',
+    canonicalUrl: '/product/apex-walking-shoes-123456789012345678901234',
+    ogImage: 'https://res.cloudinary.com/demo/image/upload/products/shoes.jpg',
+    type: 'product',
+  });
+
+  assert.match(html, /<meta property="og:type" content="product" \/>/);
+  assert.match(html, /<meta property="og:title" content="Apex Walking Shoes \| Apex Fashion" \/>/);
+  assert.match(html, /<meta property="og:image" content="https:\/\/res\.cloudinary\.com\/demo\/image\/upload\/f_jpg,w_1200,h_630,c_fill,q_auto\/products\/shoes\.jpg" \/>/);
+  assert.match(html, /<meta name="twitter:card" content="summary_large_image" \/>/);
+  assert.match(html, /<meta name="twitter:image:alt" content="Apex Walking Shoes \| Apex Fashion" \/>/);
+  assert.match(html, /<meta name="twitter:url" content="https:\/\/www\.apexfashion\.lk\/product\/apex-walking-shoes-123456789012345678901234" \/>/);
+});
+
+test('server-rendered product metadata uses the branded fallback image', () => {
+  const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
+  const html = injectSeoHead(source, {
+    title: 'Image-Free Product | Apex Fashion',
+    description: 'A product preview with branded fallback artwork.',
+    canonicalUrl: '/product/image-free-product-123456789012345678901234',
+    ogImage: '/Apex Logo.jpg',
+    type: 'product',
+  });
+
+  assert.match(html, /<meta property="og:image" content="https:\/\/www\.apexfashion\.lk\/Apex%20Logo\.jpg" \/>/);
+  assert.match(html, /<meta name="twitter:image" content="https:\/\/www\.apexfashion\.lk\/Apex%20Logo\.jpg" \/>/);
+});
+
 test('server-rendered metadata normalizes legacy apexfashion.lk URLs to www', () => {
   const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
   const html = injectSeoHead(source, {

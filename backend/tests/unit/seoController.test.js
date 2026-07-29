@@ -143,3 +143,21 @@ test('buildCategorySeo creates canonical collection metadata', () => {
     'https://www.apexfashion.lk/product/block-heel-sandals-123456789012345678901234'
   );
 });
+
+test('buildProductSeo uses the branded fallback image when a product has no image', () => {
+  const seo = buildProductSeo({
+    _id: { toString: () => 'image-free-product' },
+    name: 'Image-Free Product',
+    slug: 'image-free-product',
+    image: '',
+    images: [],
+    description: 'A product without an uploaded image.',
+    brand: 'Apex Fashion',
+    category: 'Accessories',
+    price: 1200,
+    countInStock: 3,
+    seo: {},
+  });
+
+  assert.equal(seo.ogImage, 'https://www.apexfashion.lk/Apex%20Logo.jpg');
+});

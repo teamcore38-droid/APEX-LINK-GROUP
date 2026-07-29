@@ -8,7 +8,7 @@ import {
 import { buildProductUrl } from '../utils/productUrls.js';
 
 const DEFAULT_SITE_URL = 'https://www.apexfashion.lk';
-const DEFAULT_IMAGE_PATH = '/hero/hero-bg-4.webp';
+const DEFAULT_IMAGE_PATH = '/Apex Logo.jpg';
 const STORE_ID = `${DEFAULT_SITE_URL}/#organization`;
 const CATEGORY_ITEMLIST_LIMIT = 24;
 const RELATED_CATEGORY_LIMIT = 8;
@@ -27,6 +27,13 @@ const SEO_PRODUCT_FILTER = {
     { price: { $gt: 0 } },
   ],
 };
+const PRODUCT_PAGE_SEO_FILTER = {
+  $and: [
+    ...PUBLIC_PRODUCT_FILTER.$and,
+    { name: { $type: 'string', $regex: /\S/ } },
+    { price: { $gt: 0 } },
+  ],
+};
 
 const getSiteUrl = () => DEFAULT_SITE_URL;
 
@@ -41,7 +48,7 @@ const escapeXml = (value = '') =>
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getImageUrl = (image = '') =>
-  typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '').trim();
+  (typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '')).trim();
 
 const toAbsoluteUrl = (value = '', siteUrl = getSiteUrl()) => {
   try {
@@ -276,7 +283,9 @@ const buildProductSeo = (product, selection = {}) => {
         ? product.seo.keywords
         : [productName, product.category, brand, product.sku, 'Sri Lanka'].filter(Boolean),
     canonicalUrl: url,
-    ogImage: toAbsoluteUrl(selectedImage || product.seo?.ogImage || product.image),
+    ogImage: toAbsoluteUrl(
+      selectedImage || getImageUrl(product.seo?.ogImage) || getImageUrl(product.image) || DEFAULT_IMAGE_PATH
+    ),
     url,
     type: 'product',
     structuredData: {
@@ -387,7 +396,7 @@ const buildCategorySeo = (category, { products = [], ancestors = [], relatedCate
 };
 
 const getProductSeo = async (req, res) => {
-  const product = await Product.findOne({ _id: req.params.id, ...SEO_PRODUCT_FILTER });
+  const product = await Product.findOne({ _id: req.params.id, ...PRODUCT_PAGE_SEO_FILTER });
 
   if (!product) {
     return res.status(404).json({ message: 'Product not found' });

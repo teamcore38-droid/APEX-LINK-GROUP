@@ -109,6 +109,7 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:url" content="${escapeHtml(canonicalUrl)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:image:alt" content="${escapeHtml(title)}" />
     ${structuredDataTags}
   `;
 
