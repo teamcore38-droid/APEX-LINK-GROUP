@@ -95,9 +95,13 @@ const CategoryPage = () => {
   const [productGridRef, productsVisible] = useScrollReveal();
   const loaderRef = useRef(null);
   const queryVersionRef = useRef(0);
+  const categoryRequestVersionRef = useRef(0);
   const loadingMoreRef = useRef(false);
+  const initialBootstrapStateRef = useRef(bootstrapState);
+  const resolvedCategorySlugRef = useRef(bootstrapState.hasCategory ? bootstrapState.slug : '');
   const prerenderedSlugRef = useRef(bootstrapState.slug);
   const preservePrerenderedProductsRef = useRef(bootstrapState.hasProductPayload);
+  const categorySeoRef = useRef(bootstrapState.seo);
 
   const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
     const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
@@ -192,60 +196,102 @@ const CategoryPage = () => {
   }, [mobilePanel]);
 
   useEffect(() => {
-    if (bootstrapState.hasCategory && prerenderedSlugRef.current === slug) {
+    const initialBootstrapState = initialBootstrapStateRef.current;
+
+    if (
+      initialBootstrapState.hasCategory &&
+      resolvedCategorySlugRef.current === slug
+    ) {
       setLoadingCategory(false);
       setError('');
       setCategoryNotFound(false);
-      applyCategorySeo(category, categorySeo, products);
+      applyCategorySeo(
+        initialBootstrapState.category,
+        initialBootstrapState.seo,
+        initialBootstrapState.products
+      );
       return undefined;
     }
 
     preservePrerenderedProductsRef.current = false;
+    const requestVersion = categoryRequestVersionRef.current + 1;
+    categoryRequestVersionRef.current = requestVersion;
+    const controller = new AbortController();
 
     const fetchCategory = async () => {
       setLoadingCategory(true);
+      setLoadingProducts(true);
       setError('');
       setCategoryNotFound(false);
 
       try {
-        const { data } = await axios.get(`/api/categories/${slug}`);
+        const { data } = await axios.get(`/api/categories/${slug}`, {
+          signal: controller.signal,
+        });
+
+        if (categoryRequestVersionRef.current !== requestVersion) {
+          return;
+        }
+
+        resolvedCategorySlugRef.current = data.slug;
+        categorySeoRef.current = null;
         setCategory(data);
+        setCategorySeo(null);
+        setSearchInput('');
+        setFilters(createCategoryFilters(data.name));
+        setFilterDraft(createCategoryFilters(data.name));
+        applyCategorySeo(data);
+        setLoadingCategory(false);
+
         const [seoResult, categoriesResult] = await Promise.allSettled([
-          axios.get(`/api/seo/category/${data.slug}`),
+          axios.get(`/api/seo/category/${data.slug}`, {
+            signal: controller.signal,
+          }),
           getCategories(),
         ]);
+
+        if (categoryRequestVersionRef.current !== requestVersion) {
+          return;
+        }
+
         const seoData = seoResult.status === 'fulfilled' ? seoResult.value.data : null;
+        categorySeoRef.current = seoData;
         setCategorySeo(seoData);
         if (categoriesResult.status === 'fulfilled') {
           setAllCategories(categoriesResult.value);
         }
         applyCategorySeo(data, seoData);
-        setSearchInput('');
-        setFilters(createCategoryFilters(data.name));
-        setFilterDraft(createCategoryFilters(data.name));
       } catch (fetchError) {
+        if (fetchError.name === 'CanceledError' || fetchError.code === 'ERR_CANCELED') {
+          return;
+        }
+
+        if (categoryRequestVersionRef.current !== requestVersion) {
+          return;
+        }
+
         console.error(fetchError);
         const isNotFound = fetchError.response?.status === 404;
         setCategoryNotFound(isNotFound);
+        setLoadingProducts(false);
         setError(
           isNotFound
             ? 'This category no longer exists.'
             : fetchError.response?.data?.message || 'Unable to load this category right now.'
         );
       } finally {
-        setLoadingCategory(false);
+        if (categoryRequestVersionRef.current === requestVersion) {
+          setLoadingCategory(false);
+        }
       }
     };
 
     fetchCategory();
-  }, [
-    applyCategorySeo,
-    bootstrapState.hasCategory,
-    category,
-    categorySeo,
-    products,
-    slug,
-  ]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [applyCategorySeo, slug]);
 
   useEffect(() => {
     if (!category?.name || category.slug !== slug) {
@@ -271,7 +317,6 @@ const CategoryPage = () => {
       setLoadingMore(false);
       loadingMoreRef.current = false;
       setError('');
-      setProducts([]);
 
       try {
         const { data } = await axios.get('/api/customer/search', {
@@ -289,14 +334,14 @@ const CategoryPage = () => {
         }
 
         const payload = normalizeProductPayload(data);
-        await preloadProductGridImages(payload.products);
 
         if (queryVersionRef.current !== requestVersion) {
           return;
         }
 
+        void preloadProductGridImages(payload.products, 4);
         setProducts(payload.products);
-        applyCategorySeo(category, categorySeo, payload.products);
+        applyCategorySeo(category, categorySeoRef.current, payload.products);
         setFacets(data.facets || createEmptyFacets());
         setMeta({
           currentPage: payload.currentPage,
@@ -307,6 +352,10 @@ const CategoryPage = () => {
         });
       } catch (fetchError) {
         if (fetchError.name === 'CanceledError' || fetchError.code === 'ERR_CANCELED') {
+          return;
+        }
+
+        if (queryVersionRef.current !== requestVersion) {
           return;
         }
 
@@ -324,7 +373,7 @@ const CategoryPage = () => {
     return () => {
       controller.abort();
     };
-  }, [applyCategorySeo, category, categorySeo, filters, slug]);
+  }, [applyCategorySeo, category, filters, slug]);
 
   const loadMoreProducts = useCallback(async () => {
     if (
@@ -358,12 +407,12 @@ const CategoryPage = () => {
       }
 
       const payload = normalizeProductPayload(data);
-      await preloadProductGridImages(payload.products);
 
       if (queryVersionRef.current !== requestVersion) {
         return;
       }
 
+      void preloadProductGridImages(payload.products, 4);
       const seenProductIds = new Set(products.map((product) => product._id));
       const nextProducts = payload.products.filter((product) => !seenProductIds.has(product._id));
       const combinedProducts = [...products, ...nextProducts];
@@ -503,8 +552,9 @@ const CategoryPage = () => {
   const activeSortLabel = PRODUCT_PRICE_SORT_OPTIONS.find(
     (option) => option.value === filters.sort
   )?.label || 'Featured First';
+  const isRefreshingProductGrid = (loadingCategory || loadingProducts) && products.length > 0;
 
-  if (loadingCategory) {
+  if (loadingCategory && !category) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#f8efe6]">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-brand-accent"></div>
@@ -780,8 +830,8 @@ const CategoryPage = () => {
             </nav>
           )}
 
-          <div className="mt-8">
-            {!loadingProducts && !error && (
+          <div className="relative mt-8" aria-busy={loadingCategory || loadingProducts}>
+            {!error && (
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-gray-500">
                   <span className="font-semibold text-brand-dark">{meta.totalProducts}</span> products in{' '}
@@ -796,7 +846,21 @@ const CategoryPage = () => {
               </div>
             )}
 
-            {loadingProducts ? (
+            {isRefreshingProductGrid ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mb-4 flex items-center justify-center gap-2 text-sm font-medium text-brand-primary"
+              >
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-brand-accent/30 border-t-brand-accent"
+                  aria-hidden="true"
+                />
+                Updating products...
+              </div>
+            ) : null}
+
+            {loadingProducts && products.length === 0 ? (
               <div className="product-grid">
                 {[...Array(4)].map((_, index) => (
                   <div key={index} className="h-[420px] animate-pulse rounded-[28px] bg-[#f8efe6]" />
