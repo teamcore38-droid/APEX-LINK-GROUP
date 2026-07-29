@@ -736,7 +736,7 @@ const ProductPage = () => {
     if (!activeVariants.length) return null;
 
     return (
-      <div className={`rounded-[28px] border border-[#ecd9ca] bg-white p-5 shadow-sm ${containerClass}`}>
+      <div className={`min-w-0 max-w-full rounded-[28px] border border-[#ecd9ca] bg-white p-5 shadow-sm ${containerClass}`}>
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Variant</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {activeVariants.map((variant) => {
@@ -757,7 +757,7 @@ const ProductPage = () => {
                   }
                   setQty(1);
                 }}
-                className={`flex min-h-[82px] items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition ${
+                className={`flex min-h-[82px] min-w-0 max-w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition ${
                   String(selectedVariantId) === String(variant._id)
                     ? 'border-brand-primary bg-brand-light text-brand-dark'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary/40'
@@ -794,8 +794,8 @@ const ProductPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff7ee] pt-2 sm:pt-4 pb-16">
-      <div className="container mx-auto max-w-7xl px-4">
+    <div className="min-h-screen min-w-0 max-w-full overflow-x-clip bg-[#fff7ee] pt-2 pb-16 sm:pt-4">
+      <div className="container mx-auto min-w-0 max-w-7xl px-4">
         <Link
           to="/products"
           className="inline-flex items-center text-sm font-semibold text-brand-dark transition hover:text-brand-primary"
@@ -803,8 +803,8 @@ const ProductPage = () => {
           <ArrowLeft size={16} className="mr-2" /> Back to Shop
         </Link>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-2">
-          <section className="space-y-4 lg:sticky lg:top-24 h-fit">
+        <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-2">
+          <section className="min-w-0 max-w-full space-y-4 lg:sticky lg:top-24 h-fit">
             <button
               type="button"
               onClick={() => {
@@ -860,11 +860,11 @@ const ProductPage = () => {
             {renderVariantSelection('hidden lg:block mt-6')}
           </section>
 
-          <section className="rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.10)] sm:p-8">
-            <div className="flex flex-wrap items-center gap-3">
+          <section className="min-w-0 max-w-full rounded-[32px] bg-white p-4 shadow-[0_24px_70px_rgba(53, 26, 17,0.10)] sm:p-8">
+            <div className="flex min-w-0 max-w-full flex-wrap items-center gap-2 sm:gap-3">
               <Link
                 to={categoryPath}
-                className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent transition-colors duration-200 hover:text-brand-primary"
+                className="min-w-0 max-w-full break-words text-xs font-bold uppercase tracking-[0.25em] text-brand-accent transition-colors duration-200 hover:text-brand-primary"
               >
                 {product.category}
               </Link>
@@ -880,18 +880,18 @@ const ProductPage = () => {
               )}
             </div>
 
-            <h1 className="mt-4 font-serif text-4xl font-bold text-brand-dark sm:text-5xl">{product.name}</h1>
+            <h1 className="mt-4 min-w-0 max-w-full font-serif text-3xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-5xl">{product.name}</h1>
 
             <button
               type="button"
               onClick={shareProduct}
-              className="mt-4 rounded-md border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"
+              className="mt-4 inline-flex max-w-full rounded-md border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"
             >
               Share Product
             </button>
 
-            <div className="mt-5 flex flex-wrap items-center gap-4">
-              <div className="flex items-center text-brand-accent">
+            <div className="mt-5 flex min-w-0 max-w-full flex-wrap items-center gap-3 sm:gap-4">
+              <div className="flex min-w-0 max-w-full flex-wrap items-center text-brand-accent">
                 {[...Array(5)].map((_, index) => (
                   <Star
                     key={index}
@@ -900,7 +900,7 @@ const ProductPage = () => {
                     className={index < Math.floor(product.rating || 0) ? 'text-brand-accent' : 'text-gray-300'}
                   />
                 ))}
-                <span className="ml-2 text-sm font-semibold text-gray-500">
+                <span className="ml-2 max-w-full break-words text-sm font-semibold text-gray-500">
                   {product.numReviews || reviews.length || 0} reviews
                 </span>
               </div>
@@ -909,34 +909,34 @@ const ProductPage = () => {
               </span>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-end gap-4">
+            <div className="mt-6 flex min-w-0 max-w-full flex-wrap items-end gap-3 sm:gap-4">
               {product.compareAtPrice > product.price && (
                 <p className="text-xl text-gray-400 line-through">
                   {formatCurrency(product.compareAtPrice)}
                 </p>
               )}
-              <p className="font-serif text-4xl font-bold text-brand-dark">
+                <p className="max-w-full font-serif text-3xl font-bold text-brand-dark sm:text-4xl">
                 {formatCurrency(effectivePrice)}
               </p>
               {displaySku && (
-                <span className="rounded-full border border-[#ead6c6] bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-gray-600">
+                <span className="min-w-0 max-w-full break-all rounded-full border border-[#ead6c6] bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-gray-600">
                   SKU {displaySku}
                 </span>
               )}
             </div>
 
-            <div className="mt-6 overflow-hidden rounded-2xl border border-[#ecd9ca] bg-white transition-all duration-200">
+            <div className="mt-6 min-w-0 max-w-full overflow-hidden rounded-2xl border border-[#ecd9ca] bg-white transition-all duration-200">
               <button
                 type="button"
                 onClick={() => setDetailsExpanded((prev) => !prev)}
-                className="flex w-full items-center justify-between bg-[#fbf3ea] px-5 py-4 text-left transition-colors duration-200 hover:bg-[#f5e9dd]"
+                className="flex min-w-0 w-full items-center justify-between gap-2 bg-[#fbf3ea] px-4 py-4 text-left transition-colors duration-200 hover:bg-[#f5e9dd] sm:px-5"
                 aria-expanded={detailsExpanded}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
                     <Info size={18} />
                   </div>
-                  <span className="font-serif text-base font-bold text-brand-dark sm:text-lg">
+                  <span className="min-w-0 break-words font-serif text-base font-bold leading-tight text-brand-dark sm:text-lg">
                     Product Details & Specifications
                   </span>
                 </div>
@@ -949,24 +949,24 @@ const ProductPage = () => {
               </button>
 
               {detailsExpanded && (
-                <div className="p-5 space-y-5 border-t border-[#ecd9ca] bg-white animate-in fade-in slide-in-from-top-1">
+                <div className="min-w-0 space-y-5 border-t border-[#ecd9ca] bg-white p-4 animate-in fade-in slide-in-from-top-1 sm:p-5">
                   {product.description && (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Description</p>
-                      <p className="mt-2 text-sm leading-7 text-gray-700 whitespace-pre-line">
+                      <p className="mt-2 break-words whitespace-pre-line text-sm leading-7 text-gray-700">
                         {product.description}
                       </p>
                     </div>
                   )}
 
-                  <div className="grid gap-4 rounded-2xl bg-[#f8efe6] p-4 sm:grid-cols-2">
-                    <div>
+                  <div className="grid min-w-0 gap-4 rounded-2xl bg-[#f8efe6] p-4 sm:grid-cols-2">
+                    <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Origin</p>
-                      <p className="mt-1.5 text-sm leading-6 text-gray-700">{product.origin || 'India'}</p>
+                      <p className="mt-1.5 break-words text-sm leading-6 text-gray-700">{product.origin || 'India'}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Contents & Specifications</p>
-                      <p className="mt-1.5 text-sm leading-6 text-gray-700">{product.ingredients || 'Premium product with verified sourcing.'}</p>
+                      <p className="mt-1.5 break-words text-sm leading-6 text-gray-700">{product.ingredients || 'Premium product with verified sourcing.'}</p>
                     </div>
                   </div>
                 </div>
@@ -975,10 +975,10 @@ const ProductPage = () => {
 
             {/* Standalone Size & Color Selection Component */}
             {product?.hasSizes && product?.sizes?.length > 0 && (
-              <div className="mt-6 space-y-4 rounded-[24px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
+              <div className="mt-6 min-w-0 max-w-full space-y-4 rounded-[24px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
                 {/* 1. Size Selection */}
                 <div>
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <h3 className="font-serif text-base font-bold text-brand-dark">1. Select Size</h3>
                     <Link
                       to="/faq"
@@ -1022,7 +1022,7 @@ const ProductPage = () => {
 
                     <div
                       ref={sizeScrollRef}
-                      className="flex touch-pan-x snap-x snap-mandatory gap-2 overflow-x-auto px-0.5 py-1 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:px-9"
+                      className="flex min-w-0 max-w-full touch-pan-x snap-x snap-mandatory gap-2 overflow-x-auto px-0.5 py-1 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:px-9"
                     >
                     {product.sizes.map((sizeObj) => {
                       const comboStock = (product.variants || [])
@@ -1082,10 +1082,10 @@ const ProductPage = () => {
 
                 {selectedSize && availableColorsForSize.length > 0 && (
                   <div className="border-t border-[#f2e2d5] pt-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                       <h3 className="font-serif text-base font-bold text-brand-dark">2. Select Color</h3>
                       {selectedColor && (
-                        <span className="text-xs font-semibold text-brand-primary">Selected Color: {selectedColor}</span>
+                        <span className="max-w-full break-words text-xs font-semibold text-brand-primary">Selected Color: {selectedColor}</span>
                       )}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2.5">
@@ -1099,7 +1099,7 @@ const ProductPage = () => {
                             type="button"
                             disabled={isOutOfStock}
                             onClick={() => handleSelectColor(colorOption)}
-                            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
+                            className={`flex min-w-0 max-w-full items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all duration-200 ${
                               isOutOfStock
                                 ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-60'
                                 : isSelected
@@ -1111,7 +1111,7 @@ const ProductPage = () => {
                               className="h-3.5 w-3.5 rounded-full border border-black/20 shadow-xs"
                               style={{ backgroundColor: colorOption.name.toLowerCase() }}
                             />
-                            <span>{colorOption.name}</span>
+                            <span className="break-words">{colorOption.name}</span>
                           </button>
                         );
                       })}
@@ -1121,7 +1121,7 @@ const ProductPage = () => {
               </div>
             )}
 
-            <div className="mt-6 rounded-[28px] border border-[#ecd9ca] bg-white p-4 sm:p-5 shadow-xs">
+            <div className="mt-6 min-w-0 max-w-full rounded-[28px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
               {sizeError && (
                 <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700">
                   {sizeError}
@@ -1129,7 +1129,7 @@ const ProductPage = () => {
               )}
               {renderVariantSelection('lg:hidden mb-5')}
 
-              <div className="space-y-3">
+              <div className="min-w-0 space-y-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-start">
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 sm:hidden">Quantity</span>
@@ -1155,12 +1155,12 @@ const ProductPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-1 items-center gap-3">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <button
                       type="button"
                       onClick={handleAddToCart}
                       disabled={effectiveStock === 0}
-                      className={`inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 py-3 text-xs sm:text-sm font-bold uppercase tracking-[0.18em] transition-all duration-200 ${
+                      className={`inline-flex h-12 min-w-0 flex-1 items-center justify-center rounded-xl px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] transition-all duration-200 sm:px-5 sm:text-sm sm:tracking-[0.18em] ${
                         effectiveStock === 0
                           ? 'cursor-not-allowed bg-gray-200 text-gray-500'
                           : 'bg-brand-primary text-white shadow-sm hover:bg-brand-dark hover:shadow-md'
@@ -1173,7 +1173,7 @@ const ProductPage = () => {
                       type="button"
                       onClick={addToWishlist}
                       disabled={wishlistSaving}
-                      className="inline-flex h-12 shrink-0 items-center justify-center rounded-xl border border-brand-primary/20 px-4 py-3 text-xs sm:text-sm font-semibold uppercase tracking-[0.16em] text-brand-primary transition-all duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex h-12 shrink-0 items-center justify-center rounded-xl border border-brand-primary/20 px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-brand-primary transition-all duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-sm sm:tracking-[0.16em]"
                     >
                       {wishlistSaving ? (
                         <Loader2 size={16} className="mr-2 animate-spin" />
@@ -1215,10 +1215,10 @@ const ProductPage = () => {
           </section>
         </div>
 
-        <section className="mt-8 rounded-[32px] bg-white p-6 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:mt-10 sm:p-8">
+        <section className="mt-8 min-w-0 max-w-full rounded-[32px] bg-white p-4 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:mt-10 sm:p-8">
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Reviews</p>
-            <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Customer feedback</h2>
+            <h2 className="mt-2 break-words font-serif text-3xl font-bold text-brand-dark">Customer feedback</h2>
           </div>
 
           {reviewMessage && (
@@ -1227,7 +1227,7 @@ const ProductPage = () => {
             </div>
           )}
 
-          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="grid min-w-0 gap-8 lg:grid-cols-[0.8fr_1.2fr]">
             <form onSubmit={submitReview} className="rounded-[24px] border border-gray-100 bg-brand-light p-5">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-brand-dark">Rating</span>
@@ -1260,7 +1260,7 @@ const ProductPage = () => {
               </button>
             </form>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               {reviews.length === 0 ? (
                 <p className="rounded-[24px] border border-dashed border-brand-accent/30 bg-brand-light p-6 text-sm text-gray-600">
                   No approved reviews yet. Be the first to submit one.
@@ -1269,10 +1269,10 @@ const ProductPage = () => {
                 reviews.map((review) => (
                   <article key={review._id} className="rounded-[24px] border border-gray-100 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-serif text-xl font-bold text-brand-dark">{review.name}</p>
+                      <p className="min-w-0 break-words font-serif text-xl font-bold text-brand-dark">{review.name}</p>
                       <span className="text-sm font-semibold text-brand-accent">{review.rating}/5</span>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-gray-600">{review.comment}</p>
+                    <p className="mt-3 break-words text-sm leading-7 text-gray-600">{review.comment}</p>
                   </article>
                 ))
               )}
@@ -1280,10 +1280,10 @@ const ProductPage = () => {
           </div>
         </section>
 
-        <section className="mt-12 rounded-[28px] bg-white p-5 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-6">
+        <section className="mt-12 min-w-0 max-w-full rounded-[28px] bg-white p-5 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-6">
           <div className="mb-5">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Trust & Quality</p>
-            <h2 className="mt-1 font-serif text-2xl font-bold text-brand-dark sm:text-3xl">Why customers choose Apex Fashion</h2>
+            <h2 className="mt-1 break-words font-serif text-2xl font-bold text-brand-dark sm:text-3xl">Why customers choose Apex Fashion</h2>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1291,13 +1291,13 @@ const ProductPage = () => {
               const Icon = [BadgeCheck, Sparkles, ShieldCheck, Truck][index];
 
               return (
-                <div key={title} className="flex items-start gap-3.5 rounded-[20px] bg-[#f8efe6] p-3.5 sm:p-4">
+                <div key={title} className="flex min-w-0 items-start gap-3.5 rounded-[20px] bg-[#f8efe6] p-3.5 sm:p-4">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-brand-primary shadow-sm">
                     <Icon size={18} />
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-brand-dark leading-tight">{title}</h3>
-                    <p className="mt-1 text-xs leading-relaxed text-gray-600">{subtitle}</p>
+                  <div className="min-w-0">
+                    <h3 className="break-words text-base font-bold leading-tight text-brand-dark">{title}</h3>
+                    <p className="mt-1 break-words text-xs leading-relaxed text-gray-600">{subtitle}</p>
                   </div>
                 </div>
               );
@@ -1306,7 +1306,7 @@ const ProductPage = () => {
         </section>
 
         {relatedProducts.length > 0 && (
-          <section className="mt-16">
+          <section className="mt-16 min-w-0 max-w-full">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Related Products</p>
@@ -1331,7 +1331,7 @@ const ProductPage = () => {
         )}
 
         {recommendedProducts.length > 0 && (
-          <section className="mt-16">
+          <section className="mt-16 min-w-0 max-w-full">
             <div className="mb-8">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">For You</p>
               <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Personalized recommendations</h2>
@@ -1347,21 +1347,21 @@ const ProductPage = () => {
 
       {isLightboxOpen && (
         <div
-          className="product-lightbox fixed inset-0 z-[90] flex flex-col bg-[#1f0f0a]/95 px-4 py-4 text-white sm:px-8 sm:py-6"
+          className="product-lightbox fixed inset-0 z-[90] flex min-w-0 max-w-full flex-col overflow-x-hidden bg-[#1f0f0a]/95 px-4 py-4 text-white sm:px-8 sm:py-6"
           role="dialog"
           aria-modal="true"
           aria-label={`${product.name} image gallery`}
           onClick={() => setIsLightboxOpen(false)}
         >
-          <div className="flex items-center justify-between gap-4">
-            <div>
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-brand-accent">
                 {selectedImageIndex + 1} / {productImages.length || 1}
               </p>
-              <p className="mt-1 line-clamp-1 font-serif text-xl font-bold">{product.name}</p>
+              <p className="mt-1 line-clamp-2 break-words font-serif text-lg font-bold sm:text-xl">{product.name}</p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
                 onClick={(event) => {
@@ -1387,7 +1387,7 @@ const ProductPage = () => {
             </div>
           </div>
 
-          <div className="relative mt-4 flex min-h-0 flex-1 items-center justify-center" onClick={(event) => event.stopPropagation()}>
+          <div className="relative mt-4 flex min-h-0 min-w-0 max-w-full flex-1 items-center justify-center" onClick={(event) => event.stopPropagation()}>
             {productImages.length > 1 && (
               <button
                 type="button"
@@ -1402,7 +1402,7 @@ const ProductPage = () => {
             <button
               type="button"
               onClick={() => setIsLightboxZoomed((current) => !current)}
-              className={`max-h-full overflow-auto rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-accent/40 ${
+              className={`max-h-full max-w-full overflow-auto rounded-2xl focus:outline-none focus:ring-4 focus:ring-brand-accent/40 ${
                 isLightboxZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
               }`}
               aria-label={isLightboxZoomed ? 'Zoom out product image' : 'Zoom in product image'}
