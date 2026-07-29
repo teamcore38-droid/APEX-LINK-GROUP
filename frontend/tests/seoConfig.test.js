@@ -8,6 +8,7 @@ import {
   isNoIndexPath,
 } from '../src/utils/seoConfig.js';
 import { injectSeoHead } from '../server/seoResponse.js';
+import { injectCategoryPrerender } from '../api/render.js';
 
 test('SEO routes use the canonical www storefront domain', () => {
   assert.equal(buildCanonicalUrl('/'), 'https://www.apexfashion.lk/');
@@ -124,6 +125,31 @@ test('server-rendered category metadata includes breadcrumb and item list JSON-L
   assert.match(html, /"@type":"BreadcrumbList"/);
   assert.match(html, /"@type":"ItemList"/);
   assert.match(html, /"position":1/);
+});
+
+test('server-rendered category pages include visible category and product content', () => {
+  const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
+  const html = injectCategoryPrerender(source, {
+    category: { name: 'Women', slug: 'women', description: 'Women fashion collection.' },
+    seo: {
+      title: 'Women | Apex Fashion',
+      itemList: {
+        itemListElement: [
+          {
+            name: 'Walking Shoes',
+            url: 'https://www.apexfashion.lk/product/walking-shoes-123456789012345678901234',
+          },
+        ],
+      },
+    },
+    productPayload: { products: [] },
+  });
+
+  assert.match(html, /<h1>Women<\/h1>/);
+  assert.match(html, /Women fashion collection\./);
+  assert.match(html, /Walking Shoes/);
+  assert.match(html, /window\.__APEX_CATEGORY_PRERENDER__/);
+  assert.doesNotMatch(html, /<div id="root"><\/div>/);
 });
 
 test('server-rendered public catalog metadata emits indexable robots tags', () => {

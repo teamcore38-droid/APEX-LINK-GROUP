@@ -60,18 +60,27 @@ const RATING_OPTIONS = [
 const getCategoryId = (category) => String(category?._id || '');
 const getParentCategoryId = (category) =>
   String(category?.parentCategory?._id || category?.parentCategory || '');
+const getPrerenderedCategoryData = (slug) => {
+  if (typeof window === 'undefined') return null;
+
+  const payload = window.__APEX_CATEGORY_PRERENDER__;
+  return payload?.slug === slug ? payload : null;
+};
 
 const CategoryPage = () => {
   const { slug } = useParams();
+  const prerenderedData = getPrerenderedCategoryData(slug);
+  const hasPrerenderedCategory = Boolean(prerenderedData?.category);
 
-  const [category, setCategory] = useState(null);
-  const [categorySeo, setCategorySeo] = useState(null);
+  const [category, setCategory] = useState(() => prerenderedData?.category || null);
+  const [categorySeo, setCategorySeo] = useState(() => prerenderedData?.seo || null);
   const [allCategories, setAllCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loadingCategory, setLoadingCategory] = useState(true);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [products, setProducts] = useState(() => normalizeProductPayload(prerenderedData?.productPayload).products);
+  const [loadingCategory, setLoadingCategory] = useState(() => !hasPrerenderedCategory);
+  const [loadingProducts, setLoadingProducts] = useState(() => !prerenderedData?.productPayload);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
+  const [categoryNotFound, setCategoryNotFound] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState(() => createCategoryFilters(''));
   const [mobilePanel, setMobilePanel] = useState(null);
@@ -89,6 +98,7 @@ const CategoryPage = () => {
   const loaderRef = useRef(null);
   const queryVersionRef = useRef(0);
   const loadingMoreRef = useRef(false);
+  const hasPrerenderedProductsRef = useRef(Boolean(prerenderedData?.productPayload));
 
   const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
     const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
@@ -174,8 +184,9 @@ const CategoryPage = () => {
 
   useEffect(() => {
     const fetchCategory = async () => {
-      setLoadingCategory(true);
+      setLoadingCategory(!hasPrerenderedCategory);
       setError('');
+      setCategoryNotFound(false);
 
       try {
         const { data } = await axios.get(`/api/categories/${slug}`);
@@ -195,19 +206,20 @@ const CategoryPage = () => {
         setFilterDraft(createCategoryFilters(data.name));
       } catch (fetchError) {
         console.error(fetchError);
-        setError(fetchError.response?.data?.message || 'Unable to load this category right now.');
-        applySeo({
-          title: 'Category Not Found',
-          description: 'This Apex Fashion category is unavailable or could not be found.',
-          canonicalUrl: buildCanonicalUrl(`/category/${slug}`),
-        });
+        const isNotFound = fetchError.response?.status === 404;
+        setCategoryNotFound(isNotFound);
+        setError(
+          isNotFound
+            ? 'This category no longer exists.'
+            : fetchError.response?.data?.message || 'Unable to load this category right now.'
+        );
       } finally {
         setLoadingCategory(false);
       }
     };
 
     fetchCategory();
-  }, [applyCategorySeo, slug]);
+  }, [applyCategorySeo, hasPrerenderedCategory, slug]);
 
   useEffect(() => {
     if (!category?.name) {
@@ -219,11 +231,14 @@ const CategoryPage = () => {
     const controller = new AbortController();
 
     const fetchProducts = async () => {
-      setLoadingProducts(true);
+      const retainPrerenderedProducts = hasPrerenderedProductsRef.current;
+      setLoadingProducts(!retainPrerenderedProducts);
       setLoadingMore(false);
       loadingMoreRef.current = false;
       setError('');
-      setProducts([]);
+      if (!hasPrerenderedProductsRef.current) {
+        setProducts([]);
+      }
 
       try {
         const { data } = await axios.get('/api/customer/search', {
@@ -241,6 +256,7 @@ const CategoryPage = () => {
         }
 
         const payload = normalizeProductPayload(data);
+        hasPrerenderedProductsRef.current = false;
         await preloadProductGridImages(payload.products);
 
         if (queryVersionRef.current !== requestVersion) {
@@ -267,6 +283,7 @@ const CategoryPage = () => {
       } finally {
         if (queryVersionRef.current === requestVersion) {
           setLoadingProducts(false);
+          hasPrerenderedProductsRef.current = false;
         }
       }
     };
@@ -466,7 +483,9 @@ const CategoryPage = () => {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-16">
         <div className="rounded-3xl border border-red-200 bg-white px-6 py-12 text-center shadow-sm">
-          <p className="font-serif text-3xl font-bold text-brand-dark">Category unavailable</p>
+          <p className="font-serif text-3xl font-bold text-brand-dark">
+            {categoryNotFound ? 'Category not found' : 'Unable to load this category'}
+          </p>
           <p className="mt-3 text-sm text-red-700">{error}</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
