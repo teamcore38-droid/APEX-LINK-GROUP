@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   PUBLIC_ROUTE_SEO,
   buildCanonicalUrl,
@@ -8,9 +9,9 @@ import {
 } from '../src/utils/seoConfig.js';
 import { injectSeoHead } from '../server/seoResponse.js';
 
-test('SEO routes use the canonical apex storefront domain', () => {
-  assert.equal(buildCanonicalUrl('/'), 'https://apexfashion.lk/');
-  assert.equal(buildCanonicalUrl('/products/'), 'https://apexfashion.lk/products');
+test('SEO routes use the canonical www storefront domain', () => {
+  assert.equal(buildCanonicalUrl('/'), 'https://www.apexfashion.lk/');
+  assert.equal(buildCanonicalUrl('/products/'), 'https://www.apexfashion.lk/products');
   assert.equal(getPublicRouteSeo('/products').title.includes('Shoes'), true);
   assert.equal(Object.keys(PUBLIC_ROUTE_SEO).includes('/shipping'), true);
 });
@@ -44,6 +45,16 @@ test('public SEO landing pages are indexable routes', () => {
   assert.equal(isNoIndexPath('/rfq'), false);
 });
 
+test('public catalog error states never overwrite indexable robots metadata', async () => {
+  const [categoryPage, productPage] = await Promise.all([
+    readFile(new URL('../src/pages/CategoryPage.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/pages/ProductPage.jsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.doesNotMatch(categoryPage, /NOINDEX_ROBOTS/);
+  assert.doesNotMatch(productPage, /NOINDEX_ROBOTS/);
+});
+
 test('server-rendered metadata replaces generic head tags without duplicates', () => {
   const source = `<!doctype html><html><head><title>Old</title><meta name="description" content="Old"><link rel="canonical" href="https://old.example/"></head><body><div id="root"></div></body></html>`;
   const html = injectSeoHead(source, {
@@ -55,10 +66,24 @@ test('server-rendered metadata replaces generic head tags without duplicates', (
   });
 
   assert.match(html, /<title>Women Shoes in Sri Lanka \| Apex Fashion<\/title>/);
-  assert.match(html, /https:\/\/apexfashion\.lk\/category\/women-shoes/);
+  assert.match(html, /https:\/\/www\.apexfashion\.lk\/category\/women-shoes/);
   assert.match(html, /https:\/\/images\.example\/shoes\.jpg/);
   assert.equal((html.match(/rel="canonical"/g) || []).length, 1);
   assert.equal((html.match(/application\/ld\+json/g) || []).length, 1);
+});
+
+test('server-rendered metadata normalizes legacy apexfashion.lk URLs to www', () => {
+  const source = `<!doctype html><html><head><title>Old</title></head><body><div id="root"></div></body></html>`;
+  const html = injectSeoHead(source, {
+    title: 'Apex Fashion',
+    description: 'Shop fashion online in Sri Lanka.',
+    canonicalUrl: 'https://apexfashion.lk/category/women',
+    ogImage: 'https://apexfashion.lk/hero/hero-bg-4.webp',
+  });
+
+  assert.match(html, /https:\/\/www\.apexfashion\.lk\/category\/women/);
+  assert.match(html, /https:\/\/www\.apexfashion\.lk\/hero\/hero-bg-4\.jpg/);
+  assert.doesNotMatch(html, /https:\/\/apexfashion\.lk/);
 });
 
 test('server-rendered category metadata includes breadcrumb and item list JSON-LD', () => {
@@ -70,14 +95,14 @@ test('server-rendered category metadata includes breadcrumb and item list JSON-L
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'CollectionPage',
-      '@id': 'https://apexfashion.lk/category/women-shoes#collection',
+      '@id': 'https://www.apexfashion.lk/category/women-shoes#collection',
     },
     breadcrumbs: {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://apexfashion.lk/' },
-        { '@type': 'ListItem', position: 2, name: 'Women Shoes', item: 'https://apexfashion.lk/category/women-shoes' },
+        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.apexfashion.lk/' },
+        { '@type': 'ListItem', position: 2, name: 'Women Shoes', item: 'https://www.apexfashion.lk/category/women-shoes' },
       ],
     },
     itemList: {
@@ -88,7 +113,7 @@ test('server-rendered category metadata includes breadcrumb and item list JSON-L
           '@type': 'ListItem',
           position: 1,
           name: 'Block Heel Sandals',
-          url: 'https://apexfashion.lk/product/block-heel-sandals-123456789012345678901234',
+          url: 'https://www.apexfashion.lk/product/block-heel-sandals-123456789012345678901234',
         },
       ],
     },
@@ -111,6 +136,7 @@ test('server-rendered public catalog metadata emits indexable robots tags', () =
 
   assert.match(html, /<meta name="robots" content="index,follow" \/>/);
   assert.match(html, /<meta name="googlebot" content="index,follow" \/>/);
+  assert.match(html, /<meta name="twitter:url" content="https:\/\/www\.apexfashion\.lk\/category\/women" \/>/);
   assert.doesNotMatch(html, /noindex/i);
 });
 

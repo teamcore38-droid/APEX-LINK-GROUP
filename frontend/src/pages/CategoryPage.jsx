@@ -20,7 +20,6 @@ import {
   normalizeProductPayload,
 } from '../utils/productUi';
 import {
-  NOINDEX_ROBOTS,
   applySeo,
   buildBreadcrumbStructuredData,
   buildCategoryItemListStructuredData,
@@ -201,7 +200,6 @@ const CategoryPage = () => {
           title: 'Category Not Found',
           description: 'This Apex Fashion category is unavailable or could not be found.',
           canonicalUrl: buildCanonicalUrl(`/category/${slug}`),
-          robots: NOINDEX_ROBOTS,
         });
       } finally {
         setLoadingCategory(false);

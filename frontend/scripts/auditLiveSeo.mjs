@@ -1,6 +1,6 @@
-const SITE_URL = String(process.env.SEO_AUDIT_SITE_URL || 'https://apexfashion.lk').replace(/\/+$/, '');
+const SITE_URL = String(process.env.SEO_AUDIT_SITE_URL || 'https://www.apexfashion.lk').replace(/\/+$/, '');
 const CANONICAL_HOST = new URL(SITE_URL).hostname;
-const FORBIDDEN_OUTPUT = /localhost|127\.0\.0\.1|\.vercel\.app|https:\/\/www\.apexfashion\.lk|[A-Za-z]:\\/i;
+const FORBIDDEN_OUTPUT = /localhost|127\.0\.0\.1|\.vercel\.app|https:\/\/apexfashion\.lk(?=\/|$)|[A-Za-z]:\\/i;
 const COPIED_DESCRIPTION =
   /\bBIS\b|bis\.gov\.in|bureau of indian standards|product safety information|\b(?:meesho|amazon|flipkart|indiamart|tradeindia|daraz|alibaba)\b/i;
 

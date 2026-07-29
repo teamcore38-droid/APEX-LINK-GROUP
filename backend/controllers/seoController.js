@@ -7,7 +7,7 @@ import {
 } from '../utils/productSeoContent.js';
 import { buildProductUrl } from '../utils/productUrls.js';
 
-const DEFAULT_SITE_URL = 'https://apexfashion.lk';
+const DEFAULT_SITE_URL = 'https://www.apexfashion.lk';
 const DEFAULT_IMAGE_PATH = '/hero/hero-bg-4.webp';
 const STORE_ID = `${DEFAULT_SITE_URL}/#organization`;
 const CATEGORY_ITEMLIST_LIMIT = 24;
@@ -55,7 +55,7 @@ const toAbsoluteUrl = (value = '', siteUrl = getSiteUrl()) => {
     ) {
       throw new Error('Development or preview URL is not public');
     }
-    let href = url.href;
+    let href = url.href.replace(/^https:\/\/apexfashion\.lk(?=\/|$)/i, DEFAULT_SITE_URL);
     if (href.includes('/image/upload/')) {
       if (!/\/image\/upload\/[^/]*f_jpg/.test(href)) {
         href = href.replace('/image/upload/', '/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/');

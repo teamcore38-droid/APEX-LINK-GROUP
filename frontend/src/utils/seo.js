@@ -69,6 +69,7 @@ const setStructuredData = (structuredData) => {
 const toAbsoluteUrl = (value = DEFAULT_IMAGE) => {
   try {
     let url = new URL(value || DEFAULT_IMAGE, SITE_URL).href;
+    url = url.replace(/^https:\/\/apexfashion\.lk(?=\/|$)/i, SITE_URL);
     if (url.includes('/image/upload/')) {
       if (!/\/image\/upload\/[^/]*f_jpg/.test(url)) {
         url = url.replace('/image/upload/', '/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/');
@@ -131,6 +132,7 @@ const applySeo = ({
   setMetaTag({ name: 'twitter:card', content: 'summary_large_image' });
   setMetaTag({ name: 'twitter:title', content: resolvedTitle });
   setMetaTag({ name: 'twitter:description', content: resolvedDescription });
+  setMetaTag({ name: 'twitter:url', content: absoluteUrl });
   setMetaTag({ name: 'twitter:image', content: absoluteImage });
   setMetaTag({ name: 'twitter:image:alt', content: resolvedImageAlt });
   setLinkTag({ rel: 'canonical', href: absoluteUrl });

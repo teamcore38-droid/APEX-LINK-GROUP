@@ -29,9 +29,9 @@ test('buildProductSeo creates product structured data', () => {
 
   assert.equal(seo.structuredData['@type'], 'Product');
   assert.equal(seo.structuredData.offers.availability, 'https://schema.org/InStock');
-  assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/product/leather-walking-shoes-product-id');
+  assert.equal(seo.canonicalUrl, 'https://www.apexfashion.lk/product/leather-walking-shoes-product-id');
   assert.equal(seo.breadcrumbs['@type'], 'BreadcrumbList');
-  assert.equal(seo.structuredData.offers.seller['@id'], 'https://apexfashion.lk/#organization');
+  assert.equal(seo.structuredData.offers.seller['@id'], 'https://www.apexfashion.lk/#organization');
 });
 
 test('buildProductSeo uses the selected database variant offer', () => {
@@ -102,8 +102,8 @@ test('Merchant feed emits distinct variant items with required fields', () => {
   assert.match(xml, /<g:name>size<\/g:name>\s*<g:value>M<\/g:value>/);
   assert.match(xml, /<g:name>color<\/g:name>\s*<g:value>Black<\/g:value>/);
   assert.match(xml, /variant=abcdefabcdefabcdefabcdef/);
-  assert.match(xml, /https:\/\/apexfashion\.lk\/product\/walking-shoes-123456789012345678901234/);
-  assert.doesNotMatch(xml, /localhost|vercel\.app|www\.apexfashion\.lk/);
+  assert.match(xml, /https:\/\/www\.apexfashion\.lk\/product\/walking-shoes-123456789012345678901234/);
+  assert.doesNotMatch(xml, /localhost|vercel\.app|https:\/\/apexfashion\.lk/);
 });
 
 test('buildCategorySeo creates canonical collection metadata', () => {
@@ -128,18 +128,18 @@ test('buildCategorySeo creates canonical collection metadata', () => {
     }
   );
 
-  assert.equal(seo.canonicalUrl, 'https://apexfashion.lk/category/women-shoes');
+  assert.equal(seo.canonicalUrl, 'https://www.apexfashion.lk/category/women-shoes');
   assert.match(seo.title, /Women's Shoes/);
   assert.match(seo.description, /Women's Shoes/);
   assert.equal(seo.structuredData['@type'], 'CollectionPage');
-  assert.equal(seo.structuredData.mainEntity['@id'], 'https://apexfashion.lk/category/women-shoes#itemlist');
+  assert.equal(seo.structuredData.mainEntity['@id'], 'https://www.apexfashion.lk/category/women-shoes#itemlist');
   assert.equal(seo.breadcrumbs.itemListElement.length, 4);
-  assert.equal(seo.breadcrumbs.itemListElement[2].item, 'https://apexfashion.lk/category/women');
+  assert.equal(seo.breadcrumbs.itemListElement[2].item, 'https://www.apexfashion.lk/category/women');
   assert.equal(seo.itemList['@type'], 'ItemList');
   assert.equal(seo.itemList.numberOfItems, 1);
   assert.equal(seo.itemList.itemListElement[0].position, 1);
   assert.equal(
     seo.itemList.itemListElement[0].url,
-    'https://apexfashion.lk/product/block-heel-sandals-123456789012345678901234'
+    'https://www.apexfashion.lk/product/block-heel-sandals-123456789012345678901234'
   );
 });

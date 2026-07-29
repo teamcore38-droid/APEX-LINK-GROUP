@@ -1,4 +1,4 @@
-const CACHE_NAME = 'apex-fashion-v4';
+const CACHE_NAME = 'apex-fashion-v5';
 const APP_SHELL = [
   '/offline.html',
   '/manifest.webmanifest',

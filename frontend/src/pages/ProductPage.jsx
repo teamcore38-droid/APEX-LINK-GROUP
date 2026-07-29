@@ -30,7 +30,6 @@ import { getCategories } from '../utils/categoryApi';
 import { getPublicCategoryPath } from '../utils/categoryUi';
 import { trackEvent } from '../utils/analytics';
 import {
-  NOINDEX_ROBOTS,
   applySeo,
   buildBreadcrumbStructuredData,
   buildProductStructuredData,
@@ -298,7 +297,6 @@ const ProductPage = () => {
           title: 'Product Not Found',
           description: 'This Apex Fashion product is unavailable or could not be found.',
           canonicalUrl: buildCanonicalUrl(`/product/${productRouteParam}`),
-          robots: NOINDEX_ROBOTS,
         });
         setLoading(false);
       }

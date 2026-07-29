@@ -1,4 +1,4 @@
-const SITE_URL = 'https://apexfashion.lk';
+const SITE_URL = 'https://www.apexfashion.lk';
 const DEFAULT_IMAGE = `${SITE_URL}/hero/hero-bg-4.webp`;
 
 const getApiBaseUrl = () =>
@@ -24,6 +24,7 @@ const normalizeCanonicalUrl = (value = '/') => {
 const normalizeAssetUrl = (value = DEFAULT_IMAGE) => {
   try {
     let url = new URL(value || DEFAULT_IMAGE, SITE_URL).href;
+    url = url.replace(/^https:\/\/apexfashion\.lk(?=\/|$)/i, SITE_URL);
     if (url.includes('/image/upload/')) {
       if (!/\/image\/upload\/[^/]*f_jpg/.test(url)) {
         url = url.replace('/image/upload/', '/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/');
@@ -106,6 +107,7 @@ const injectSeoHead = (sourceHtml, seo = {}) => {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:url" content="${escapeHtml(canonicalUrl)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />
     ${structuredDataTags}
   `;

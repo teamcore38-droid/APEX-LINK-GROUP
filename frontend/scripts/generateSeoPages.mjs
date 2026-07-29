@@ -108,6 +108,7 @@ const renderHtml = (route, seo) => {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(seo.title)}" />
     <meta name="twitter:description" content="${escapeHtml(seo.description)}" />
+    <meta name="twitter:url" content="${canonicalUrl}" />
     <meta name="twitter:image" content="${image}" />
     ${structuredData
       .map(
