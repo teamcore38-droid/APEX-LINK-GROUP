@@ -939,7 +939,7 @@ const ProductPage = () => {
                       <span className="text-xs font-semibold text-brand-primary">Selected Size: {selectedSize}</span>
                     )}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2.5">
+                  <div className="mx-auto mt-3 flex w-full flex-wrap justify-center gap-2.5">
                     {product.sizes.map((sizeObj) => {
                       const comboStock = (product.variants || [])
                         .filter((variant) =>
