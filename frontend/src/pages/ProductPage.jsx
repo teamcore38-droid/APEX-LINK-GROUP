@@ -803,7 +803,7 @@ const ProductPage = () => {
           <ArrowLeft size={16} className="mr-2" /> Back to Shop
         </Link>
 
-        <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-2">
+        <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-2">
           <section className="min-w-0 max-w-full space-y-4 lg:sticky lg:top-24 h-fit">
             <button
               type="button"
@@ -857,7 +857,7 @@ const ProductPage = () => {
               </div>
             )}
 
-            {renderVariantSelection('hidden lg:block mt-6')}
+            {renderVariantSelection('hidden lg:block mt-4')}
           </section>
 
           <section className="min-w-0 max-w-full rounded-[32px] bg-white p-4 shadow-[0_24px_70px_rgba(53, 26, 17,0.10)] sm:p-8">
@@ -880,17 +880,17 @@ const ProductPage = () => {
               )}
             </div>
 
-            <h1 className="mt-4 min-w-0 max-w-full font-serif text-3xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-5xl">{product.name}</h1>
+            <h1 className="mt-3 min-w-0 max-w-full font-serif text-2xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-4xl">{product.name}</h1>
 
             <button
               type="button"
               onClick={shareProduct}
-              className="mt-4 inline-flex max-w-full rounded-md border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"
+              className="mt-3 inline-flex max-w-full rounded-md border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"
             >
               Share Product
             </button>
 
-            <div className="mt-5 flex min-w-0 max-w-full flex-wrap items-center gap-3 sm:gap-4">
+            <div className="mt-4 flex min-w-0 max-w-full flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex min-w-0 max-w-full flex-wrap items-center text-brand-accent">
                 {[...Array(5)].map((_, index) => (
                   <Star
@@ -909,13 +909,13 @@ const ProductPage = () => {
               </span>
             </div>
 
-            <div className="mt-6 flex min-w-0 max-w-full flex-wrap items-end gap-3 sm:gap-4">
+            <div className="mt-4 flex min-w-0 max-w-full flex-wrap items-end gap-3 sm:gap-4">
               {product.compareAtPrice > product.price && (
-                <p className="text-xl text-gray-400 line-through">
+                <p className="text-lg text-gray-400 line-through sm:text-xl">
                   {formatCurrency(product.compareAtPrice)}
                 </p>
               )}
-                <p className="max-w-full font-serif text-3xl font-bold text-brand-dark sm:text-4xl">
+              <p className="max-w-full font-serif text-2xl font-bold text-brand-dark sm:text-3xl">
                 {formatCurrency(effectivePrice)}
               </p>
               {displaySku && (
@@ -925,7 +925,7 @@ const ProductPage = () => {
               )}
             </div>
 
-            <div className="mt-6 min-w-0 max-w-full overflow-hidden rounded-2xl border border-[#ecd9ca] bg-white transition-all duration-200">
+            <div className="mt-4 min-w-0 max-w-full overflow-hidden rounded-2xl border border-[#ecd9ca] bg-white transition-all duration-200">
               <button
                 type="button"
                 onClick={() => setDetailsExpanded((prev) => !prev)}
@@ -975,7 +975,7 @@ const ProductPage = () => {
 
             {/* Standalone Size & Color Selection Component */}
             {product?.hasSizes && product?.sizes?.length > 0 && (
-              <div className="mt-6 min-w-0 max-w-full space-y-4 rounded-[24px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
+              <div className="mt-4 min-w-0 max-w-full space-y-3 rounded-[24px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
                 {/* 1. Size Selection */}
                 <div>
                   <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 sm:gap-3">
@@ -988,7 +988,7 @@ const ProductPage = () => {
                     </Link>
                   </div>
 
-                  <div className="relative mt-3">
+                  <div className="relative mt-2">
                     <div
                       className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-7 bg-gradient-to-r from-white to-transparent transition-opacity duration-200 sm:w-9 ${
                         sizeScrollState.canScrollLeft ? 'opacity-100' : 'opacity-0'
@@ -1081,14 +1081,14 @@ const ProductPage = () => {
                 )}
 
                 {selectedSize && availableColorsForSize.length > 0 && (
-                  <div className="border-t border-[#f2e2d5] pt-4">
+                  <div className="border-t border-[#f2e2d5] pt-3">
                     <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
                       <h3 className="font-serif text-base font-bold text-brand-dark">2. Select Color</h3>
                       {selectedColor && (
                         <span className="max-w-full break-words text-xs font-semibold text-brand-primary">Selected Color: {selectedColor}</span>
                       )}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2.5">
+                    <div className="mt-2 flex flex-wrap gap-2.5">
                       {availableColorsForSize.map((colorOption) => {
                         const isSelected = selectedColor === colorOption.name;
                         const isOutOfStock = Number(colorOption.stock || 0) <= 0;
@@ -1121,15 +1121,15 @@ const ProductPage = () => {
               </div>
             )}
 
-            <div className="mt-6 min-w-0 max-w-full rounded-[28px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
+            <div className="mt-4 min-w-0 max-w-full rounded-[28px] border border-[#ecd9ca] bg-white p-4 shadow-xs sm:p-5">
               {sizeError && (
                 <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700">
                   {sizeError}
                 </div>
               )}
-              {renderVariantSelection('lg:hidden mb-5')}
+              {renderVariantSelection('lg:hidden mb-4')}
 
-              <div className="min-w-0 space-y-3">
+              <div className="min-w-0 space-y-2">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-start">
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500 sm:hidden">Quantity</span>
@@ -1215,8 +1215,8 @@ const ProductPage = () => {
           </section>
         </div>
 
-        <section className="mt-8 min-w-0 max-w-full rounded-[32px] bg-white p-4 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:mt-10 sm:p-8">
-          <div className="mb-8">
+        <section className="mt-6 min-w-0 max-w-full rounded-[32px] bg-white p-4 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:mt-8 sm:p-8">
+          <div className="mb-6">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Reviews</p>
             <h2 className="mt-2 break-words font-serif text-3xl font-bold text-brand-dark">Customer feedback</h2>
           </div>
@@ -1227,7 +1227,7 @@ const ProductPage = () => {
             </div>
           )}
 
-          <div className="grid min-w-0 gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[0.8fr_1.2fr]">
             <form onSubmit={submitReview} className="rounded-[24px] border border-gray-100 bg-brand-light p-5">
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-brand-dark">Rating</span>
@@ -1280,7 +1280,7 @@ const ProductPage = () => {
           </div>
         </section>
 
-        <section className="mt-12 min-w-0 max-w-full rounded-[28px] bg-white p-5 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-6">
+        <section className="mt-8 min-w-0 max-w-full rounded-[28px] bg-white p-5 shadow-[0_24px_70px_rgba(53, 26, 17,0.08)] sm:p-6">
           <div className="mb-5">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Trust & Quality</p>
             <h2 className="mt-1 break-words font-serif text-2xl font-bold text-brand-dark sm:text-3xl">Why customers choose Apex Fashion</h2>
@@ -1306,7 +1306,7 @@ const ProductPage = () => {
         </section>
 
         {relatedProducts.length > 0 && (
-          <section className="mt-16 min-w-0 max-w-full">
+          <section className="mt-12 min-w-0 max-w-full">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Related Products</p>
@@ -1331,7 +1331,7 @@ const ProductPage = () => {
         )}
 
         {recommendedProducts.length > 0 && (
-          <section className="mt-16 min-w-0 max-w-full">
+          <section className="mt-12 min-w-0 max-w-full">
             <div className="mb-8">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">For You</p>
               <h2 className="mt-2 font-serif text-3xl font-bold text-brand-dark">Personalized recommendations</h2>
