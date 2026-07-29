@@ -9,6 +9,7 @@ import {
 } from '../src/utils/seoConfig.js';
 import { injectSeoHead } from '../server/seoResponse.js';
 import { injectCategoryPrerender } from '../api/render.js';
+import { getCategoryBootstrapState } from '../src/utils/categoryHydration.js';
 
 test('SEO routes use the canonical www storefront domain', () => {
   assert.equal(buildCanonicalUrl('/'), 'https://www.apexfashion.lk/');
@@ -150,6 +151,30 @@ test('server-rendered category pages include visible category and product conten
   assert.match(html, /Walking Shoes/);
   assert.match(html, /window\.__APEX_CATEGORY_PRERENDER__/);
   assert.doesNotMatch(html, /<div id="root"><\/div>/);
+});
+
+test('category hydration preserves server products and pagination metadata', () => {
+  const state = getCategoryBootstrapState({
+    slug: 'women',
+    category: { name: 'Women', slug: 'women' },
+    seo: { title: 'Women | Apex Fashion' },
+    productPayload: {
+      products: [{ _id: 'product-1', name: 'Walking Shoes' }],
+      currentPage: 1,
+      totalPages: 5,
+      totalProducts: 55,
+      hasNextPage: true,
+      hasPrevPage: false,
+      facets: { categories: ['Women'] },
+    },
+  });
+
+  assert.equal(state.hasCategory, true);
+  assert.equal(state.hasProductPayload, true);
+  assert.equal(state.products.length, 1);
+  assert.equal(state.meta.totalProducts, 55);
+  assert.equal(state.meta.hasNextPage, true);
+  assert.deepEqual(state.facets, { categories: ['Women'] });
 });
 
 test('server-rendered public catalog metadata emits indexable robots tags', () => {

@@ -27,6 +27,10 @@ import {
 } from '../utils/seo';
 import { buildCanonicalUrl } from '../utils/seoConfig';
 import { getCategories } from '../utils/categoryApi';
+import {
+  createEmptyFacets,
+  getCategoryBootstrapState,
+} from '../utils/categoryHydration';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { preloadProductGridImages } from '../utils/imagePreloader';
 
@@ -70,35 +74,30 @@ const getPrerenderedCategoryData = (slug) => {
 const CategoryPage = () => {
   const { slug } = useParams();
   const prerenderedData = getPrerenderedCategoryData(slug);
-  const hasPrerenderedCategory = Boolean(prerenderedData?.category);
+  const bootstrapState = getCategoryBootstrapState(prerenderedData);
 
-  const [category, setCategory] = useState(() => prerenderedData?.category || null);
-  const [categorySeo, setCategorySeo] = useState(() => prerenderedData?.seo || null);
+  const [category, setCategory] = useState(() => bootstrapState.category);
+  const [categorySeo, setCategorySeo] = useState(() => bootstrapState.seo);
   const [allCategories, setAllCategories] = useState([]);
-  const [products, setProducts] = useState(() => normalizeProductPayload(prerenderedData?.productPayload).products);
-  const [loadingCategory, setLoadingCategory] = useState(() => !hasPrerenderedCategory);
-  const [loadingProducts, setLoadingProducts] = useState(() => !prerenderedData?.productPayload);
+  const [products, setProducts] = useState(() => bootstrapState.products);
+  const [loadingCategory, setLoadingCategory] = useState(() => !bootstrapState.hasCategory);
+  const [loadingProducts, setLoadingProducts] = useState(() => !bootstrapState.hasProductPayload);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [categoryNotFound, setCategoryNotFound] = useState(false);
   const [searchInput, setSearchInput] = useState('');
-  const [filters, setFilters] = useState(() => createCategoryFilters(''));
+  const [filters, setFilters] = useState(() => createCategoryFilters(bootstrapState.category?.name));
   const [mobilePanel, setMobilePanel] = useState(null);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [filterDraft, setFilterDraft] = useState(() => createCategoryFilters(''));
-  const [meta, setMeta] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalProducts: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
-  });
-  const [facets, setFacets] = useState({ categories: [], brands: [], origins: [], availability: [], priceRange: {} });
+  const [filterDraft, setFilterDraft] = useState(() => createCategoryFilters(bootstrapState.category?.name));
+  const [meta, setMeta] = useState(() => bootstrapState.meta);
+  const [facets, setFacets] = useState(() => bootstrapState.facets);
   const [productGridRef, productsVisible] = useScrollReveal();
   const loaderRef = useRef(null);
   const queryVersionRef = useRef(0);
   const loadingMoreRef = useRef(false);
-  const hasPrerenderedProductsRef = useRef(Boolean(prerenderedData?.productPayload));
+  const prerenderedSlugRef = useRef(bootstrapState.slug);
+  const preservePrerenderedProductsRef = useRef(bootstrapState.hasProductPayload);
 
   const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
     const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
@@ -151,11 +150,21 @@ const CategoryPage = () => {
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      setFilters((currentFilters) => ({
-        ...currentFilters,
-        keyword: searchInput.trim(),
-        category: category?.name || currentFilters.category,
-      }));
+      setFilters((currentFilters) => {
+        const keyword = searchInput.trim();
+        const categoryName = category?.name || currentFilters.category;
+
+        if (currentFilters.keyword === keyword && currentFilters.category === categoryName) {
+          return currentFilters;
+        }
+
+        preservePrerenderedProductsRef.current = false;
+        return {
+          ...currentFilters,
+          keyword,
+          category: categoryName,
+        };
+      });
     }, 350);
 
     return () => clearTimeout(timeoutId);
@@ -183,8 +192,18 @@ const CategoryPage = () => {
   }, [mobilePanel]);
 
   useEffect(() => {
+    if (bootstrapState.hasCategory && prerenderedSlugRef.current === slug) {
+      setLoadingCategory(false);
+      setError('');
+      setCategoryNotFound(false);
+      applyCategorySeo(category, categorySeo, products);
+      return undefined;
+    }
+
+    preservePrerenderedProductsRef.current = false;
+
     const fetchCategory = async () => {
-      setLoadingCategory(!hasPrerenderedCategory);
+      setLoadingCategory(true);
       setError('');
       setCategoryNotFound(false);
 
@@ -219,26 +238,40 @@ const CategoryPage = () => {
     };
 
     fetchCategory();
-  }, [applyCategorySeo, hasPrerenderedCategory, slug]);
+  }, [
+    applyCategorySeo,
+    bootstrapState.hasCategory,
+    category,
+    categorySeo,
+    products,
+    slug,
+  ]);
 
   useEffect(() => {
-    if (!category?.name) {
+    if (!category?.name || category.slug !== slug) {
       return;
     }
 
+    if (
+      preservePrerenderedProductsRef.current &&
+      prerenderedSlugRef.current === slug
+    ) {
+      setLoadingProducts(false);
+      setError('');
+      return;
+    }
+
+    preservePrerenderedProductsRef.current = false;
     const requestVersion = queryVersionRef.current + 1;
     queryVersionRef.current = requestVersion;
     const controller = new AbortController();
 
     const fetchProducts = async () => {
-      const retainPrerenderedProducts = hasPrerenderedProductsRef.current;
-      setLoadingProducts(!retainPrerenderedProducts);
+      setLoadingProducts(true);
       setLoadingMore(false);
       loadingMoreRef.current = false;
       setError('');
-      if (!hasPrerenderedProductsRef.current) {
-        setProducts([]);
-      }
+      setProducts([]);
 
       try {
         const { data } = await axios.get('/api/customer/search', {
@@ -256,7 +289,6 @@ const CategoryPage = () => {
         }
 
         const payload = normalizeProductPayload(data);
-        hasPrerenderedProductsRef.current = false;
         await preloadProductGridImages(payload.products);
 
         if (queryVersionRef.current !== requestVersion) {
@@ -265,7 +297,7 @@ const CategoryPage = () => {
 
         setProducts(payload.products);
         applyCategorySeo(category, categorySeo, payload.products);
-        setFacets(data.facets || { categories: [], brands: [], origins: [], availability: [], priceRange: {} });
+        setFacets(data.facets || createEmptyFacets());
         setMeta({
           currentPage: payload.currentPage,
           totalPages: payload.totalPages,
@@ -283,7 +315,6 @@ const CategoryPage = () => {
       } finally {
         if (queryVersionRef.current === requestVersion) {
           setLoadingProducts(false);
-          hasPrerenderedProductsRef.current = false;
         }
       }
     };
@@ -293,7 +324,7 @@ const CategoryPage = () => {
     return () => {
       controller.abort();
     };
-  }, [applyCategorySeo, category, categorySeo, filters]);
+  }, [applyCategorySeo, category, categorySeo, filters, slug]);
 
   const loadMoreProducts = useCallback(async () => {
     if (
@@ -390,6 +421,7 @@ const CategoryPage = () => {
   }, [loadMoreProducts, loadingProducts, meta.hasNextPage]);
 
   const updateFilter = (key, value) => {
+    preservePrerenderedProductsRef.current = false;
     setError('');
     setFilters((currentFilters) => ({
       ...currentFilters,
@@ -400,6 +432,7 @@ const CategoryPage = () => {
 
   const resetFilters = () => {
     const nextFilters = createCategoryFilters(category?.name || '');
+    preservePrerenderedProductsRef.current = false;
     setSearchInput('');
     setFilters(nextFilters);
     setFilterDraft(nextFilters);
@@ -431,6 +464,7 @@ const CategoryPage = () => {
   };
 
   const applyMobileFilters = () => {
+    preservePrerenderedProductsRef.current = false;
     setError('');
     setFilters((currentFilters) => ({
       ...currentFilters,
