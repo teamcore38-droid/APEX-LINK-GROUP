@@ -5,6 +5,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import connectDB from './config/db.js';
+import { createCorsOptions } from './config/cors.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -52,20 +53,6 @@ if (isProduction) {
   app.set('trust proxy', 1);
 }
 
-const configuredOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.CLIENT_URL,
-  ...(process.env.CORS_ORIGINS || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean),
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:4173',
-  'http://127.0.0.1:4173',
-].map((origin) => (origin ? origin.trim().replace(/\/+$/, '') : ''));
-const allowedOrigins = [...new Set(configuredOrigins.filter(Boolean))];
-
 app.get('/api/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -74,23 +61,7 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-const corsOptions = {
-  origin(origin, callback) {
-    // Allow direct server-to-server calls without an Origin header.
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-      return;
-    }
-
-    callback(null, false);
-  },
-  credentials: true,
-};
+const corsOptions = createCorsOptions();
 
 app.use(morgan(isProduction ? 'combined' : 'dev'));
 app.use(requestContext);
