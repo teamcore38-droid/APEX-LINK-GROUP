@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Product from '../components/Product';
 import FeaturedProductCarousel from '../components/FeaturedProductCarousel';
+import HomeCategoryCarousel from '../components/HomeCategoryCarousel';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Award, Globe, ShieldCheck, Truck } from 'lucide-react';
 import { normalizeProductPayload } from '../utils/productUi';
@@ -87,7 +88,7 @@ const HomePage = () => {
         }
 
         if (categoriesResult.status === 'fulfilled') {
-          setHomeCategories(categoriesResult.value.filter((category) => category.isActive !== false).slice(0, 8));
+          setHomeCategories(categoriesResult.value.filter((category) => category.isActive !== false));
         }
 
         setFeaturedProducts(nextFeaturedProducts);
@@ -201,40 +202,24 @@ const HomePage = () => {
       </div>
 
       {homeCategories.length > 0 && (
-        <section className="bg-[#fff7ee] py-10 md:py-12" aria-labelledby="home-category-links-title">
+        <section className="bg-[#fff7ee] py-9 md:py-11" aria-labelledby="home-category-links-title">
           <div className="container mx-auto px-4">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-4 md:mb-6">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Shop by Category</p>
-                <h2 id="home-category-links-title" className="mt-2 font-serif text-3xl font-bold text-brand-dark">
-                  Popular Fashion Categories
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-primary">Browse by Category</p>
+                <h2 id="home-category-links-title" className="mt-1.5 font-serif text-3xl font-bold text-brand-dark md:text-4xl">
+                  Shop by Category
                 </h2>
+                <p className="mt-2 max-w-xl text-sm text-gray-600">Explore our wide range of fashion categories for women, men, and kids.</p>
               </div>
               <Link
                 to="/categories"
-                className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+                className="inline-flex items-center rounded-full border border-brand-primary/25 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white sm:px-5 sm:py-2.5"
               >
                 View All Categories <ArrowRight size={14} className="ml-2" />
               </Link>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {homeCategories.map((category) => (
-                <Link
-                  key={category.slug}
-                  to={`/category/${category.slug}`}
-                  className="group flex min-h-20 items-center justify-between rounded-2xl border border-[#ead6c6] bg-white px-4 py-4 text-brand-dark shadow-sm transition hover:border-brand-accent hover:shadow-md"
-                >
-                  <span>
-                    <span className="block font-serif text-lg font-bold">{category.name}</span>
-                    <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.14em] text-gray-500">
-                      Shop {category.name}
-                    </span>
-                  </span>
-                  <ArrowRight size={18} className="text-brand-accent transition-transform group-hover:translate-x-1" />
-                </Link>
-              ))}
-            </div>
+            <HomeCategoryCarousel categories={homeCategories} />
           </div>
         </section>
       )}
