@@ -37,6 +37,30 @@ const PRODUCT_PAGE_SEO_FILTER = {
 
 const getSiteUrl = () => DEFAULT_SITE_URL;
 
+const isMyntraImageUrl = (value = '') => {
+  try {
+    return new URL(value, DEFAULT_SITE_URL).hostname.toLowerCase() === 'assets.myntassets.com';
+  } catch {
+    return false;
+  }
+};
+
+const getCloudinaryImageUrl = (publicId = '') => {
+  const cloudName = String(process.env.CLOUDINARY_CLOUD_NAME || '').trim();
+  const normalizedPublicId = String(publicId || '').trim();
+
+  if (!cloudName || !normalizedPublicId) {
+    return '';
+  }
+
+  const encodedPublicId = normalizedPublicId
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+
+  return `https://res.cloudinary.com/${encodeURIComponent(cloudName)}/image/upload/f_jpg,w_1200,h_630,c_fill,q_auto/${encodedPublicId}`;
+};
+
 const escapeXml = (value = '') =>
   String(value)
     .replace(/&/g, '&amp;')
@@ -47,8 +71,17 @@ const escapeXml = (value = '') =>
 
 const escapeRegex = (value = '') => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const getImageUrl = (image = '') =>
-  (typeof image === 'string' ? image : String(image?.url || image?.secureUrl || '')).trim();
+const getImageUrl = (image = '') => {
+  if (image && typeof image === 'object') {
+    const cloudinaryUrl = getCloudinaryImageUrl(image.publicId || image.public_id);
+    if (cloudinaryUrl) {
+      return cloudinaryUrl;
+    }
+  }
+
+  const url = (typeof image === 'string' ? image : String(image?.url || image?.secureUrl || image?.secure_url || '')).trim();
+  return isMyntraImageUrl(url) ? '' : url;
+};
 
 const toAbsoluteUrl = (value = '', siteUrl = getSiteUrl()) => {
   try {
@@ -77,7 +110,7 @@ const toAbsoluteUrl = (value = '', siteUrl = getSiteUrl()) => {
 };
 
 const getProductImageUrls = (product = {}) =>
-  [product.image, ...(product.images || [])]
+  [{ url: product.image, publicId: product.imagePublicId }, ...(product.images || [])]
     .map((image) => getImageUrl(image))
     .filter(Boolean)
     .map((image) => toAbsoluteUrl(image))
@@ -255,7 +288,12 @@ const buildProductSeo = (product, selection = {}) => {
   const offerUrl = new URL(url);
   const selectedSize = cleanProductText(selectedOption?.size, 100);
   const selectedColor = cleanProductText(selectedOption?.color, 100);
-  const selectedImage = getImageUrl(selectedOption?.image || selectedOption?.images?.[0]);
+  const selectedImage = getImageUrl(
+    selectedOption?.imagePublicId
+      ? { url: selectedOption.image, publicId: selectedOption.imagePublicId }
+      : selectedOption?.image || selectedOption?.images?.[0]
+  );
+  const primaryImage = getImageUrl({ url: product.image, publicId: product.imagePublicId });
 
   if (selectedOption?._id) offerUrl.searchParams.set('variant', selectedOption._id.toString());
   if (selectedSize) offerUrl.searchParams.set('size', selectedSize);
@@ -284,7 +322,7 @@ const buildProductSeo = (product, selection = {}) => {
         : [productName, product.category, brand, product.sku, 'Sri Lanka'].filter(Boolean),
     canonicalUrl: url,
     ogImage: toAbsoluteUrl(
-      selectedImage || getImageUrl(product.seo?.ogImage) || getImageUrl(product.image) || DEFAULT_IMAGE_PATH
+      selectedImage || getImageUrl(product.seo?.ogImage) || primaryImage || DEFAULT_IMAGE_PATH
     ),
     url,
     type: 'product',

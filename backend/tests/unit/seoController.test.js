@@ -161,3 +161,22 @@ test('buildProductSeo uses the branded fallback image when a product has no imag
 
   assert.equal(seo.ogImage, 'https://www.apexfashion.lk/Apex%20Logo.jpg');
 });
+
+test('buildProductSeo never emits an external Myntra image', () => {
+  const seo = buildProductSeo({
+    _id: { toString: () => 'myntra-image-product' },
+    name: 'Imported Product',
+    slug: 'imported-product',
+    image: 'https://assets.myntassets.com/assets/images/product.jpg',
+    images: [{ url: 'https://assets.myntassets.com/assets/images/product.jpg', publicId: '' }],
+    description: 'An imported product with a legacy external image.',
+    brand: 'Apex Fashion',
+    category: 'Accessories',
+    price: 1200,
+    countInStock: 3,
+    seo: {},
+  });
+
+  assert.doesNotMatch(seo.ogImage, /myntassets\.com/i);
+  assert.doesNotMatch(JSON.stringify(seo.structuredData.image), /myntassets\.com/i);
+});

@@ -17,6 +17,7 @@ import {
   Minus,
   Plus,
   Ruler,
+  Share2,
   ShieldCheck,
   Sparkles,
   Star,
@@ -655,17 +656,13 @@ const ProductPage = () => {
   };
 
   const shareProduct = async () => {
-    const shareData = {
-      title: product.name,
-      text: product.shortDescription || product.description?.slice(0, 120) || product.name,
-      url: window.location.href,
-    };
+    const shareUrl = window.location.href;
 
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({ url: shareUrl });
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(shareUrl);
         setReviewMessage('Product link copied.');
       }
       trackEvent('share_product', { productId: product._id, name: product.name });
@@ -674,6 +671,26 @@ const ProductPage = () => {
         setReviewMessage('Unable to share this product right now.');
       }
     }
+  };
+
+  const shareToNetwork = (network) => {
+    const shareUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const shareTargets = {
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      whatsapp: `https://wa.me/?text=${encodedUrl}`,
+    };
+
+    if (network === 'instagram') {
+      const copyPromise = navigator.clipboard?.writeText(shareUrl);
+      copyPromise?.catch(() => undefined);
+      window.open('https://www.instagram.com/', '_blank', 'noopener,noreferrer');
+      setReviewMessage('Product link copied for Instagram.');
+    } else {
+      window.open(shareTargets[network], '_blank', 'noopener,noreferrer');
+    }
+
+    trackEvent('share_product_network', { productId: product._id, network });
   };
 
   const addToWishlist = async () => {
@@ -880,15 +897,7 @@ const ProductPage = () => {
               )}
             </div>
 
-            <h1 className="mt-3 min-w-0 max-w-full font-serif text-xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-3xl">{product.name}</h1>
-
-            <button
-              type="button"
-              onClick={shareProduct}
-              className="mt-3 inline-flex max-w-full rounded-md border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-brand-primary"
-            >
-              Share Product
-            </button>
+            <h1 className="mt-3 min-w-0 max-w-full font-serif text-xl font-bold leading-tight text-brand-dark [overflow-wrap:anywhere] sm:text-3xl lg:text-2xl">{product.name}</h1>
 
             <div className="mt-4 flex min-w-0 max-w-full flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex min-w-0 max-w-full flex-wrap items-center text-brand-accent">
@@ -904,9 +913,44 @@ const ProductPage = () => {
                   {product.numReviews || reviews.length || 0} reviews
                 </span>
               </div>
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${stockPresentation.className}`}>
-                {stockPresentation.label}
-              </span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={shareProduct}
+                  aria-label="Share product"
+                  title="Share product"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand-primary/25 text-brand-primary transition hover:border-brand-primary hover:bg-brand-light"
+                >
+                  <Share2 size={15} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shareToNetwork('facebook')}
+                  aria-label="Share product on Facebook"
+                  title="Share on Facebook"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#1877f2]/25 text-sm font-bold text-[#1877f2] transition hover:bg-[#1877f2]/10"
+                >
+                  <span aria-hidden="true">f</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shareToNetwork('whatsapp')}
+                  aria-label="Share product on WhatsApp"
+                  title="Share on WhatsApp"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#25d366]/30 text-[#169b4a] transition hover:bg-[#25d366]/10"
+                >
+                  <MessageCircle size={15} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shareToNetwork('instagram')}
+                  aria-label="Share product on Instagram"
+                  title="Share on Instagram"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#c13584]/30 text-sm font-bold text-[#c13584] transition hover:bg-[#c13584]/10"
+                >
+                  <span aria-hidden="true">◎</span>
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 flex min-w-0 max-w-full flex-wrap items-end gap-3 sm:gap-4">
@@ -918,6 +962,9 @@ const ProductPage = () => {
               <p className="max-w-full font-serif text-2xl font-bold text-brand-dark sm:text-3xl">
                 {formatCurrency(effectivePrice)}
               </p>
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${stockPresentation.className}`}>
+                {stockPresentation.label}
+              </span>
               {displaySku && (
                 <span className="min-w-0 max-w-full break-all rounded-full border border-[#ead6c6] bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-gray-600">
                   SKU {displaySku}
@@ -929,14 +976,14 @@ const ProductPage = () => {
               <button
                 type="button"
                 onClick={() => setDetailsExpanded((prev) => !prev)}
-                className="flex min-w-0 w-full items-center justify-between gap-2 bg-[#fbf3ea] px-4 py-4 text-left transition-colors duration-200 hover:bg-[#f5e9dd] sm:px-5"
+                className="flex min-w-0 w-full items-center justify-between gap-2 bg-[#fbf3ea] px-4 py-2.5 text-left transition-colors duration-200 hover:bg-[#f5e9dd] sm:px-5 sm:py-3"
                 aria-expanded={detailsExpanded}
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
                     <Info size={18} />
                   </div>
-                  <span className="min-w-0 break-words font-serif text-base font-bold leading-tight text-brand-dark sm:text-lg">
+                  <span className="min-w-0 truncate font-serif text-sm font-bold leading-tight text-brand-dark sm:text-base">
                     Product Details & Specifications
                   </span>
                 </div>
@@ -949,7 +996,7 @@ const ProductPage = () => {
               </button>
 
               {detailsExpanded && (
-                <div className="min-w-0 space-y-5 border-t border-[#ecd9ca] bg-white p-4 animate-in fade-in slide-in-from-top-1 sm:p-5">
+                <div className="min-w-0 space-y-4 border-t border-[#ecd9ca] bg-white p-3 animate-in fade-in slide-in-from-top-1 sm:p-4">
                   {product.description && (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-accent">Description</p>

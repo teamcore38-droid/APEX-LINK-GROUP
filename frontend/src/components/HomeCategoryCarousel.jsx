@@ -87,7 +87,7 @@ const HomeCategoryCarousel = ({ categories = [] }) => {
 
       <div
         ref={scrollContainerRef}
-        className="flex touch-pan-x snap-x snap-mandatory gap-4 overflow-x-auto px-1 py-2 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:gap-5 md:px-12"
+        className="flex touch-pan-x snap-x snap-mandatory gap-4 overflow-x-auto px-1 py-1 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:gap-5 md:px-12"
         tabIndex="0"
         onKeyDown={(event) => {
           if (event.key === 'ArrowLeft') scrollCategories('left');

@@ -212,7 +212,7 @@ const FeaturedProductCarousel = ({ products = [], isVisible = true }) => {
             </button>
           </div>
 
-          <div className="mt-7 flex items-center justify-center gap-2">
+          <div className="mt-5 flex items-center justify-center gap-2">
             {pages.map((_, index) => {
               const isCurrent = index === safeActivePage;
               return (
@@ -234,7 +234,7 @@ const FeaturedProductCarousel = ({ products = [], isVisible = true }) => {
             })}
           </div>
 
-          <div className="mt-5 flex items-center justify-center gap-3 md:hidden">
+          <div className="mt-4 flex items-center justify-center gap-3 md:hidden">
             <button
               type="button"
               onClick={goToPrev}

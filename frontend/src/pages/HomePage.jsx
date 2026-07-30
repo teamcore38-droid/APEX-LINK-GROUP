@@ -109,7 +109,7 @@ const HomePage = () => {
 
   return (
     <div>
-      <div className="relative flex min-h-[88svh] items-center justify-center overflow-hidden bg-brand-dark md:h-[85vh] md:min-h-0">
+      <div className="relative flex min-h-[72svh] items-center justify-center overflow-hidden bg-brand-dark md:h-[72vh] md:min-h-0">
         <div
           className="absolute inset-0"
           style={{
@@ -174,7 +174,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div ref={trustBadgesRef} className="border-y border-brand-accent/45 bg-gradient-to-r from-[#4a2317] via-[#8c3b2a] to-[#31160f] py-6 text-white md:py-8">
+      <div ref={trustBadgesRef} className="border-y border-brand-accent/45 bg-gradient-to-r from-[#4a2317] via-[#8c3b2a] to-[#31160f] py-4 text-white md:py-5">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {[
@@ -202,9 +202,9 @@ const HomePage = () => {
       </div>
 
       {homeCategories.length > 0 && (
-        <section className="bg-[#fff7ee] py-9 md:py-11" aria-labelledby="home-category-links-title">
+        <section className="bg-[#fff7ee] py-6 md:py-8" aria-labelledby="home-category-links-title">
           <div className="container mx-auto px-4">
-            <div className="mb-5 flex flex-wrap items-end justify-between gap-4 md:mb-6">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-4 md:mb-5">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-primary">Browse by Category</p>
                 <h2 id="home-category-links-title" className="mt-1.5 font-serif text-3xl font-bold text-brand-dark md:text-4xl">
@@ -224,10 +224,10 @@ const HomePage = () => {
         </section>
       )}
 
-      <div ref={featuredRef} className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-10 md:py-12">
+      <div ref={featuredRef} className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-8 md:py-10">
         <div className="container mx-auto px-4">
           <div
-            className={`mb-10 text-center md:mb-12 reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
+            className={`mb-6 text-center md:mb-8 reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
             style={{ transitionDelay: '0ms' }}
           >
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Curated Signature Picks</p>
@@ -271,7 +271,7 @@ const HomePage = () => {
 
           {!loading && !error && featuredProducts.length > 0 && (
             <div
-              className={`mt-10 text-center reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
+              className={`mt-6 text-center reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '450ms' }}
             >
               <Link
@@ -286,10 +286,10 @@ const HomePage = () => {
       </div>
 
       {!loading && bestSellers.length > 0 && (
-        <div ref={bestSellersRef} className="bg-[#f5e7da] py-20">
+        <div ref={bestSellersRef} className="bg-[#f5e7da] py-12 md:py-14">
           <div className="container mx-auto px-4">
             <div
-              className={`mb-12 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
+              className={`mb-7 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '0ms' }}
             >
               <div>
@@ -319,9 +319,9 @@ const HomePage = () => {
         </div>
       )}
 
-      <div ref={fashionBannerRef} className="bg-[#f6eadf] py-24">
+      <div ref={fashionBannerRef} className="bg-[#f6eadf] py-14 md:py-16">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center gap-16 md:flex-row">
+          <div className="flex flex-col items-center gap-10 md:flex-row md:gap-12">
             <div
               className={`relative md:w-1/2 reveal-fade-up ${fashionBannerVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '0ms' }}
@@ -341,12 +341,12 @@ const HomePage = () => {
               className={`md:w-1/2 reveal-fade-up ${fashionBannerVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '150ms' }}
             >
-              <h2 className="mb-6 font-serif text-4xl font-bold text-brand-dark md:text-5xl">Style Made for Every Moment</h2>
-              <div className="mb-8 h-1 w-20 bg-brand-accent"></div>
-              <p className="mb-6 text-lg leading-relaxed text-gray-700">
+              <h2 className="mb-4 font-serif text-4xl font-bold text-brand-dark md:text-5xl">Style Made for Every Moment</h2>
+              <div className="mb-6 h-1 w-20 bg-brand-accent"></div>
+              <p className="mb-4 text-lg leading-relaxed text-gray-700">
                 Discover fashion essentials selected for comfort, confidence, and everyday polish. From statement footwear to easy wardrobe staples, every piece is chosen to help you dress well without overthinking it.
               </p>
-              <p className="mb-10 text-lg leading-relaxed text-gray-700">
+              <p className="mb-6 text-lg leading-relaxed text-gray-700">
                 We focus on wearable designs, dependable materials, and versatile styling, so your cart feels ready for workdays, weekends, celebrations, and everything in between.
               </p>
               <Link to="/products" className="btn-outline inline-block border-brand-dark px-8 py-4 font-bold uppercase tracking-wider text-brand-dark hover:bg-brand-dark hover:text-white">
