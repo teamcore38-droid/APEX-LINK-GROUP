@@ -176,8 +176,8 @@ const Footer = () => {
               </button>
             </div>
             <p className="mt-2 text-xs leading-5 text-gray-400">
-              Marketing emails are optional. See our <Link to="/privacy" className="text-brand-accent">Privacy Policy</Link> and{' '}
-              <Link to="/cookies" className="text-brand-accent">Cookie Policy</Link>.
+              Marketing emails are optional. See our <Link to="/privacy" className="text-brand-accent underline underline-offset-2">Privacy Policy</Link> and{' '}
+              <Link to="/cookies" className="text-brand-accent underline underline-offset-2">Cookie Policy</Link>.
             </p>
             {message && <p className="mt-2 text-xs text-gray-300">{message}</p>}
           </form>

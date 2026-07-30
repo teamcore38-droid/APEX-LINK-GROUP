@@ -152,7 +152,7 @@ const Header = () => {
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
 
 
-          <Link to="/cart" className="relative inline-flex items-center transition-colors hover:text-brand-accent">
+          <Link to="/cart" aria-label="View cart" className="relative inline-flex items-center transition-colors hover:text-brand-accent">
             <div className="relative">
               <ShoppingBag size={22} className="text-brand-accent" />
               {cartItems.length > 0 && (

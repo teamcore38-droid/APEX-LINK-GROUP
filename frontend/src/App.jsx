@@ -5,7 +5,6 @@ import CategoryNavBar from './components/CategoryNavBar'
 import Footer from './components/Footer'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
 import ScrollToTop from './components/ScrollToTop'
-import SitePreloader from './components/SitePreloader'
 import SeoRouteManager from './components/SeoRouteManager'
 
 const CHUNK_RELOAD_KEY = 'apex-fashion-chunk-reload'
@@ -75,7 +74,6 @@ const AdminShippingPage = lazyWithReload(() => import('./pages/AdminShippingPage
 function App() {
   return (
     <div className="flex flex-col min-h-screen">
-      <SitePreloader />
       <ScrollToTop />
       <SeoRouteManager />
       <Header />

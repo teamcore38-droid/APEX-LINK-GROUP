@@ -117,26 +117,32 @@ const HomePage = () => {
               'radial-gradient(ellipse at 20% 20%, rgba(217, 154, 50,0.14), transparent 52%), radial-gradient(ellipse at 80% 75%, rgba(140, 59, 42,0.85), transparent 62%), linear-gradient(155deg, #2a140e 0%, #351a11 45%, #4a2317 100%)',
           }}
         ></div>
-        <div
+        <img
           key={`mobile-hero-bg-${activeHeroImage}`}
-          className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[12%] -right-[12%] md:hidden"
-          style={{
-            '--hero-opacity': 0.42,
-            backgroundImage: `url(${mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        ></div>
-        <div
+          src={mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]}
+          alt=""
+          aria-hidden="true"
+          width="864"
+          height="1821"
+          fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
+          loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
+          decoding="async"
+          className="hero-bg-crossfade hero-bg-pan pointer-events-none absolute inset-y-0 -left-[12%] -right-[12%] h-full w-[124%] object-cover object-center md:hidden"
+          style={{ '--hero-opacity': 0.42 }}
+        />
+        <img
           key={`desktop-hero-bg-${activeHeroImage}`}
-          className="hero-bg-crossfade hero-bg-pan absolute inset-y-0 -left-[10%] -right-[10%] hidden md:block"
-          style={{
-            '--hero-opacity': 0.4,
-            backgroundImage: `url(${heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        ></div>
+          src={heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]}
+          alt=""
+          aria-hidden="true"
+          width="1717"
+          height="916"
+          fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
+          loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
+          decoding="async"
+          className="hero-bg-crossfade hero-bg-pan pointer-events-none absolute inset-y-0 -left-[10%] -right-[10%] hidden h-full w-[120%] object-cover object-center md:block"
+          style={{ '--hero-opacity': 0.4 }}
+        />
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
@@ -156,6 +162,8 @@ const HomePage = () => {
           <img
             src="/apex-fashion-mobile-hero.webp"
             alt="Apex Fashion hero mark"
+            width="1024"
+            height="1024"
             fetchPriority="high"
             decoding="async"
             className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
@@ -193,7 +201,7 @@ const HomePage = () => {
                 <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-full border border-brand-accent/55 bg-[#4a2317] text-brand-accent md:mb-3 md:h-11 md:w-11">
                   <item.icon size={19} />
                 </div>
-                <h4 className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">{item.title}</h4>
+                <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#fff7ee] md:text-sm">{item.title}</p>
                 <p className="mt-1 text-[11px] text-[#e7c7ad] md:text-xs">{item.subtitle}</p>
               </div>
             ))}
