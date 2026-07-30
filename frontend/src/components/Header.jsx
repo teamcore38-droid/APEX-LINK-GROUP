@@ -103,10 +103,10 @@ const Header = () => {
       <div className="container mx-auto flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-6">
         <Link to="/" className="flex min-w-0 shrink-0 items-center gap-1.5">
           <img
-            src="/logo.webp"
+            src="/logo-256.webp"
             alt="Apex Fashion logo"
-            width="128"
-            height="128"
+            width="256"
+            height="256"
             fetchPriority="high"
             decoding="async"
             className="h-12 w-auto shrink-0 object-contain sm:h-14 xl:h-16"

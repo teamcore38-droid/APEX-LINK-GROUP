@@ -6,6 +6,7 @@ import Footer from './components/Footer'
 import RouteLoadingScreen from './components/RouteLoadingScreen'
 import ScrollToTop from './components/ScrollToTop'
 import SeoRouteManager from './components/SeoRouteManager'
+import HomePage from './pages/HomePage'
 
 const CHUNK_RELOAD_KEY = 'apex-fashion-chunk-reload'
 
@@ -28,7 +29,6 @@ const lazyWithReload = (loader) =>
       })
   )
 
-const HomePage = lazyWithReload(() => import('./pages/HomePage'))
 const ProductsPage = lazyWithReload(() => import('./pages/ProductsPage'))
 const CategoriesPage = lazyWithReload(() => import('./pages/CategoriesPage'))
 const CategoryPage = lazyWithReload(() => import('./pages/CategoryPage'))

@@ -282,7 +282,12 @@ const CategoryNavBar = () => {
   };
 
   if (loading || parentCategories.length === 0) {
-    return null;
+    return (
+      <div
+        className="min-h-[42px] border-b border-white/10 bg-[#1c0d09]"
+        aria-hidden="true"
+      />
+    );
   }
 
   return (

@@ -19,6 +19,7 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
+  const [shouldLoadStorefrontProducts, setShouldLoadStorefrontProducts] = useState(false);
 
   const [trustBadgesRef, trustBadgesVisible] = useScrollReveal();
   const [featuredRef, featuredVisible] = useScrollReveal();
@@ -55,9 +56,29 @@ const HomePage = () => {
   }, [activeHeroImage]);
 
   useEffect(() => {
+    getCategories()
+      .then((categories) => {
+        setHomeCategories(categories.filter((category) => category.isActive !== false));
+      })
+      .catch((err) => {
+        console.error('Unable to load homepage categories', err);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (featuredVisible) {
+      setShouldLoadStorefrontProducts(true);
+    }
+  }, [featuredVisible]);
+
+  useEffect(() => {
+    if (!shouldLoadStorefrontProducts) {
+      return;
+    }
+
     const fetchHomeData = async () => {
       try {
-        const [featuredResult, bestSellersResult, categoriesResult] = await Promise.allSettled([
+        const [featuredResult, bestSellersResult] = await Promise.allSettled([
           axios.get('/api/products', {
             params: {
               featured: true,
@@ -70,7 +91,6 @@ const HomePage = () => {
               limit: 4,
             },
           }),
-          getCategories(),
         ]);
 
         let nextFeaturedProducts = [];
@@ -87,10 +107,6 @@ const HomePage = () => {
           nextBestSellers = bestSellerPayload.products;
         }
 
-        if (categoriesResult.status === 'fulfilled') {
-          setHomeCategories(categoriesResult.value.filter((category) => category.isActive !== false));
-        }
-
         setFeaturedProducts(nextFeaturedProducts);
         setBestSellers(nextBestSellers);
         if (featuredResult.status === 'fulfilled') {
@@ -105,7 +121,7 @@ const HomePage = () => {
     };
 
     fetchHomeData();
-  }, []);
+  }, [shouldLoadStorefrontProducts]);
 
   return (
     <div>
@@ -160,10 +176,10 @@ const HomePage = () => {
             Curated Fashion <br /> For Everyday Style
           </h1>
           <img
-            src="/apex-fashion-mobile-hero.webp"
+            src="/apex-fashion-mobile-hero-512.webp"
             alt="Apex Fashion hero mark"
-            width="1024"
-            height="1024"
+            width="512"
+            height="512"
             fetchPriority="high"
             decoding="async"
             className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"

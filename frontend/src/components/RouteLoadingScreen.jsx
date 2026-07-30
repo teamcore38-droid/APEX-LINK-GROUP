@@ -11,10 +11,10 @@ const RouteLoadingScreen = ({ message = 'Preparing your experience' }) => (
 
         <div className="relative flex h-20 w-20 items-center justify-center rounded-full border border-[#d99a32]/70 bg-[#2a140e] p-3 shadow-[0_0_30px_rgba(217,154,50,0.25)]">
           <img
-            src="/logo.webp"
+            src="/logo-256.webp"
             alt="Apex Fashion logo"
-            width="80"
-            height="80"
+            width="256"
+            height="256"
             decoding="async"
             className="h-12 w-auto animate-preloader-pulse object-contain"
             onError={(event) => {
