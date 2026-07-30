@@ -8,8 +8,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Facebook,
   Heart,
   Info,
+  Instagram,
+  Link2,
   Loader2,
   Maximize2,
   MessageCircle,
@@ -17,7 +20,6 @@ import {
   Minus,
   Plus,
   Ruler,
-  Share2,
   ShieldCheck,
   Sparkles,
   Star,
@@ -913,42 +915,42 @@ const ProductPage = () => {
                   {product.numReviews || reviews.length || 0} reviews
                 </span>
               </div>
-              <div className="ml-auto flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={shareProduct}
-                  aria-label="Share product"
-                  title="Share product"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand-primary/25 text-brand-primary transition hover:border-brand-primary hover:bg-brand-light"
-                >
-                  <Share2 size={15} aria-hidden="true" />
-                </button>
+              <div className="ml-auto flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => shareToNetwork('facebook')}
                   aria-label="Share product on Facebook"
                   title="Share on Facebook"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#1877f2]/25 text-sm font-bold text-[#1877f2] transition hover:bg-[#1877f2]/10"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#3157e7] text-white shadow-sm transition hover:bg-[#2547c8]"
                 >
-                  <span aria-hidden="true">f</span>
+                  <Facebook size={15} fill="currentColor" strokeWidth={0} aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   onClick={() => shareToNetwork('whatsapp')}
                   aria-label="Share product on WhatsApp"
                   title="Share on WhatsApp"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#25d366]/30 text-[#169b4a] transition hover:bg-[#25d366]/10"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#00c86f] text-white shadow-sm transition hover:bg-[#00a95e]"
                 >
-                  <MessageCircle size={15} aria-hidden="true" />
+                  <MessageCircle size={15} strokeWidth={2.4} aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   onClick={() => shareToNetwork('instagram')}
                   aria-label="Share product on Instagram"
                   title="Share on Instagram"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#c13584]/30 text-sm font-bold text-[#c13584] transition hover:bg-[#c13584]/10"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#e73378] text-white shadow-sm transition hover:bg-[#c72463]"
                 >
-                  <span aria-hidden="true">◎</span>
+                  <Instagram size={15} strokeWidth={2.3} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={shareProduct}
+                  aria-label="Copy product link"
+                  title="Copy product link"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-[#444c5c] text-white shadow-sm transition hover:bg-[#343b48]"
+                >
+                  <Link2 size={15} strokeWidth={2.4} aria-hidden="true" />
                 </button>
               </div>
             </div>

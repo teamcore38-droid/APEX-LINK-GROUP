@@ -19,12 +19,12 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
-  const [shouldLoadStorefrontProducts, setShouldLoadStorefrontProducts] = useState(false);
 
   const [trustBadgesRef, trustBadgesVisible] = useScrollReveal();
   const [featuredRef, featuredVisible] = useScrollReveal();
   const [bestSellersRef, bestSellersVisible] = useScrollReveal();
   const [fashionBannerRef, fashionBannerVisible] = useScrollReveal();
+  const shouldLoadStorefrontProducts = featuredVisible;
 
   useEffect(() => {
     const heroTimer = window.setInterval(() => {
@@ -64,12 +64,6 @@ const HomePage = () => {
         console.error('Unable to load homepage categories', err);
       });
   }, []);
-
-  useEffect(() => {
-    if (featuredVisible) {
-      setShouldLoadStorefrontProducts(true);
-    }
-  }, [featuredVisible]);
 
   useEffect(() => {
     if (!shouldLoadStorefrontProducts) {
