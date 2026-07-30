@@ -143,7 +143,7 @@ const HomePage = () => {
           fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
           loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
           decoding="async"
-          className="hero-bg-crossfade hero-bg-pan pointer-events-none absolute inset-y-0 -left-[12%] -right-[12%] h-full w-[124%] object-cover object-center md:hidden"
+          className="hero-bg-crossfade pointer-events-none absolute inset-0 h-full w-full object-cover object-center md:hidden"
           style={{ '--hero-opacity': 0.42 }}
         />
         <img
@@ -156,7 +156,7 @@ const HomePage = () => {
           fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
           loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
           decoding="async"
-          className="hero-bg-crossfade hero-bg-pan pointer-events-none absolute inset-y-0 -left-[10%] -right-[10%] hidden h-full w-[120%] object-cover object-center md:block"
+          className="hero-bg-crossfade pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center md:block"
           style={{ '--hero-opacity': 0.4 }}
         />
         <div
@@ -350,7 +350,7 @@ const HomePage = () => {
               className={`relative md:w-1/2 reveal-fade-up ${fashionBannerVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '0ms' }}
             >
-              <div className="absolute -inset-4 translate-x-4 translate-y-4 transform rounded-lg border-2 border-brand-accent"></div>
+              <div className="absolute -inset-4 hidden translate-x-4 translate-y-4 transform rounded-lg border-2 border-brand-accent md:block"></div>
               <img
                 src="https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg?auto=compress&cs=tinysrgb&w=1000"
                 alt="Curated fashion apparel and footwear collection"

@@ -102,15 +102,6 @@
     }
   }
 
-  @keyframes hero-bg-pan {
-    from {
-      transform: translateX(-4%);
-    }
-    to {
-      transform: translateX(4%);
-    }
-  }
-
   @keyframes hero-bg-fade-in {
     from {
       opacity: 0;
@@ -148,14 +139,9 @@
     animation: preloader-shimmer 1.5s ease-in-out infinite;
   }
 
-  .hero-bg-pan {
-    animation: hero-bg-pan 24s ease-in-out infinite alternate;
-    will-change: transform;
-  }
-
   .hero-bg-crossfade {
     animation: hero-bg-fade-in 1200ms ease-out both;
-    will-change: opacity, transform;
+    will-change: opacity;
   }
 
   .mobile-product-sheet {
@@ -241,7 +227,6 @@
     .mobile-product-sheet,
     .mobile-sheet-backdrop,
     .product-lightbox,
-    .hero-bg-pan,
     .hero-bg-crossfade {
       animation: none;
       transition: none;
