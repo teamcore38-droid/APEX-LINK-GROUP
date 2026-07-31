@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Product from '../components/Product';
 import FeaturedProductCarousel from '../components/FeaturedProductCarousel';
 import HomeCategoryCarousel from '../components/HomeCategoryCarousel';
@@ -45,6 +45,9 @@ const HomePage = () => {
   const [homeCategories, setHomeCategories] = useState([]);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
   const [initialDesktopViewport] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const mobileHeroBackgroundRef = useRef(null);
+  const desktopHeroBackgroundRef = useRef(null);
+  const mobileHeroMarkRef = useRef(null);
   const [heroAssetsReady, setHeroAssetsReady] = useState(() => ({
     background: false,
     mobileMark: initialDesktopViewport,
@@ -104,12 +107,26 @@ const HomePage = () => {
       return;
     }
 
+    const completedImageTimer = window.setTimeout(() => {
+      const backgroundImage = initialDesktopViewport
+        ? desktopHeroBackgroundRef.current
+        : mobileHeroBackgroundRef.current;
+      const mobileMarkReady = initialDesktopViewport || mobileHeroMarkRef.current?.complete;
+
+      if (backgroundImage?.complete && mobileMarkReady) {
+        setHeroAssetsReady({ background: true, mobileMark: true });
+      }
+    }, 0);
+
     const fallbackTimer = window.setTimeout(() => {
       setHeroAssetsReady({ background: true, mobileMark: true });
     }, 3500);
 
-    return () => window.clearTimeout(fallbackTimer);
-  }, [heroContentReady]);
+    return () => {
+      window.clearTimeout(completedImageTimer);
+      window.clearTimeout(fallbackTimer);
+    };
+  }, [heroContentReady, initialDesktopViewport]);
 
   useEffect(() => {
     if (!heroContentReady) {
@@ -205,6 +222,7 @@ const HomePage = () => {
           }}
         ></div>
         <img
+          ref={mobileHeroBackgroundRef}
           key={`mobile-hero-bg-${activeHeroImage}`}
           src={mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]}
           alt=""
@@ -220,6 +238,7 @@ const HomePage = () => {
           style={{ '--hero-opacity': 0.42 }}
         />
         <img
+          ref={desktopHeroBackgroundRef}
           key={`desktop-hero-bg-${activeHeroImage}`}
           src={heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]}
           alt=""
@@ -251,6 +270,7 @@ const HomePage = () => {
             Curated Fashion <br /> For Everyday Style
           </h1>
           <img
+            ref={mobileHeroMarkRef}
             src="/apex-fashion-mobile-hero-512.webp"
             alt="Apex Fashion hero mark"
             width="512"
