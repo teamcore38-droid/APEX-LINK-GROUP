@@ -24,7 +24,11 @@ const chunkProducts = (products, size) => {
   return pages;
 };
 
-const FeaturedProductCarousel = ({ products = [], isVisible = true }) => {
+const FeaturedProductCarousel = ({
+  products = [],
+  isVisible = true,
+  prioritizeFirstPage = false,
+}) => {
   const [itemsPerView, setItemsPerView] = useState(() => getItemsPerView(window.innerWidth));
   const [activePage, setActivePage] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -182,7 +186,10 @@ const FeaturedProductCarousel = ({ products = [], isVisible = true }) => {
                     className={`h-full reveal-fade-up ${isVisible ? 'is-visible' : ''}`}
                     style={{ transitionDelay: isVisible ? `${(productIndex + 1) * 100}ms` : '0ms' }}
                   >
-                    <Product product={product} />
+                    <Product
+                      product={product}
+                      priority={prioritizeFirstPage && pageIndex === 0}
+                    />
                   </div>
                 ))}
               </div>

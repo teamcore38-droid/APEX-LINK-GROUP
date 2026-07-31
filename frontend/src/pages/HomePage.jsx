@@ -1,30 +1,64 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from 'react';
 import Product from '../components/Product';
 import FeaturedProductCarousel from '../components/FeaturedProductCarousel';
 import HomeCategoryCarousel from '../components/HomeCategoryCarousel';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Award, Globe, ShieldCheck, Truck } from 'lucide-react';
-import { normalizeProductPayload } from '../utils/productUi';
 import { getCategories } from '../utils/categoryApi';
+import { preloadProductGridImages } from '../utils/imagePreloader';
+import {
+  getCachedHomepageProducts,
+  getHomepageProducts,
+} from '../utils/homepageProductCache';
 import useScrollReveal from '../hooks/useScrollReveal';
 
 const heroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-bg-${index + 1}.webp`);
 const mobileHeroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-mobile-${index + 1}.webp`);
 
+const createInitialCollectionState = (collection) => {
+  const cachedProducts = getCachedHomepageProducts(collection);
+
+  return {
+    products: cachedProducts || [],
+    loading: cachedProducts === null,
+    error: null,
+  };
+};
+
+const getInitialImageCounts = () => {
+  const width = window.innerWidth;
+
+  if (width < 768) {
+    return { featured: 1, bestSellers: 2 };
+  }
+
+  if (width < 1024) {
+    return { featured: 2, bestSellers: 3 };
+  }
+
+  return { featured: 3, bestSellers: 4 };
+};
+
 const HomePage = () => {
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [bestSellers, setBestSellers] = useState([]);
+  const [featuredState, setFeaturedState] = useState(() => createInitialCollectionState('featured'));
+  const [bestSellersState, setBestSellersState] = useState(() => createInitialCollectionState('bestSellers'));
   const [homeCategories, setHomeCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
+  const [initialDesktopViewport] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const [heroAssetsReady, setHeroAssetsReady] = useState(() => ({
+    background: false,
+    mobileMark: initialDesktopViewport,
+  }));
+  const [prioritizeProductImages, setPrioritizeProductImages] = useState(false);
 
   const [trustBadgesRef, trustBadgesVisible] = useScrollReveal();
   const [featuredRef, featuredVisible] = useScrollReveal();
   const [bestSellersRef, bestSellersVisible] = useScrollReveal();
   const [fashionBannerRef, fashionBannerVisible] = useScrollReveal();
-  const shouldLoadStorefrontProducts = featuredVisible;
+  const heroContentReady = heroAssetsReady.background && heroAssetsReady.mobileMark;
+  const featuredProducts = featuredState.products;
+  const bestSellers = bestSellersState.products;
+  const initialImageCounts = getInitialImageCounts();
 
   useEffect(() => {
     const heroTimer = window.setInterval(() => {
@@ -66,56 +100,99 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    if (!shouldLoadStorefrontProducts) {
+    if (heroContentReady) {
       return;
     }
 
-    const fetchHomeData = async () => {
-      try {
-        const [featuredResult, bestSellersResult] = await Promise.allSettled([
-          axios.get('/api/products', {
-            params: {
-              featured: true,
-              limit: 8,
-            },
-          }),
-          axios.get('/api/products', {
-            params: {
-              bestSeller: true,
-              limit: 4,
-            },
-          }),
-        ]);
+    const fallbackTimer = window.setTimeout(() => {
+      setHeroAssetsReady({ background: true, mobileMark: true });
+    }, 3500);
 
-        let nextFeaturedProducts = [];
-        let nextBestSellers = [];
-        if (featuredResult.status === 'fulfilled') {
-          const featuredPayload = normalizeProductPayload(featuredResult.value.data);
-          nextFeaturedProducts = featuredPayload.products;
-        } else {
-          setError('Unable to load featured collection right now.');
-        }
+    return () => window.clearTimeout(fallbackTimer);
+  }, [heroContentReady]);
 
-        if (bestSellersResult.status === 'fulfilled') {
-          const bestSellerPayload = normalizeProductPayload(bestSellersResult.value.data);
-          nextBestSellers = bestSellerPayload.products;
-        }
+  useEffect(() => {
+    if (!heroContentReady) {
+      return undefined;
+    }
 
-        setFeaturedProducts(nextFeaturedProducts);
-        setBestSellers(nextBestSellers);
-        if (featuredResult.status === 'fulfilled') {
-          setError(null);
-        }
-        setLoading(false);
-      } catch (err) {
-        console.error(err);
-        setError('Unable to load featured collection right now.');
-        setLoading(false);
+    let isActive = true;
+    let idleId;
+    let timerId;
+
+    const publishProducts = (collection, products) => {
+      if (!isActive) {
+        return;
       }
+
+      const preloadCount = getInitialImageCounts()[collection];
+      void preloadProductGridImages(products, preloadCount, 3500);
+
+      const setCollectionState = collection === 'featured' ? setFeaturedState : setBestSellersState;
+      setCollectionState({ products, loading: false, error: null });
     };
 
-    fetchHomeData();
-  }, [shouldLoadStorefrontProducts]);
+    const publishError = (collection, error) => {
+      console.error(`Unable to load homepage ${collection}`, error);
+
+      if (!isActive) {
+        return;
+      }
+
+      const setCollectionState = collection === 'featured' ? setFeaturedState : setBestSellersState;
+      setCollectionState((current) => ({ ...current, loading: false, error }));
+    };
+
+    const startProductRequests = () => {
+      if (!isActive) {
+        return;
+      }
+
+      setPrioritizeProductImages(true);
+
+      void getHomepageProducts('featured')
+        .then((products) => publishProducts('featured', products))
+        .catch((error) => publishError('featured', error));
+
+      void getHomepageProducts('bestSellers')
+        .then((products) => publishProducts('bestSellers', products))
+        .catch((error) => publishError('bestSellers', error));
+    };
+
+    if ('requestIdleCallback' in window) {
+      idleId = window.requestIdleCallback(startProductRequests, { timeout: 1200 });
+    } else {
+      timerId = window.setTimeout(startProductRequests, 300);
+    }
+
+    return () => {
+      isActive = false;
+
+      if (idleId !== undefined) {
+        window.cancelIdleCallback(idleId);
+      }
+
+      if (timerId !== undefined) {
+        window.clearTimeout(timerId);
+      }
+    };
+  }, [heroContentReady]);
+
+  const markHeroBackgroundReady = (viewport) => {
+    const isRelevantViewport = viewport === (initialDesktopViewport ? 'desktop' : 'mobile');
+
+    if (isRelevantViewport) {
+      setHeroAssetsReady((current) => (
+        current.background ? current : { ...current, background: true }
+      ));
+    }
+  };
+
+  const markMobileHeroReady = () => {
+    setHeroAssetsReady((current) => (
+      current.mobileMark ? current : { ...current, mobileMark: true }
+    ));
+  };
 
   return (
     <div>
@@ -137,6 +214,8 @@ const HomePage = () => {
           fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
           loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
           decoding="async"
+          onLoad={() => markHeroBackgroundReady('mobile')}
+          onError={() => markHeroBackgroundReady('mobile')}
           className="hero-bg-crossfade pointer-events-none absolute inset-0 h-full w-full object-cover object-center md:hidden"
           style={{ '--hero-opacity': 0.42 }}
         />
@@ -150,6 +229,8 @@ const HomePage = () => {
           fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
           loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
           decoding="async"
+          onLoad={() => markHeroBackgroundReady('desktop')}
+          onError={() => markHeroBackgroundReady('desktop')}
           className="hero-bg-crossfade pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center md:block"
           style={{ '--hero-opacity': 0.4 }}
         />
@@ -176,6 +257,8 @@ const HomePage = () => {
             height="512"
             fetchPriority="high"
             decoding="async"
+            onLoad={markMobileHeroReady}
+            onError={markMobileHeroReady}
             className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
           />
           <p className="mx-auto mb-7 hidden max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:block md:text-xl">
@@ -256,15 +339,15 @@ const HomePage = () => {
             </p>
           </div>
 
-          {loading ? (
+          {featuredState.loading ? (
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, index) => (
                 <div key={index} className="h-[460px] animate-pulse rounded-[28px] border border-[#ead6c6] bg-[#f6eadf]" />
               ))}
             </div>
-          ) : error ? (
+          ) : featuredState.error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-6 text-center text-red-700">
-              <p className="font-semibold">{error}</p>
+              <p className="font-semibold">Unable to load featured collection right now.</p>
               <Link
                 to="/products"
                 className="mt-4 inline-flex items-center rounded-md border border-red-300 px-5 py-2 text-xs font-bold uppercase tracking-[0.16em] text-red-700 transition-colors hover:bg-red-100"
@@ -284,10 +367,14 @@ const HomePage = () => {
               </Link>
             </div>
           ) : (
-            <FeaturedProductCarousel products={featuredProducts} isVisible={featuredVisible} />
+            <FeaturedProductCarousel
+              products={featuredProducts}
+              isVisible={featuredVisible}
+              prioritizeFirstPage={prioritizeProductImages}
+            />
           )}
 
-          {!loading && !error && featuredProducts.length > 0 && (
+          {!featuredState.loading && !featuredState.error && featuredProducts.length > 0 && (
             <div
               className={`mt-6 text-center reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '450ms' }}
@@ -303,25 +390,43 @@ const HomePage = () => {
         </div>
       </div>
 
-      {!loading && bestSellers.length > 0 && (
-        <div ref={bestSellersRef} className="bg-[#f5e7da] py-12 md:py-14">
-          <div className="container mx-auto px-4">
-            <div
-              className={`mb-7 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
-              style={{ transitionDelay: '0ms' }}
-            >
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Customer Favorites</p>
-                <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Best Sellers</h2>
-              </div>
-              <Link
-                to="/products"
-                className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
-              >
-                Shop All Products
-              </Link>
+      <div ref={bestSellersRef} className="bg-[#f5e7da] py-12 md:py-14" aria-busy={bestSellersState.loading}>
+        <div className="container mx-auto px-4">
+          <div
+            className={`mb-7 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
+            style={{ transitionDelay: '0ms' }}
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Customer Favorites</p>
+              <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Best Sellers</h2>
             </div>
+            <Link
+              to="/products"
+              className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"
+            >
+              Shop All Products
+            </Link>
+          </div>
 
+          {bestSellersState.loading ? (
+            <div className="product-grid" aria-label="Loading best sellers">
+              {[...Array(4)].map((_, index) => (
+                <div
+                  key={index}
+                  className="min-h-[330px] animate-pulse rounded-2xl border border-[#e4cdbb] bg-[#ecd9ca] sm:min-h-[430px]"
+                />
+              ))}
+            </div>
+          ) : bestSellersState.error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-6 text-center text-red-700">
+              <p className="font-semibold">Unable to load best sellers right now.</p>
+            </div>
+          ) : bestSellers.length === 0 ? (
+            <div className="rounded-xl border border-brand-accent/25 bg-[#f8eee5] px-6 py-8 text-center text-brand-primary">
+              <p className="font-serif text-xl font-bold text-brand-dark">No best sellers yet</p>
+              <p className="mt-2 text-sm">Explore the full collection for more customer favorites.</p>
+            </div>
+          ) : (
             <div className="product-grid">
               {bestSellers.map((product, index) => (
                 <div
@@ -329,13 +434,16 @@ const HomePage = () => {
                   className={`h-full reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
                   style={{ transitionDelay: `${(index + 1) * 100}ms` }}
                 >
-                  <Product product={product} />
+                  <Product
+                    product={product}
+                    priority={prioritizeProductImages && index < initialImageCounts.bestSellers}
+                  />
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       <div ref={fashionBannerRef} className="bg-[#f6eadf] py-14 md:py-16">
         <div className="container mx-auto px-4">
