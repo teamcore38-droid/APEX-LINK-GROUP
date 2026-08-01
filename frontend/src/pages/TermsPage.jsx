@@ -33,7 +33,7 @@ const TermsPage = () => {
       sections={[
         {
           title: 'Business information',
-          body: `${BUSINESS_INFO.brandName} is the trading name used on this website. Legal entity: ${BUSINESS_INFO.legalName}. Business registration number: ${BUSINESS_INFO.registrationNumber}. VAT/TIN status: ${BUSINESS_INFO.taxStatus}. Registered address: ${BUSINESS_INFO.registeredAddress}. Customer care: ${BUSINESS_INFO.email}, ${BUSINESS_INFO.phone}.`,
+          body: `${BUSINESS_INFO.brandName} is the trading name used on this website. Legal entity: ${BUSINESS_INFO.legalName}. Business registration number: ${BUSINESS_INFO.registrationNumber}. VAT/TIN status: ${BUSINESS_INFO.taxStatus}. Registered address: ${BUSINESS_INFO.registeredAddress}. Customer care: ${BUSINESS_INFO.emails.support}, ${BUSINESS_INFO.phone}. General inquiries: ${BUSINESS_INFO.emails.info}.`,
         },
         {
           title: 'Using the website',

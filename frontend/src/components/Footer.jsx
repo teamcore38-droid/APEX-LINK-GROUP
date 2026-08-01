@@ -55,7 +55,8 @@ const Footer = () => {
             <p>{BUSINESS_INFO.legalName}</p>
             <p>{BUSINESS_INFO.registrationNumber}</p>
             <p>{BUSINESS_INFO.registeredAddress}</p>
-            <p>{BUSINESS_INFO.email}</p>
+            <p>{BUSINESS_INFO.emails.info}</p>
+            <p>{BUSINESS_INFO.emails.support}</p>
             <p>{BUSINESS_INFO.phone}</p>
           </div>
         </div>
@@ -164,7 +165,7 @@ const Footer = () => {
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@example.com"
+                placeholder="Enter your email"
                 className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-gray-400 outline-none focus:border-brand-accent"
               />
               <button

@@ -59,7 +59,7 @@ const createStructuredData = (route, seo) => {
       logo: `${SITE_URL}/logo.webp`,
       image: `${SITE_URL}${DEFAULT_IMAGE}`,
       telephone: BUSINESS_INFO.phone,
-      email: BUSINESS_INFO.email,
+      email: BUSINESS_INFO.emails.info,
       address: { '@type': 'PostalAddress', ...BUSINESS_INFO.address },
       areaServed: { '@type': 'Country', name: 'Sri Lanka' },
     },

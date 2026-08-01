@@ -50,7 +50,7 @@ const ShippingPage = () => {
         },
         {
           title: 'Tracking and notifications',
-          body: 'Where tracking is available, Apex Fashion will show or send the tracking number, courier name, tracking URL, or delivery notes through the order page, email, or customer account. Tracking details may appear only after courier pickup or label confirmation.',
+          body: `Where tracking is available, Apex Fashion will show or send the tracking number, courier name, tracking URL, or delivery notes through the order page, email, or customer account. For order or delivery questions, contact ${BUSINESS_INFO.emails.orders}. Tracking details may appear only after courier pickup or label confirmation.`,
         },
         {
           title: 'Failed delivery attempts',
@@ -78,7 +78,7 @@ const ShippingPage = () => {
       cta={{
         eyebrow: 'Delivery support',
         title: 'Need help with an order in transit?',
-        body: 'Contact customer care with your order ID and the email or phone number used during checkout.',
+        body: `Contact ${BUSINESS_INFO.emails.orders} with your order ID and the email or phone number used during checkout.`,
         to: '/contact',
         label: 'Contact Support',
       }}

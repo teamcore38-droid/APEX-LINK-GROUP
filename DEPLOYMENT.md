@@ -36,6 +36,13 @@ Recommended:
 - `CORS_ORIGINS` (comma-separated extra frontend origins)
 - `BUSINESS_NAME`
 - `BUSINESS_EMAIL`
+- `BUSINESS_INFO_EMAIL`
+- `BUSINESS_SUPPORT_EMAIL`
+- `BUSINESS_ORDERS_EMAIL`
+- `BUSINESS_RETURNS_EMAIL`
+- `BUSINESS_HELLO_EMAIL`
+- `BUSINESS_SALES_EMAIL`
+- `BUSINESS_BILLING_EMAIL`
 - `BUSINESS_PHONE`
 - `BUSINESS_ADDRESS`
 - `BUSINESS_WEBSITE`
@@ -144,6 +151,13 @@ EMAIL_USER=<Brevo SMTP login>
 EMAIL_PASS=<Brevo SMTP key>
 EMAIL_FROM=Apex Fashion <orders@apexfashion.lk>
 EMAIL_REPLY_TO=support@apexfashion.lk
+BUSINESS_INFO_EMAIL=info@apexfashion.lk
+BUSINESS_SUPPORT_EMAIL=support@apexfashion.lk
+BUSINESS_ORDERS_EMAIL=orders@apexfashion.lk
+BUSINESS_RETURNS_EMAIL=returns@apexfashion.lk
+BUSINESS_HELLO_EMAIL=hello@apexfashion.lk
+BUSINESS_SALES_EMAIL=sales@apexfashion.lk
+BUSINESS_BILLING_EMAIL=billing@apexfashion.lk
 EMAIL_SEND_MAX_ATTEMPTS=3
 EMAIL_RETRY_DELAY_MS=750
 ```
@@ -158,7 +172,7 @@ Local smoke test:
 
 ```bash
 cd backend
-npm run email:test -- you@example.com
+npm run email:test -- support@apexfashion.lk
 ```
 
 Redeploy the backend after changing production environment variables so the Node process receives the new SMTP settings.

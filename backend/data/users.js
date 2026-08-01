@@ -4,13 +4,13 @@ const users = [
   // Development/staging bootstrap users only. Rotate credentials before production.
   {
     name: 'Admin User',
-    email: 'admin@apexlinkgroup.com',
+    email: 'support@apexfashion.lk',
     password: bcrypt.hashSync('password123', 10),
     isAdmin: true,
   },
   {
     name: 'John Doe',
-    email: 'john@example.com',
+    email: 'hello@apexfashion.lk',
     password: bcrypt.hashSync('password123', 10),
   },
 ];

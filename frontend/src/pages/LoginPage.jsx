@@ -131,7 +131,7 @@ const LoginPage = () => {
                       className={`w-full rounded-xl border bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition ${
                         fieldErrors.email ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-brand-accent'
                       }`}
-                      placeholder="you@example.com"
+                      placeholder="Enter your account email"
                     />
                   </div>
                   {fieldErrors.email && (

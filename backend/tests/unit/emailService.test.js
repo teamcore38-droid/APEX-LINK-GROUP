@@ -106,7 +106,7 @@ test('sendTestEmail skips safely when SMTP is not configured', async () => {
     console.log = () => {};
 
     try {
-      const result = await sendTestEmail('customer@example.com');
+      const result = await sendTestEmail('support@apexfashion.lk');
 
       assert.equal(result.sent, false);
       assert.equal(result.skipped, true);

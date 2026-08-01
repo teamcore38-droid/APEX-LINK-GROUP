@@ -29,7 +29,7 @@ test('checkout quote smoke test recalculates totals server-side', { skip: !baseU
       shippingAddress: {
         fullName: 'E2E Test',
         phone: '+10000000000',
-        email: 'e2e@example.com',
+        email: 'orders@apexfashion.lk',
         addressLine1: '100 Test Street',
         city: 'Colombo',
         state: 'WP',

@@ -35,8 +35,15 @@ const ContactPage = () => {
       },
       {
         icon: Mail,
-        title: 'Email Support',
-        body: BUSINESS_INFO.email,
+        title: 'Email Contacts',
+        body: [
+          `General: ${BUSINESS_INFO.emails.info}`,
+          `Support: ${BUSINESS_INFO.emails.support}`,
+          `Orders: ${BUSINESS_INFO.emails.orders}`,
+          `Returns: ${BUSINESS_INFO.emails.returns}`,
+          `Billing: ${BUSINESS_INFO.emails.billing}`,
+          `Sales: ${BUSINESS_INFO.emails.sales}`,
+        ].join('\n'),
       },
     ],
     []

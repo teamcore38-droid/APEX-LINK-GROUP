@@ -74,7 +74,8 @@ const AboutPage = () => {
             <div>
               <p><span className="font-semibold text-brand-dark">Registered address:</span> {BUSINESS_INFO.registeredAddress}</p>
               <p><span className="font-semibold text-brand-dark">Dispatch/returns address:</span> {BUSINESS_INFO.dispatchAddress}</p>
-              <p><span className="font-semibold text-brand-dark">Email:</span> {BUSINESS_INFO.email}</p>
+              <p><span className="font-semibold text-brand-dark">General inquiries:</span> {BUSINESS_INFO.emails.info}</p>
+              <p><span className="font-semibold text-brand-dark">Sales inquiries:</span> {BUSINESS_INFO.emails.sales}</p>
               <p><span className="font-semibold text-brand-dark">Phone:</span> {BUSINESS_INFO.phone}</p>
             </div>
           </div>

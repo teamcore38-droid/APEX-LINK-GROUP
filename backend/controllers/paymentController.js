@@ -34,7 +34,7 @@ import {
 
 const getSafePayHereActor = () => ({
   name: 'PayHere Callback',
-  email: 'payhere-callback@system',
+  email: process.env.BUSINESS_BILLING_EMAIL || 'billing@apexfashion.lk',
 });
 
 const getAdminActor = (user) => ({

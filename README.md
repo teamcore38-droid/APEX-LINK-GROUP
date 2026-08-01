@@ -100,6 +100,13 @@ Optional:
 - `CORS_ORIGINS` (comma-separated extra allowed origins)
 - `BUSINESS_NAME`
 - `BUSINESS_EMAIL`
+- `BUSINESS_INFO_EMAIL`
+- `BUSINESS_SUPPORT_EMAIL`
+- `BUSINESS_ORDERS_EMAIL`
+- `BUSINESS_RETURNS_EMAIL`
+- `BUSINESS_HELLO_EMAIL`
+- `BUSINESS_SALES_EMAIL`
+- `BUSINESS_BILLING_EMAIL`
 - `BUSINESS_PHONE`
 - `BUSINESS_ADDRESS`
 - `BUSINESS_WEBSITE`
@@ -155,7 +162,7 @@ ngrok http 5000
 - Production: SMTP sends password reset, order, status, invoice, refund, and contact emails.
 - Development: if SMTP is missing, the app falls back safely to non-crashing no-op/dev logging behavior.
 - Brevo SMTP: use `EMAIL_HOST=smtp-relay.brevo.com`, `EMAIL_PORT=587`, `EMAIL_USER` as your Brevo SMTP login, `EMAIL_PASS` as your Brevo SMTP key, and `EMAIL_FROM` as a verified sender such as `Apex Fashion <orders@apexfashion.lk>`.
-- Local SMTP smoke test: from `backend/`, run `npm run email:test -- you@example.com`.
+- Local SMTP smoke test: from `backend/`, run `npm run email:test -- support@apexfashion.lk`.
 
 ## Seed and Data Safety
 

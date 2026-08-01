@@ -33,7 +33,7 @@ const PrivacyPage = () => {
       sections={[
         {
           title: 'Who controls this information',
-          body: `${BUSINESS_INFO.brandName} is the trading name used on this website. Legal entity: ${BUSINESS_INFO.legalName}. Business registration number: ${BUSINESS_INFO.registrationNumber}. Registered address: ${BUSINESS_INFO.registeredAddress}. Privacy contact: ${BUSINESS_INFO.email}.`,
+          body: `${BUSINESS_INFO.brandName} is the trading name used on this website. Legal entity: ${BUSINESS_INFO.legalName}. Business registration number: ${BUSINESS_INFO.registrationNumber}. Registered address: ${BUSINESS_INFO.registeredAddress}. Privacy and support contact: ${BUSINESS_INFO.emails.support}.`,
         },
         {
           title: 'Information we collect',
@@ -96,7 +96,7 @@ const PrivacyPage = () => {
           body: 'Subject to applicable Sri Lankan law, including the Personal Data Protection Act, customers may request access to personal data, correction or completion of inaccurate data, withdrawal of consent where processing is based on consent, deletion/anonymisation where applicable, and review of certain privacy decisions.',
           points: [
             'Logged-in customers can use the Privacy Center to request an export or deletion/anonymisation workflow.',
-            `You can also contact customer care at ${BUSINESS_INFO.email} with enough information for us to verify the relevant account or order safely.`,
+            `You can also contact customer care at ${BUSINESS_INFO.emails.support} with enough information for us to verify the relevant account or order safely.`,
             'Some order, payment, tax, fraud-prevention, or dispute records may need to be retained where required by law or legitimate business obligations.',
           ],
         },

@@ -39,7 +39,7 @@ const withEmailFallback = async (callback) => {
 
 const createOrder = (overrides = {}) => ({
   _id: { toString: () => 'order-id' },
-  shippingAddress: { email: 'customer@example.com' },
+  shippingAddress: { email: 'orders@apexfashion.lk' },
   totalPrice: 100,
   orderStatus: 'Processing',
   paymentStatus: 'Payment Pending',

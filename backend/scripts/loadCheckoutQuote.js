@@ -31,7 +31,7 @@ const quoteOnce = async (product) => {
       shippingAddress: {
         fullName: 'Load Test',
         phone: '+10000000000',
-        email: 'load@example.com',
+        email: 'orders@apexfashion.lk',
         addressLine1: '100 Test Street',
         city: 'Colombo',
         state: 'WP',

@@ -21,7 +21,7 @@ if (!status.configured) {
 }
 
 if (!recipient) {
-  console.error('Provide a recipient email: npm run email:test -- you@example.com');
+  console.error('Provide a recipient email: npm run email:test -- support@apexfashion.lk');
   process.exit(1);
 }
 

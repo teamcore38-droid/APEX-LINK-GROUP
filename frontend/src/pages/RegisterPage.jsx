@@ -105,7 +105,7 @@ const RegisterPage = () => {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   className="w-full rounded-xl border border-gray-200 bg-[#fff7ee] py-3 pl-12 pr-4 text-sm text-gray-700 outline-none transition focus:border-brand-accent"
-                  placeholder="you@example.com"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>

@@ -10,6 +10,13 @@ import nodemailer from 'nodemailer';
   - FRONTEND_URL
   Optional:
   - EMAIL_REPLY_TO
+  - BUSINESS_INFO_EMAIL
+  - BUSINESS_SUPPORT_EMAIL
+  - BUSINESS_ORDERS_EMAIL
+  - BUSINESS_RETURNS_EMAIL
+  - BUSINESS_HELLO_EMAIL
+  - BUSINESS_SALES_EMAIL
+  - BUSINESS_BILLING_EMAIL
   - EMAIL_SEND_MAX_ATTEMPTS
   - EMAIL_RETRY_DELAY_MS
 
@@ -20,6 +27,15 @@ import nodemailer from 'nodemailer';
 let transporter = null;
 
 const REQUIRED_EMAIL_ENV_VARS = ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_USER', 'EMAIL_PASS', 'EMAIL_FROM'];
+const getBusinessEmails = () => ({
+  info: process.env.BUSINESS_INFO_EMAIL || 'info@apexfashion.lk',
+  support: process.env.BUSINESS_SUPPORT_EMAIL || process.env.EMAIL_REPLY_TO || 'support@apexfashion.lk',
+  orders: process.env.BUSINESS_ORDERS_EMAIL || 'orders@apexfashion.lk',
+  returns: process.env.BUSINESS_RETURNS_EMAIL || 'returns@apexfashion.lk',
+  hello: process.env.BUSINESS_HELLO_EMAIL || 'hello@apexfashion.lk',
+  sales: process.env.BUSINESS_SALES_EMAIL || 'sales@apexfashion.lk',
+  billing: process.env.BUSINESS_BILLING_EMAIL || 'billing@apexfashion.lk',
+});
 const TRANSIENT_SMTP_RESPONSE_CODES = new Set([421, 450, 451, 452, 454]);
 const RETRYABLE_NETWORK_ERROR_CODES = new Set([
   'EAI_AGAIN',
@@ -209,7 +225,7 @@ const logInDevelopment = (label, payload) => {
   };
 };
 
-const sendMailSafe = async ({ label, to, subject, html, developmentPayload = {} }) => {
+const sendMailSafe = async ({ label, to, subject, html, replyTo, developmentPayload = {} }) => {
   if (!to) {
     return logInDevelopment(`${label}:missing-recipient`, developmentPayload);
   }
@@ -237,7 +253,7 @@ const sendMailSafe = async ({ label, to, subject, html, developmentPayload = {} 
         to,
         subject,
         html,
-        ...(emailConfig.replyTo ? { replyTo: emailConfig.replyTo } : {}),
+        ...(replyTo || emailConfig.replyTo ? { replyTo: replyTo || emailConfig.replyTo } : {}),
       });
 
       if (attempt > 1) {
@@ -317,6 +333,31 @@ const getSafeOrderRecipient = (order) => order?.shippingAddress?.email || order?
 
 const getPaymentLabel = (order) => order?.paymentStatus || (order?.isPaid ? 'Paid' : 'Unpaid');
 
+const getContactMailbox = (message = {}) => {
+  const businessEmails = getBusinessEmails();
+  const searchable = `${message?.subject || ''} ${message?.message || ''}`.toLowerCase();
+
+  if (/\b(return|refund|exchange|warranty|damaged|defective|wrong item)\b/.test(searchable)) {
+    return businessEmails.returns;
+  }
+
+  if (/\b(order|shipping|delivery|tracking|dispatch|courier)\b/.test(searchable)) {
+    return businessEmails.orders;
+  }
+
+  if (/\b(payment|payhere|billing|invoice|receipt|chargeback|paid|card)\b/.test(searchable)) {
+    return businessEmails.billing;
+  }
+
+  if (/\b(sales|bulk|wholesale|quote|quotation|partnership|product inquiry|price)\b/.test(searchable)) {
+    return businessEmails.sales;
+  }
+
+  return businessEmails.info;
+};
+
+const getBusinessReplyTo = (key) => getBusinessEmails()[key] || getBusinessEmails().support;
+
 const buildOrderHtml = ({ heading, copy, order, ctaLabel, ctaUrl }) => {
   const orderId = order?._id?.toString?.() || '';
   const trackingNumber = order?.trackingNumber || 'Pending assignment';
@@ -368,6 +409,7 @@ const sendOrderConfirmationEmail = async (order) =>
     label: 'order-placed',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Order Placed - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('orders'),
     html: buildOrderHtml({
       heading: 'Your order has been placed',
       copy:
@@ -390,6 +432,7 @@ const sendOrderConfirmedEmail = async (order) =>
     label: 'order-confirmed',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Order Confirmed - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('orders'),
     html: buildOrderHtml({
       heading: 'Your order is confirmed',
       copy:
@@ -410,6 +453,7 @@ const sendOrderCancelledEmail = async (order) =>
     label: 'order-cancelled',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Order Cancelled - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('orders'),
     html: buildOrderHtml({
       heading: 'Your order was cancelled',
       copy:
@@ -430,6 +474,7 @@ const sendOrderDeliveredEmail = async (order) =>
     label: 'order-delivered',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Order Delivered - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('orders'),
     html: buildOrderHtml({
       heading: 'Your order was delivered',
       copy:
@@ -450,6 +495,7 @@ const sendOrderStatusUpdateEmail = async (order) =>
     label: 'order-status-update',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Order Update - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('orders'),
     html: buildOrderHtml({
       heading: 'Your order has a new update',
       copy:
@@ -489,6 +535,7 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
     label: 'password-reset',
     to: user?.email || '',
     subject: 'Reset your Apex Fashion password',
+    replyTo: getBusinessReplyTo('support'),
     html,
     developmentPayload,
   });
@@ -499,6 +546,7 @@ const sendAdminTwoFactorCodeEmail = async (user, code, expiresInMinutes = 10) =>
     label: 'admin-2fa-code',
     to: user?.email || '',
     subject: 'Your Apex Fashion admin verification code',
+    replyTo: getBusinessReplyTo('support'),
     html: wrapTemplate({
       title: 'Admin verification code',
       preheader: 'Use this code to complete your secure admin sign-in.',
@@ -525,6 +573,7 @@ const sendSecurityAlertEmail = async (user, { title = 'Security alert', message 
     label: 'security-alert',
     to: user?.email || '',
     subject: `Apex Fashion Security Alert - ${title}`,
+    replyTo: getBusinessReplyTo('support'),
     html: wrapTemplate({
       title,
       preheader: 'A security-sensitive event occurred on your Apex Fashion account.',
@@ -550,8 +599,9 @@ const sendSecurityAlertEmail = async (user, { title = 'Security alert', message 
 const sendContactMessageNotification = async (message) =>
   sendMailSafe({
     label: 'contact-notification',
-    to: process.env.EMAIL_FROM || '',
+    to: getContactMailbox(message),
     subject: `New Contact Message - ${message?.subject || 'Apex Fashion'}`,
+    replyTo: message?.email || getBusinessReplyTo('info'),
     html: wrapTemplate({
       title: 'New customer message',
       preheader: 'A new contact form message was submitted on the Apex Fashion storefront.',
@@ -578,6 +628,7 @@ const sendContactAutoReply = async (message) =>
     label: 'contact-auto-reply',
     to: message?.email || '',
     subject: 'We received your message - Apex Fashion',
+    replyTo: getContactMailbox(message),
     html: wrapTemplate({
       title: 'Thank you for contacting Apex Fashion',
       preheader: 'Our team has received your message and will get back to you shortly.',
@@ -602,6 +653,7 @@ const sendInvoiceEmail = async (order) =>
     label: 'invoice-email',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Invoice - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('billing'),
     html: wrapTemplate({
       title: 'Your invoice is ready',
       preheader: 'You can review or print your invoice from your order dashboard.',
@@ -628,6 +680,7 @@ const sendRefundConfirmationEmail = async (order, refund = {}) =>
     label: 'refund-confirmation',
     to: getSafeOrderRecipient(order),
     subject: `Apex Fashion Refund Update - ${order?._id?.toString?.() || ''}`,
+    replyTo: getBusinessReplyTo('returns'),
     html: wrapTemplate({
       title: 'Your refund has been processed',
       preheader: 'A refund update is now available for your order.',
@@ -657,6 +710,7 @@ const sendNewsletterWelcomeEmail = async (subscriber) =>
     label: 'newsletter-welcome',
     to: subscriber?.email || '',
     subject: 'Welcome to Apex Fashion updates',
+    replyTo: getBusinessReplyTo('hello'),
     html: wrapTemplate({
       title: 'You are subscribed',
       preheader: 'You will receive fashion product updates, store news, and offers from Apex Fashion.',
@@ -690,6 +744,7 @@ const sendAbandonedCartEmail = async (cart) => {
     label: 'abandoned-cart',
     to: cart?.email || '',
     subject: 'Your Apex Fashion cart is waiting',
+    replyTo: getBusinessReplyTo('hello'),
     html: wrapTemplate({
       title: 'Still thinking it over?',
       preheader: 'Your selected products are still waiting in your Apex Fashion cart.',
@@ -715,6 +770,7 @@ const sendTestEmail = async (to = process.env.EMAIL_TEST_TO || process.env.EMAIL
     label: 'smtp-test',
     to,
     subject: 'Apex Fashion SMTP test',
+    replyTo: getBusinessReplyTo('support'),
     html: wrapTemplate({
       title: 'SMTP is configured',
       preheader: 'This confirms that the Apex Fashion backend can send email through your SMTP provider.',

@@ -79,7 +79,7 @@ const PaymentPolicyPage = () => {
         },
         {
           title: 'Payment security and customer care',
-          body: `Apex Fashion does not ask customers to send card numbers, CVV values, one-time passwords, PayHere login details, or banking passwords by email, WhatsApp, phone, or contact form. If you suspect payment fraud, contact ${BUSINESS_INFO.email} immediately and also contact your bank or payment provider.`,
+          body: `Apex Fashion does not ask customers to send card numbers, CVV values, one-time passwords, PayHere login details, or banking passwords by email, WhatsApp, phone, or contact form. If you suspect payment fraud or have a billing issue, contact ${BUSINESS_INFO.emails.billing} immediately and also contact your bank or payment provider.`,
         },
         {
           title: 'Currency, tax, and invoice status',
@@ -95,7 +95,7 @@ const PaymentPolicyPage = () => {
       cta={{
         eyebrow: 'Payment question?',
         title: 'We can help trace a PayHere payment',
-        body: 'Send your order ID, checkout email or phone, approximate payment time, amount, and any PayHere reference shown to you.',
+        body: `Send your order ID, checkout email or phone, approximate payment time, amount, and any PayHere reference shown to ${BUSINESS_INFO.emails.billing}.`,
         to: '/contact',
         label: 'Contact Support',
       }}

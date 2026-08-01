@@ -162,7 +162,7 @@ const buildStoreStructuredData = () => ({
   logo: `${SITE_URL}/logo.webp`,
   image: toAbsoluteUrl(DEFAULT_IMAGE),
   description: DEFAULT_DESCRIPTION,
-  email: BUSINESS_INFO.email,
+  email: BUSINESS_INFO.emails.info,
   telephone: BUSINESS_INFO.phone,
   currenciesAccepted: 'LKR',
   areaServed: {
@@ -183,7 +183,7 @@ const buildStoreStructuredData = () => ({
     '@type': 'ContactPoint',
     contactType: 'customer service',
     telephone: BUSINESS_INFO.phone,
-    email: BUSINESS_INFO.email,
+    email: BUSINESS_INFO.emails.support,
     areaServed: 'LK',
     availableLanguage: ['English'],
   },

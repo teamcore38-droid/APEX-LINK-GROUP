@@ -56,7 +56,7 @@ const ReturnsPage = () => {
         },
         {
           title: 'How to submit a request',
-          body: `Contact ${BUSINESS_INFO.email} or use the Contact page. Include the order ID, customer name, email/phone used at checkout, item details, reason, preferred resolution, and clear photos where relevant. Return address: ${BUSINESS_INFO.dispatchAddress}.`,
+          body: `Contact ${BUSINESS_INFO.emails.returns} or use the Contact page. Include the order ID, customer name, email/phone used at checkout, item details, reason, preferred resolution, and clear photos where relevant. Return address: ${BUSINESS_INFO.dispatchAddress}.`,
         },
         {
           title: 'Assessment and resolution',
@@ -78,7 +78,7 @@ const ReturnsPage = () => {
         },
         {
           title: 'Failed refunds, disputes, and chargebacks',
-          body: 'If a refund does not appear within the expected banking timeframe, contact customer care with the order ID and PayHere payment reference if available. If a payment is disputed through a card issuer, the order may be marked as charged back while PayHere, the bank, and Apex Fashion review the matter.',
+          body: `If a refund does not appear within the expected banking timeframe, contact ${BUSINESS_INFO.emails.returns} with the order ID and PayHere payment reference if available. For billing disputes, use ${BUSINESS_INFO.emails.billing}. If a payment is disputed through a card issuer, the order may be marked as charged back while PayHere, the bank, and Apex Fashion review the matter.`,
         },
       ]}
       relatedLinks={[

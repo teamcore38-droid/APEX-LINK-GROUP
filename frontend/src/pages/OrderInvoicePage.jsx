@@ -13,7 +13,7 @@ import {
 
 const DEFAULT_BUSINESS_INFO = {
   name: 'APEX FASHION',
-  email: 'info@apexfashion.lk',
+  email: 'billing@apexfashion.lk',
   phone: '+94 76 566 9961',
   address: '[BUSINESS OWNER TO CONFIRM: registered business address in Sri Lanka]',
   website: 'https://www.apexfashion.lk',

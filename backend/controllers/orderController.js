@@ -182,7 +182,7 @@ const mapStatusHistory = (statusHistory = []) =>
 
 const getBusinessInfoForDocuments = () => ({
   name: process.env.BUSINESS_NAME || 'APEX FASHION',
-  email: process.env.BUSINESS_EMAIL || 'info@apexfashion.lk',
+  email: process.env.BUSINESS_BILLING_EMAIL || process.env.BUSINESS_EMAIL || 'billing@apexfashion.lk',
   phone: process.env.BUSINESS_PHONE || '+94 76 566 9961',
   address:
     process.env.BUSINESS_ADDRESS ||
