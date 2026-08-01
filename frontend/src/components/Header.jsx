@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned, X } from 'lucide-react';
+import { ChevronDown, Heart, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { getCategories } from '../utils/categoryApi';
 
@@ -17,6 +18,7 @@ const HEADER_CATEGORY_LIMIT = 3;
 
 const Header = () => {
   const { cartItems } = useCart();
+  const { wishlistCount } = useWishlist();
   const { userInfo, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -150,7 +152,23 @@ const Header = () => {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4 lg:gap-5">
-
+          <Link
+            to="/wishlist"
+            aria-label={`View wishlist with ${wishlistCount} ${wishlistCount === 1 ? 'item' : 'items'}`}
+            className="relative inline-flex items-center transition-colors hover:text-brand-accent"
+          >
+            <div className="relative">
+              <Heart size={22} className="text-brand-accent" />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-accent px-1 text-[10px] font-bold text-[#2a140e]">
+                  {wishlistCount > 99 ? '99+' : wishlistCount}
+                </span>
+              )}
+            </div>
+            <span className="ml-2 hidden text-sm font-semibold uppercase tracking-wider font-['Times_New_Roman',_Times,_Georgia,_serif] xl:inline">
+              Wishlist
+            </span>
+          </Link>
 
           <Link to="/cart" aria-label="View cart" className="relative inline-flex items-center transition-colors hover:text-brand-accent">
             <div className="relative">

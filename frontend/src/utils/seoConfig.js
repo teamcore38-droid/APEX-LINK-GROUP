@@ -98,6 +98,7 @@ const NOINDEX_PREFIXES = [
   '/reset-password',
   '/track-order',
   '/vendor',
+  '/wishlist',
 ];
 
 const normalizePathname = (pathname = '/') => {

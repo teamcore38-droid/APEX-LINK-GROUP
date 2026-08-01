@@ -27,6 +27,7 @@ const getPrivatePageTitle = (pathname) => {
   if (pathname.startsWith('/track-order')) return 'Track Order';
   if (pathname.startsWith('/checkout')) return 'Checkout';
   if (pathname.startsWith('/cart')) return 'Shopping Cart';
+  if (pathname.startsWith('/wishlist')) return 'My Wishlist';
   if (pathname.startsWith('/login')) return 'Sign In';
   if (pathname.startsWith('/register')) return 'Create Account';
   return 'Private Page';

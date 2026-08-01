@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import axios from 'axios'
 import { CartProvider } from './context/CartContext'
+import { WishlistProvider } from './context/WishlistContext'
 import { AuthProvider } from './context/AuthContext'
 import { CurrencyProvider } from './context/CurrencyContext'
 import App from './App.jsx'
@@ -20,11 +21,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <CartProvider>
-        <CurrencyProvider>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </CurrencyProvider>
+        <WishlistProvider>
+          <CurrencyProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </CurrencyProvider>
+        </WishlistProvider>
       </CartProvider>
     </AuthProvider>
   </React.StrictMode>,

@@ -3,15 +3,15 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Product from './Product';
 
 const getItemsPerView = (width) => {
-  if (width < 768) {
-    return 1;
-  }
-
-  if (width < 1024) {
+  if (width < 640) {
     return 2;
   }
 
-  return 3;
+  if (width < 1024) {
+    return 3;
+  }
+
+  return 4;
 };
 
 const chunkProducts = (products, size) => {
@@ -162,7 +162,7 @@ const FeaturedProductCarousel = ({
       onTouchEnd={finishTouchGesture}
       onTouchCancel={finishTouchGesture}
     >
-      <div className="overflow-hidden rounded-[28px] touch-pan-y">
+      <div className="overflow-hidden rounded-lg touch-pan-y">
         <div
           className={`flex ${dragOffset ? 'transition-none' : 'transition-transform duration-700 ease-out'}`}
           style={{
@@ -172,12 +172,12 @@ const FeaturedProductCarousel = ({
           {pages.map((pageProducts, pageIndex) => (
             <div key={`featured-page-${pageIndex}`} className="w-full flex-shrink-0">
               <div
-                className={`grid gap-6 ${
-                  itemsPerView === 1
-                    ? 'grid-cols-1'
-                    : itemsPerView === 2
+                className={`grid gap-3 sm:gap-4 ${
+                  itemsPerView === 2
                       ? 'grid-cols-2'
-                      : 'grid-cols-3'
+                      : itemsPerView === 3
+                        ? 'grid-cols-3'
+                        : 'grid-cols-4'
                 }`}
               >
                 {pageProducts.map((product, productIndex) => (
@@ -189,6 +189,7 @@ const FeaturedProductCarousel = ({
                     <Product
                       product={product}
                       priority={prioritizeFirstPage && pageIndex === 0}
+                      compact
                     />
                   </div>
                 ))}
@@ -205,21 +206,21 @@ const FeaturedProductCarousel = ({
               type="button"
               onClick={goToPrev}
               aria-label="Previous featured products"
-              className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e0c3ae] bg-white/90 text-[#6b321f] shadow-lg transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
+              className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e0c3ae] bg-white/95 text-[#6b321f] shadow-md transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={18} />
             </button>
             <button
               type="button"
               onClick={goToNext}
               aria-label="Next featured products"
-              className="pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e0c3ae] bg-white/90 text-[#6b321f] shadow-lg transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
+              className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#e0c3ae] bg-white/95 text-[#6b321f] shadow-md transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
-              <ChevronRight size={22} />
+              <ChevronRight size={18} />
             </button>
           </div>
 
-          <div className="mt-5 flex items-center justify-center gap-2">
+          <div className="mt-4 flex items-center justify-center gap-2">
             {pages.map((_, index) => {
               const isCurrent = index === safeActivePage;
               return (
@@ -229,7 +230,7 @@ const FeaturedProductCarousel = ({
                   onClick={() => setActivePage(index)}
                   aria-label={`Go to featured slide ${index + 1} of ${pages.length}`}
                   aria-current={isCurrent ? 'true' : 'false'}
-                  className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] transition ${
+                  className={`inline-flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[10px] font-semibold transition ${
                     isCurrent
                       ? 'border-[#b36a2e] bg-[#b36a2e] text-white'
                       : 'border-[#e0c3ae] bg-white text-[#8f5a34] hover:border-[#b36a2e] hover:text-[#b36a2e]'
@@ -241,12 +242,12 @@ const FeaturedProductCarousel = ({
             })}
           </div>
 
-          <div className="mt-4 flex items-center justify-center gap-3 md:hidden">
+          <div className="mt-3 flex items-center justify-center gap-3 md:hidden">
             <button
               type="button"
               onClick={goToPrev}
               aria-label="Previous featured products"
-              className="inline-flex items-center rounded-full border border-[#e0c3ae] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#6b321f] transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
+              className="inline-flex min-h-9 items-center rounded-md border border-[#e0c3ae] bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b321f] transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
               <ChevronLeft size={16} className="mr-2" /> Prev
             </button>
@@ -254,7 +255,7 @@ const FeaturedProductCarousel = ({
               type="button"
               onClick={goToNext}
               aria-label="Next featured products"
-              className="inline-flex items-center rounded-full border border-[#e0c3ae] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.15em] text-[#6b321f] transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
+              className="inline-flex min-h-9 items-center rounded-md border border-[#e0c3ae] bg-white px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#6b321f] transition hover:border-[#b36a2e] hover:text-[#b36a2e]"
             >
               Next <ChevronRight size={16} className="ml-2" />
             </button>

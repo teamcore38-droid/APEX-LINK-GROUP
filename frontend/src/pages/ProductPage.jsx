@@ -28,6 +28,7 @@ import {
   ZoomIn,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import RouteLoadingScreen from '../components/RouteLoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import Product from '../components/Product';
@@ -91,6 +92,7 @@ const ProductPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const { userInfo } = useAuth();
   const productId = getProductIdFromRouteParam(productRouteParam);
 
@@ -111,10 +113,10 @@ const ProductPage = () => {
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewMessage, setReviewMessage] = useState('');
   const [reviewSaving, setReviewSaving] = useState(false);
-  const [wishlistSaving, setWishlistSaving] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [categorySlug, setCategorySlug] = useState('');
   const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94703690505' });
+  const productSavedToWishlist = isInWishlist(product || productId);
   const sizeScrollRef = useRef(null);
   const [sizeScrollState, setSizeScrollState] = useState({ canScrollLeft: false, canScrollRight: false });
 
@@ -695,30 +697,11 @@ const ProductPage = () => {
     trackEvent('share_product_network', { productId: product._id, network });
   };
 
-  const addToWishlist = async () => {
-    if (!userInfo?.token) {
-      navigate(`/login?redirect=${encodeURIComponent(`${currentProductPath}${location.search}`)}`);
-      return;
-    }
-
-    setWishlistSaving(true);
-
-    try {
-      await axios.post(
-        '/api/wishlist',
-        { productId: product._id },
-        {
-          headers: {
-            Authorization: `Bearer ${userInfo.token}`,
-          },
-        }
-      );
-      setReviewMessage('Saved to your wishlist.');
-    } catch (wishlistError) {
-      setReviewMessage(wishlistError.response?.data?.message || 'Unable to update wishlist.');
-    } finally {
-      setWishlistSaving(false);
-    }
+  const handleWishlistToggle = () => {
+    toggleWishlist(product);
+    setReviewMessage(
+      productSavedToWishlist ? 'Removed from your wishlist.' : 'Saved to your wishlist.'
+    );
   };
 
   const submitReview = async (event) => {
@@ -1220,16 +1203,21 @@ const ProductPage = () => {
 
                     <button
                       type="button"
-                      onClick={addToWishlist}
-                      disabled={wishlistSaving}
-                      className="inline-flex h-12 shrink-0 items-center justify-center rounded-xl border border-brand-primary/20 px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-brand-primary transition-all duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 sm:text-sm sm:tracking-[0.16em]"
+                      onClick={handleWishlistToggle}
+                      aria-pressed={productSavedToWishlist}
+                      className={`inline-flex h-12 shrink-0 items-center justify-center rounded-xl border px-3 py-3 text-xs font-semibold uppercase tracking-[0.12em] transition-all duration-200 sm:px-4 sm:text-sm sm:tracking-[0.16em] ${
+                        productSavedToWishlist
+                          ? 'border-brand-primary bg-brand-primary text-white'
+                          : 'border-brand-primary/20 text-brand-primary hover:border-brand-primary hover:bg-brand-primary hover:text-white'
+                      }`}
                     >
-                      {wishlistSaving ? (
-                        <Loader2 size={16} className="mr-2 animate-spin" />
-                      ) : (
-                        <Heart size={16} className="mr-1.5 text-brand-accent" />
-                      )}
-                      Save
+                      <Heart
+                        size={16}
+                        fill={productSavedToWishlist ? 'currentColor' : 'none'}
+                        className="mr-1.5"
+                        aria-hidden="true"
+                      />
+                      {productSavedToWishlist ? 'Saved' : 'Save'}
                     </button>
                   </div>
                 </div>

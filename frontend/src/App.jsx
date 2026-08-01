@@ -33,6 +33,7 @@ const ProductsPage = lazyWithReload(() => import('./pages/ProductsPage'))
 const CategoriesPage = lazyWithReload(() => import('./pages/CategoriesPage'))
 const CategoryPage = lazyWithReload(() => import('./pages/CategoryPage'))
 const CartPage = lazyWithReload(() => import('./pages/CartPage'))
+const WishlistPage = lazyWithReload(() => import('./pages/WishlistPage'))
 const LoginPage = lazyWithReload(() => import('./pages/LoginPage'))
 const RegisterPage = lazyWithReload(() => import('./pages/RegisterPage'))
 const AboutPage = lazyWithReload(() => import('./pages/AboutPage'))
@@ -88,6 +89,7 @@ function App() {
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />

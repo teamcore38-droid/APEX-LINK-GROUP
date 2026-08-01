@@ -29,14 +29,14 @@ const getInitialImageCounts = () => {
   const width = window.innerWidth;
 
   if (width < 768) {
-    return { featured: 1, bestSellers: 2 };
+    return { featured: 2, bestSellers: 2 };
   }
 
   if (width < 1024) {
-    return { featured: 2, bestSellers: 3 };
+    return { featured: 3, bestSellers: 3 };
   }
 
-  return { featured: 3, bestSellers: 4 };
+  return { featured: 4, bestSellers: 4 };
 };
 
 const HomePage = () => {
@@ -360,9 +360,9 @@ const HomePage = () => {
           </div>
 
           {featuredState.loading ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(3)].map((_, index) => (
-                <div key={index} className="h-[460px] animate-pulse rounded-[28px] border border-[#ead6c6] bg-[#f6eadf]" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+              {[...Array(4)].map((_, index) => (
+                <div key={index} className="h-[255px] animate-pulse rounded-lg border border-[#ead6c6] bg-[#f6eadf] sm:h-[285px]" />
               ))}
             </div>
           ) : featuredState.error ? (
