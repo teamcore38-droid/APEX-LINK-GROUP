@@ -28,6 +28,53 @@ export const getPublicCategoryPath = (categoryName = '', categorySlug = '') => {
     : `/products?category=${encodeURIComponent(String(categoryName || '').trim())}`;
 };
 
+const getCategorySlugFromPathname = (pathname = '') => {
+  const match = String(pathname).match(/^\/category\/([^/]+)\/?$/i);
+  if (!match) return '';
+
+  try {
+    return decodeURIComponent(match[1]).toLowerCase();
+  } catch {
+    return match[1].toLowerCase();
+  }
+};
+
+export const getActiveTopLevelCategoryId = (categories = [], pathname = '', search = '') => {
+  const activeSlug = getCategorySlugFromPathname(pathname);
+  const categoryFilter = /^\/products\/?$/i.test(String(pathname))
+    ? new URLSearchParams(search).get('category')
+    : '';
+  const normalizedFilter = slugifyCategoryName(categoryFilter || '');
+
+  if (!activeSlug && !normalizedFilter) return null;
+
+  const categoryById = new Map(
+    categories.map((category) => [String(category?._id || ''), category])
+  );
+  let current = categories.find(
+    (category) => {
+      const categorySlug = slugifyCategoryName(category?.slug || category?.name || '');
+      return activeSlug
+        ? categorySlug === activeSlug
+        : categorySlug === normalizedFilter || slugifyCategoryName(category?.name) === normalizedFilter;
+    }
+  );
+  const visited = new Set();
+
+  while (current) {
+    const currentId = String(current._id || '');
+    if (!currentId || visited.has(currentId)) return null;
+    visited.add(currentId);
+
+    const parentId = String(current.parentCategory?._id || current.parentCategory || '');
+    if (!parentId) return currentId;
+
+    current = categoryById.get(parentId);
+  }
+
+  return null;
+};
+
 export const getCategoryImage = (category) => {
   const [firstCandidate] = getCategoryImageCandidates(category);
   return firstCandidate;

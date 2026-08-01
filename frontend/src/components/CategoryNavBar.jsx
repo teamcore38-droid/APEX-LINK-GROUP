@@ -2,8 +2,9 @@ import { memo, useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, Grid } from 'lucide-react';
 import { getCategories } from '../utils/categoryApi';
+import { getActiveTopLevelCategoryId } from '../utils/categoryUi';
 
-const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryClick, activeDropdown, setActiveDropdown }) => {
+const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryClick, activeDropdown, setActiveDropdown, isActive }) => {
   const buttonRef = useRef(null);
   const leaveTimeoutRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState(null);
@@ -91,8 +92,11 @@ const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryCl
         ref={buttonRef}
         type="button"
         onClick={handleToggle}
+        aria-current={isActive ? 'page' : undefined}
         className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition-all duration-200 ${
-          isOpen
+          isActive
+            ? 'bg-brand-accent text-[#1c0d09] shadow-sm'
+            : isOpen
             ? 'bg-brand-accent/20 text-brand-accent'
             : 'text-[#fff7ee]/90 hover:bg-white/5 hover:text-brand-accent'
         }`}
@@ -101,7 +105,7 @@ const NavItem = memo(({ parent, children, getChildrenForParent, handleCategoryCl
         {hasChildren && (
           <ChevronDown
             size={12}
-            className={`transition-transform duration-200 text-brand-accent ${
+            className={`transition-transform duration-200 ${isActive ? 'text-[#1c0d09]' : 'text-brand-accent'} ${
               isOpen ? 'rotate-180' : ''
             }`}
           />
@@ -249,6 +253,11 @@ const CategoryNavBar = () => {
     [childrenByParent]
   );
 
+  const activeParentCategoryId = useMemo(
+    () => getActiveTopLevelCategoryId(categories, location.pathname, location.search),
+    [categories, location.pathname, location.search]
+  );
+
   const handleCategoryClick = useCallback((categorySlug) => {
     setActiveDropdown(null);
     navigate(`/category/${categorySlug}`);
@@ -349,6 +358,7 @@ const CategoryNavBar = () => {
                   handleCategoryClick={handleCategoryClick}
                   activeDropdown={activeDropdown}
                   setActiveDropdown={setActiveDropdown}
+                  isActive={String(parent._id) === activeParentCategoryId}
                 />
               );
             })}

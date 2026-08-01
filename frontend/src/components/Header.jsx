@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, Heart, Mail, Menu, PackagePlus, ShoppingBag, User, LogOut, MapPinned, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { getCategories } from '../utils/categoryApi';
+import { getActiveTopLevelCategoryId } from '../utils/categoryUi';
 
 
 const PRIMARY_NAV_LINKS = [
@@ -25,7 +26,7 @@ const Header = () => {
 
   const [desktopUserMenuOpen, setDesktopUserMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [headerCategories, setHeaderCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
 
   const desktopUserMenuRef = useRef(null);
   const mobileNavRef = useRef(null);
@@ -44,15 +45,20 @@ const Header = () => {
   const isActiveLink = (path) =>
     location.pathname === path || (path !== '/' && location.pathname.startsWith(path));
 
+  const headerCategories = useMemo(
+    () => categories
+      .filter((category) => category.isActive !== false && !category.parentCategory)
+      .slice(0, HEADER_CATEGORY_LIMIT),
+    [categories]
+  );
+  const activeParentCategoryId = useMemo(
+    () => getActiveTopLevelCategoryId(categories, location.pathname, location.search),
+    [categories, location.pathname, location.search]
+  );
+
   useEffect(() => {
     getCategories()
-      .then((categories) => {
-        setHeaderCategories(
-          categories
-            .filter((category) => category.isActive !== false && !category.parentCategory)
-            .slice(0, HEADER_CATEGORY_LIMIT)
-        );
-      })
+      .then(setCategories)
       .catch((error) => {
         console.error('Failed to load header category links', error);
       });
@@ -388,8 +394,9 @@ const Header = () => {
                         key={`mobile-header-category-${category.slug}`}
                         to={`/category/${category.slug}`}
                         onClick={() => setMobileNavOpen(false)}
+                        aria-current={String(category._id) === activeParentCategoryId ? 'page' : undefined}
                         className={`block rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${
-                          isActiveLink(`/category/${category.slug}`)
+                          String(category._id) === activeParentCategoryId
                             ? 'bg-brand-accent/20 text-brand-accent'
                             : 'hover:bg-white/10'
                         }`}
