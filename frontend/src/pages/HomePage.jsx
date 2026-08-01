@@ -323,15 +323,14 @@ const HomePage = () => {
       </div>
 
       {homeCategories.length > 0 && (
-        <section className="bg-[#fff7ee] py-6 md:py-8" aria-labelledby="home-category-links-title">
+        <section className="bg-[#fff7ee] pb-4 pt-6 md:pb-6 md:pt-8" aria-labelledby="home-category-links-title">
           <div className="container mx-auto px-4">
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-4 md:mb-5">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-4 md:mb-4">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-brand-primary">Browse by Category</p>
                 <h2 id="home-category-links-title" className="mt-1.5 font-serif text-3xl font-bold text-brand-dark md:text-4xl">
                   Shop by Category
                 </h2>
-                <p className="mt-2 max-w-xl text-sm text-gray-600">Explore our wide range of fashion categories for women, men, and kids.</p>
               </div>
               <Link
                 to="/categories"
@@ -345,18 +344,14 @@ const HomePage = () => {
         </section>
       )}
 
-      <div ref={featuredRef} className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-8 md:py-10">
+      <div ref={featuredRef} className="bg-[radial-gradient(circle_at_top,_rgba(217, 154, 50,0.10),_transparent_58%),#fffaf4] py-6 md:py-8">
         <div className="container mx-auto px-4">
           <div
-            className={`mb-6 text-center md:mb-8 reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
+            className={`mb-4 text-center md:mb-5 reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
             style={{ transitionDelay: '0ms' }}
           >
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Curated Signature Picks</p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Featured Collection</h2>
-            <div className="mx-auto mt-5 h-px w-28 bg-gradient-to-r from-transparent via-brand-accent to-transparent"></div>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-gray-600 md:text-base">
-              A refined rotation of fashion products selected for everyday style, clear product details, and smooth checkout.
-            </p>
+            <h2 className="font-serif text-3xl font-bold text-brand-dark md:text-4xl">Featured Collection</h2>
+            <div className="mx-auto mt-3 h-px w-28 bg-gradient-to-r from-transparent via-brand-accent to-transparent"></div>
           </div>
 
           {featuredState.loading ? (
@@ -396,7 +391,7 @@ const HomePage = () => {
 
           {!featuredState.loading && !featuredState.error && featuredProducts.length > 0 && (
             <div
-              className={`mt-6 text-center reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
+              className={`mt-5 text-center reveal-fade-up ${featuredVisible ? 'is-visible' : ''}`}
               style={{ transitionDelay: '450ms' }}
             >
               <Link
@@ -410,16 +405,13 @@ const HomePage = () => {
         </div>
       </div>
 
-      <div ref={bestSellersRef} className="bg-[#f5e7da] py-12 md:py-14" aria-busy={bestSellersState.loading}>
+      <div ref={bestSellersRef} className="bg-[#f5e7da] py-8 md:py-10" aria-busy={bestSellersState.loading}>
         <div className="container mx-auto px-4">
           <div
-            className={`mb-7 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
+            className={`mb-5 flex flex-wrap items-end justify-between gap-4 reveal-fade-up ${bestSellersVisible ? 'is-visible' : ''}`}
             style={{ transitionDelay: '0ms' }}
           >
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-brand-accent">Customer Favorites</p>
-              <h2 className="mt-3 font-serif text-3xl font-bold text-brand-dark md:text-4xl">Best Sellers</h2>
-            </div>
+            <h2 className="font-serif text-3xl font-bold text-brand-dark md:text-4xl">Best Sellers</h2>
             <Link
               to="/products"
               className="inline-flex items-center rounded-full border border-brand-primary/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-brand-primary transition-colors duration-200 hover:bg-brand-primary hover:text-white"

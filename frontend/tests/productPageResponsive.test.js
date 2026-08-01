@@ -6,7 +6,7 @@ const source = await readFile(new URL('../src/pages/ProductPage.jsx', import.met
 
 test('Product Details keeps narrow-screen layout constrained and shrinkable', () => {
   assert.match(source, /min-h-screen min-w-0 max-w-full overflow-x-clip/);
-  assert.match(source, /mt-6 grid min-w-0 gap-5 lg:grid-cols-2/);
+  assert.match(source, /mt-3 grid min-w-0 gap-5 sm:mt-4 lg:grid-cols-2/);
   assert.match(source, /min-w-0 max-w-full font-serif text-xl[^`]*\[overflow-wrap:anywhere\]/);
   assert.match(source, /await navigator\.share\(\{ url: shareUrl \}\)/);
   assert.doesNotMatch(source, /navigator\.share\(shareData\)/);

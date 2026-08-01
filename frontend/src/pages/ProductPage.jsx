@@ -805,7 +805,7 @@ const ProductPage = () => {
           <ArrowLeft size={16} className="mr-2" /> Back to Shop
         </Link>
 
-        <div className="mt-6 grid min-w-0 gap-5 lg:grid-cols-2">
+        <div className="mt-3 grid min-w-0 gap-5 sm:mt-4 lg:grid-cols-2">
           <section className="min-w-0 max-w-full space-y-4 lg:sticky lg:top-24 h-fit">
             <button
               type="button"
