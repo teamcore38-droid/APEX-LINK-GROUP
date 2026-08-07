@@ -97,7 +97,7 @@ const HomeCategoryCarousel = ({ categories = [] }) => {
         {categories.map((category) => (
           <Link
             key={category._id || category.slug || category.name}
-            to={getPublicCategoryPath(category.name, category.slug)}
+            to={getPublicCategoryPath(category.name, category.slug, category.path)}
             className="group w-[104px] min-w-[104px] snap-start text-center sm:w-[122px] sm:min-w-[122px] md:w-[132px] md:min-w-[132px]"
           >
             <div className="mx-auto aspect-[0.78] w-full overflow-hidden rounded-[999px] border-2 border-white bg-[#f2e3d7] shadow-[0_6px_18px_rgba(77,33,22,0.12)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-accent group-hover:shadow-[0_10px_22px_rgba(77,33,22,0.18)]">

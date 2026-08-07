@@ -19,7 +19,9 @@ test('category transitions keep the existing page and products visible', () => {
 
 test('category and product requests cancel stale transitions', () => {
   assert.match(source, /categoryRequestVersionRef/);
-  assert.match(source, /axios\.get\(`\/api\/categories\/\$\{slug\}`,\s*\{\s*signal: controller\.signal/);
+  assert.match(source, /axios\.get\(`\/api\/categories\/\$\{categoryLeafSlug\}`,\s*\{/);
+  assert.match(source, /params: \{ path: categoryPath \}/);
+  assert.match(source, /signal: controller\.signal/);
   assert.match(source, /return \(\) => \{\s*controller\.abort\(\);\s*\};/);
   assert.doesNotMatch(
     source,

@@ -10,7 +10,6 @@ const categorySchema = mongoose.Schema(
     slug: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -57,6 +56,21 @@ const categorySchema = mongoose.Schema(
 
 categorySchema.index({ isActive: 1, displayOrder: 1, name: 1 });
 categorySchema.index({ parentCategory: 1, isActive: 1, displayOrder: 1 });
+categorySchema.index(
+  { parentCategory: 1, name: 1 },
+  {
+    unique: true,
+    name: 'category_parent_name_unique',
+    collation: { locale: 'en', strength: 2 },
+  }
+);
+categorySchema.index(
+  { parentCategory: 1, slug: 1 },
+  {
+    unique: true,
+    name: 'category_parent_slug_unique',
+  }
+);
 
 const Category = mongoose.model('Category', categorySchema);
 

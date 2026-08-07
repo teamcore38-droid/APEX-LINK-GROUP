@@ -86,7 +86,7 @@ function App() {
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/shop" element={<Navigate to="/products" replace />} />
             <Route path="/categories" element={<CategoriesPage />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
+            <Route path="/category/:slug/*" element={<CategoryPage />} />
             <Route path="/product/:id" element={<ProductPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />

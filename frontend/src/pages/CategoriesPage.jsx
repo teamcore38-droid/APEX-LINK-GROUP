@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Globe, Sparkles, Tag } from 'lucide-react';
-import { getCategoryImage } from '../utils/categoryUi';
+import { getCategoryImage, getPublicCategoryPath } from '../utils/categoryUi';
 import { getCategories } from '../utils/categoryApi';
 
 const CategoriesPage = () => {
@@ -93,7 +93,7 @@ const CategoriesPage = () => {
                     className="group flex flex-col justify-between overflow-hidden rounded-[28px] bg-white shadow-[0_20px_50px_rgba(53, 26, 17,0.08)] transition-all duration-300 hover:-translate-y-1"
                   >
                     <div>
-                      <Link to={`/category/${category.slug}`} className="block relative h-72 overflow-hidden">
+                      <Link to={getPublicCategoryPath(category.name, category.slug, category.path)} className="block relative h-72 overflow-hidden">
                         <img
                           src={getCategoryImage(category)}
                           alt={category.name}
@@ -128,7 +128,7 @@ const CategoriesPage = () => {
                               {subcategories.map((sub) => (
                                 <Link
                                   key={sub._id}
-                                  to={`/category/${sub.slug}`}
+                                  to={getPublicCategoryPath(sub.name, sub.slug, sub.path)}
                                   className="inline-flex items-center gap-1 rounded-full bg-[#fff7ee] border border-brand-accent/30 px-3 py-1 text-xs font-semibold text-brand-dark transition-all hover:bg-brand-primary hover:text-white hover:border-brand-primary"
                                 >
                                   <Tag size={10} className="text-brand-accent" />
@@ -143,7 +143,7 @@ const CategoriesPage = () => {
 
                     <div className="px-6 pb-6 pt-2">
                       <Link
-                        to={`/category/${category.slug}`}
+                        to={getPublicCategoryPath(category.name, category.slug, category.path)}
                         className="inline-flex items-center text-sm font-bold uppercase tracking-[0.2em] text-brand-primary hover:text-brand-dark transition-colors"
                       >
                         Explore All {category.name} <ArrowRight size={16} className="ml-2 transition-transform duration-200 group-hover:translate-x-1" />

@@ -21,21 +21,25 @@ export const slugifyCategoryName = (value = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-export const getPublicCategoryPath = (categoryName = '', categorySlug = '') => {
-  const slug = slugifyCategoryName(categorySlug);
+export const getPublicCategoryPath = (categoryName = '', categorySlug = '', categoryPath = '') => {
+  const slug = String(categoryPath || '')
+    .split('/')
+    .map((segment) => slugifyCategoryName(segment))
+    .filter(Boolean)
+    .join('/') || slugifyCategoryName(categorySlug);
   return slug
     ? `/category/${slug}`
     : `/products?category=${encodeURIComponent(String(categoryName || '').trim())}`;
 };
 
 const getCategorySlugFromPathname = (pathname = '') => {
-  const match = String(pathname).match(/^\/category\/([^/]+)\/?$/i);
+  const match = String(pathname).match(/^\/category\/(.+?)\/?$/i);
   if (!match) return '';
 
   try {
-    return decodeURIComponent(match[1]).toLowerCase();
+    return decodeURIComponent(match[1]).toLowerCase().replace(/^\/+|\/+$/g, '');
   } catch {
-    return match[1].toLowerCase();
+    return match[1].toLowerCase().replace(/^\/+|\/+$/g, '');
   }
 };
 
@@ -54,8 +58,9 @@ export const getActiveTopLevelCategoryId = (categories = [], pathname = '', sear
   let current = categories.find(
     (category) => {
       const categorySlug = slugifyCategoryName(category?.slug || category?.name || '');
+      const categoryPath = String(category?.path || '').toLowerCase();
       return activeSlug
-        ? categorySlug === activeSlug
+        ? categoryPath === activeSlug || categorySlug === activeSlug.split('/').pop()
         : categorySlug === normalizedFilter || slugifyCategoryName(category?.name) === normalizedFilter;
     }
   );

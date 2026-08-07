@@ -1,5 +1,6 @@
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
+import { decorateCategoryPaths, resolveCategoryByPath } from './categoryController.js';
 import {
   cleanProductText,
   getDatabaseProductDescription,
@@ -152,7 +153,7 @@ const getCategoryMetaDescription = (category, productCount = 0) => {
 
 const getCategoryImageUrl = (category = {}) => toAbsoluteUrl(category.seo?.ogImage || category.image);
 
-const getCategoryUrl = (category, siteUrl = getSiteUrl()) => `${siteUrl}/category/${category.slug}`;
+const getCategoryUrl = (category, siteUrl = getSiteUrl()) => `${siteUrl}/category/${category.path || category.slug}`;
 
 const getCategoryProductFilter = (categoryNames = []) => {
   const categoryPatterns = categoryNames
@@ -445,10 +446,7 @@ const getProductSeo = async (req, res) => {
 };
 
 const getCategorySeo = async (req, res) => {
-  const category = await Category.findOne({
-    slug: req.params.slug,
-    isActive: true,
-  }).lean();
+  const category = await resolveCategoryByPath(req.query.path || req.params.slug);
 
   if (!category) {
     return res.status(404).json({ message: 'Category not found' });
@@ -490,13 +488,13 @@ const getSitemap = async (_req, res) => {
     Product.find(SEO_PRODUCT_FILTER)
       .select('_id name slug image images updatedAt')
       .lean(),
-    Category.find({ isActive: true }).select('slug image updatedAt').lean(),
+    Category.find({ isActive: true }).select('name slug parentCategory image updatedAt').lean(),
   ]);
 
   const urls = [
     ...INDEXABLE_STATIC_PATHS.map((path) => ({ loc: `${siteUrl}${path || '/'}` })),
-    ...categories.map((category) => ({
-      loc: `${siteUrl}/category/${category.slug}`,
+    ...decorateCategoryPaths(categories).map((category) => ({
+      loc: getCategoryUrl(category, siteUrl),
       lastmod: category.updatedAt?.toISOString?.(),
       images: category.image ? [{ loc: toAbsoluteUrl(category.image) }] : [],
     })),

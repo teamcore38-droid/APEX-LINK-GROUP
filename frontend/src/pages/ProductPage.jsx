@@ -115,6 +115,7 @@ const ProductPage = () => {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [categorySlug, setCategorySlug] = useState('');
+  const [categoryUrlPath, setCategoryUrlPath] = useState('');
   const [storeSettings, setStoreSettings] = useState({ checkoutMode: 'whatsapp', whatsappNumber: '+94703690505' });
   const productSavedToWishlist = isInWishlist(product || productId);
   const sizeScrollRef = useRef(null);
@@ -287,8 +288,10 @@ const ProductPage = () => {
             String(data.category || '').trim().toLowerCase()
         );
         setCategorySlug(matchingCategory?.slug || '');
+        setCategoryUrlPath(matchingCategory?.path || '');
       } else {
         setCategorySlug('');
+        setCategoryUrlPath('');
       }
     };
 
@@ -297,6 +300,7 @@ const ProductPage = () => {
       setError('');
       setSizeError('');
       setCategorySlug('');
+      setCategoryUrlPath('');
 
       try {
         const { data } = await axios.get(`/api/products/${productId}`);
@@ -377,7 +381,7 @@ const ProductPage = () => {
     },
     [product, selectedColor, selectedSize, selectedVariantId]
   );
-  const categoryPath = getPublicCategoryPath(product?.category, categorySlug);
+  const categoryPath = getPublicCategoryPath(product?.category, categorySlug, categoryUrlPath);
   const selectedSizeObj = useMemo(
     () => (product?.hasSizes && selectedSize ? product.sizes?.find((s) => s.size === selectedSize) : null),
     [product, selectedSize]

@@ -4,6 +4,7 @@ import { Mail } from 'lucide-react';
 import axios from 'axios';
 import { BUSINESS_INFO } from '../utils/businessInfo';
 import { getCategories } from '../utils/categoryApi';
+import { getPublicCategoryPath } from '../utils/categoryUi';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -107,7 +108,10 @@ const Footer = () => {
             </li>
             {footerCategories.map((category) => (
               <li key={`footer-category-${category.slug}`}>
-                <Link to={`/category/${category.slug}`} className="transition-colors hover:text-brand-accent">
+                <Link
+                  to={getPublicCategoryPath(category.name, category.slug, category.path)}
+                  className="transition-colors hover:text-brand-accent"
+                >
                   {category.name}
                 </Link>
               </li>

@@ -31,6 +31,7 @@ import {
   createEmptyFacets,
   getCategoryBootstrapState,
 } from '../utils/categoryHydration';
+import { getPublicCategoryPath } from '../utils/categoryUi';
 import useScrollReveal from '../hooks/useScrollReveal';
 import { preloadProductGridImages } from '../utils/imagePreloader';
 
@@ -64,16 +65,18 @@ const RATING_OPTIONS = [
 const getCategoryId = (category) => String(category?._id || '');
 const getParentCategoryId = (category) =>
   String(category?.parentCategory?._id || category?.parentCategory || '');
-const getPrerenderedCategoryData = (slug) => {
+const getPrerenderedCategoryData = (categoryPath) => {
   if (typeof window === 'undefined') return null;
 
   const payload = window.__APEX_CATEGORY_PRERENDER__;
-  return payload?.slug === slug ? payload : null;
+  return payload?.path === categoryPath || payload?.slug === categoryPath ? payload : null;
 };
 
 const CategoryPage = () => {
-  const { slug } = useParams();
-  const prerenderedData = getPrerenderedCategoryData(slug);
+  const { slug, '*': childPath = '' } = useParams();
+  const categoryPath = [slug, childPath].filter(Boolean).join('/');
+  const categoryLeafSlug = categoryPath.split('/').filter(Boolean).pop() || slug;
+  const prerenderedData = getPrerenderedCategoryData(categoryPath);
   const bootstrapState = getCategoryBootstrapState(prerenderedData);
 
   const [category, setCategory] = useState(() => bootstrapState.category);
@@ -98,13 +101,14 @@ const CategoryPage = () => {
   const categoryRequestVersionRef = useRef(0);
   const loadingMoreRef = useRef(false);
   const initialBootstrapStateRef = useRef(bootstrapState);
-  const resolvedCategorySlugRef = useRef(bootstrapState.hasCategory ? bootstrapState.slug : '');
-  const prerenderedSlugRef = useRef(bootstrapState.slug);
+  const resolvedCategoryPathRef = useRef(bootstrapState.hasCategory ? bootstrapState.category?.path || bootstrapState.slug : '');
+  const prerenderedPathRef = useRef(bootstrapState.category?.path || bootstrapState.slug);
   const preservePrerenderedProductsRef = useRef(bootstrapState.hasProductPayload);
   const categorySeoRef = useRef(bootstrapState.seo);
 
   const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
-    const canonicalUrl = buildCanonicalUrl(`/category/${data.slug}`);
+    const canonicalPath = data.path || data.slug;
+    const canonicalUrl = buildCanonicalUrl(`/category/${canonicalPath}`);
     const itemList =
       itemListProducts.length > 0
         ? buildCategoryItemListStructuredData(data, itemListProducts, canonicalUrl)
@@ -200,7 +204,7 @@ const CategoryPage = () => {
 
     if (
       initialBootstrapState.hasCategory &&
-      resolvedCategorySlugRef.current === slug
+      resolvedCategoryPathRef.current === categoryPath
     ) {
       setLoadingCategory(false);
       setError('');
@@ -225,7 +229,8 @@ const CategoryPage = () => {
       setCategoryNotFound(false);
 
       try {
-        const { data } = await axios.get(`/api/categories/${slug}`, {
+        const { data } = await axios.get(`/api/categories/${categoryLeafSlug}`, {
+          params: { path: categoryPath },
           signal: controller.signal,
         });
 
@@ -233,7 +238,7 @@ const CategoryPage = () => {
           return;
         }
 
-        resolvedCategorySlugRef.current = data.slug;
+        resolvedCategoryPathRef.current = data.path || data.slug;
         categorySeoRef.current = null;
         setCategory(data);
         setCategorySeo(null);
@@ -245,6 +250,7 @@ const CategoryPage = () => {
 
         const [seoResult, categoriesResult] = await Promise.allSettled([
           axios.get(`/api/seo/category/${data.slug}`, {
+            params: { path: data.path || categoryPath },
             signal: controller.signal,
           }),
           getCategories(),
@@ -291,16 +297,18 @@ const CategoryPage = () => {
     return () => {
       controller.abort();
     };
-  }, [applyCategorySeo, slug]);
+  }, [applyCategorySeo, categoryLeafSlug, categoryPath]);
 
   useEffect(() => {
-    if (!category?.name || category.slug !== slug) {
+    const resolvedPath = category?.path || category?.slug;
+
+    if (!category?.name || (resolvedPath !== categoryPath && category?.slug !== categoryLeafSlug)) {
       return;
     }
 
     if (
       preservePrerenderedProductsRef.current &&
-      prerenderedSlugRef.current === slug
+      prerenderedPathRef.current === categoryPath
     ) {
       setLoadingProducts(false);
       setError('');
@@ -373,7 +381,7 @@ const CategoryPage = () => {
     return () => {
       controller.abort();
     };
-  }, [applyCategorySeo, category, filters, slug]);
+  }, [applyCategorySeo, category, categoryLeafSlug, categoryPath, filters]);
 
   const loadMoreProducts = useCallback(async () => {
     if (
@@ -820,7 +828,7 @@ const CategoryPage = () => {
                 {relatedCategories.map((relatedCategory) => (
                   <Link
                     key={relatedCategory.slug}
-                    to={`/category/${relatedCategory.slug}`}
+                    to={getPublicCategoryPath(relatedCategory.name, relatedCategory.slug, relatedCategory.path)}
                     className="rounded-full border border-brand-primary/20 bg-[#fff7ee] px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
                   >
                     {relatedCategory.name}

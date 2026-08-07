@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 import { getCategories } from '../utils/categoryApi';
-import { getActiveTopLevelCategoryId } from '../utils/categoryUi';
+import { getActiveTopLevelCategoryId, getPublicCategoryPath } from '../utils/categoryUi';
 
 
 const PRIMARY_NAV_LINKS = [
@@ -392,7 +392,7 @@ const Header = () => {
                     {headerCategories.map((category) => (
                       <Link
                         key={`mobile-header-category-${category.slug}`}
-                        to={`/category/${category.slug}`}
+                        to={getPublicCategoryPath(category.name, category.slug, category.path)}
                         onClick={() => setMobileNavOpen(false)}
                         aria-current={String(category._id) === activeParentCategoryId ? 'page' : undefined}
                         className={`block rounded-xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] font-['Times_New_Roman',_Times,_Georgia,_serif] transition-colors ${

@@ -20,7 +20,8 @@
     "seo:migrate-external-images": "node scripts/migrateExternalProductImages.js",
     "data:import": "node seeder.js",
     "data:destroy": "node seeder.js -d",
-    "data:seed-categories": "node seedCategories.js"
+    "data:seed-categories": "node seedCategories.js",
+    "db:migrate-category-indexes": "node scripts/migrateCategoryScopedIndexes.js"
   },
   "keywords": [],
   "author": "",
