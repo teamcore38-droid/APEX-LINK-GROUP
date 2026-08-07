@@ -9,6 +9,7 @@ import {
   SITE_URL,
   buildCanonicalUrl,
 } from '../src/utils/seoConfig.js';
+import { renderHomeHeroPreloads } from './homeHeroPreloads.mjs';
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const frontendDirectory = path.resolve(scriptDirectory, '..');
@@ -80,6 +81,7 @@ const renderHtml = (route, seo) => {
   const canonicalUrl = buildCanonicalUrl(route);
   const image = `${SITE_URL}${DEFAULT_IMAGE}`;
   const structuredData = createStructuredData(route, seo);
+  const homeHeroPreloads = renderHomeHeroPreloads(route);
   let html = sourceHtml
     .replace(/\s*<title>[\s\S]*?<\/title>/i, '')
     .replace(/\s*<link[^>]+rel=["']canonical["'][^>]*>/gi, '')
@@ -91,6 +93,7 @@ const renderHtml = (route, seo) => {
     .replace(/\s*<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi, '');
 
   const tags = `
+    ${homeHeroPreloads}
     <title>${escapeHtml(seo.title)}</title>
     <meta name="description" content="${escapeHtml(seo.description)}" />
     <meta name="robots" content="index,follow" />
@@ -128,6 +131,12 @@ for (const [route, seo] of Object.entries(PUBLIC_ROUTE_SEO)) {
   await writeFile(path.join(outputDirectory, 'index.html'), renderHtml(route, seo), 'utf8');
 }
 
-await writeFile(path.join(distDirectory, 'index.html'), renderHtml('/', PUBLIC_ROUTE_SEO['/']), 'utf8');
+const homeOutputDirectory = path.join(distDirectory, 'home');
+await mkdir(homeOutputDirectory, { recursive: true });
+await writeFile(
+  path.join(homeOutputDirectory, 'index.html'),
+  renderHtml('/', PUBLIC_ROUTE_SEO['/']),
+  'utf8'
+);
 
 console.log(`Generated SEO HTML for ${Object.keys(PUBLIC_ROUTE_SEO).length} public routes.`);

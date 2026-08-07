@@ -3,6 +3,7 @@
     { "source": "/shop", "destination": "/products", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/", "destination": "/home/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
