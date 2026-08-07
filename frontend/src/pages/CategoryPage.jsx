@@ -108,7 +108,7 @@ const CategoryPage = () => {
 
   const applyCategorySeo = useCallback((data, seoData = null, itemListProducts = []) => {
     const canonicalPath = data.path || data.slug;
-    const canonicalUrl = buildCanonicalUrl(`/category/${canonicalPath}`);
+    const canonicalUrl = buildCanonicalUrl(`/${canonicalPath}`);
     const itemList =
       itemListProducts.length > 0
         ? buildCategoryItemListStructuredData(data, itemListProducts, canonicalUrl)
@@ -331,6 +331,8 @@ const CategoryPage = () => {
           params: {
             ...filters,
             category: category.name,
+            categoryId: category._id,
+            categoryPath: category.path || categoryPath,
             page: 1,
             limit: PRODUCT_PAGE_SIZE,
           },
@@ -405,6 +407,8 @@ const CategoryPage = () => {
         params: {
           ...filters,
           category: category.name,
+          categoryId: category._id,
+          categoryPath: category.path || categoryPath,
           page: nextPage,
           limit: PRODUCT_PAGE_SIZE,
         },
@@ -561,6 +565,7 @@ const CategoryPage = () => {
     (option) => option.value === filters.sort
   )?.label || 'Featured First';
   const isRefreshingProductGrid = (loadingCategory || loadingProducts) && products.length > 0;
+  const categoryDisplayName = category?.namePath || category?.name;
 
   if (loadingCategory && !category) {
     return (
@@ -605,7 +610,7 @@ const CategoryPage = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-brand-accent">Category Collection</p>
-              <h2 className="mt-2 font-serif text-2xl font-bold text-brand-dark">Discover products in {category?.name}</h2>
+              <h2 className="mt-2 font-serif text-2xl font-bold text-brand-dark">Discover products in {categoryDisplayName}</h2>
             </div>
 
             <div className="hidden rounded-full bg-brand-light px-4 py-3 text-sm font-semibold text-brand-dark lg:block">
@@ -843,7 +848,7 @@ const CategoryPage = () => {
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-gray-500">
                   <span className="font-semibold text-brand-dark">{meta.totalProducts}</span> products in{' '}
-                  <span className="font-semibold text-brand-dark">{category?.name}</span>
+                  <span className="font-semibold text-brand-dark">{categoryDisplayName}</span>
                 </p>
                 <Link
                   to="/products"

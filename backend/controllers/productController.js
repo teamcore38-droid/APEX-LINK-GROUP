@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
-import { slugify } from './categoryController.js';
+import { resolveCategoryByPath, slugify } from './categoryController.js';
 import { hasPermission } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
@@ -244,13 +244,27 @@ const findCategoryByValue = async (value = '') => {
     return null;
   }
 
+  if (mongoose.Types.ObjectId.isValid(trimmedValue)) {
+    return Category.findById(trimmedValue);
+  }
+
+  if (trimmedValue.includes('/')) {
+    return resolveCategoryByPath(trimmedValue);
+  }
+
   const normalizedSlug = slugify(trimmedValue);
-  return Category.findOne({
+  const matches = await Category.find({
     $or: [
       { slug: normalizedSlug },
       { name: { $regex: new RegExp(`^${escapeRegex(trimmedValue)}$`, 'i') } },
     ],
   });
+
+  if (matches.length <= 1) {
+    return matches[0] || null;
+  }
+
+  return matches.find((category) => !category.parentCategory) || null;
 };
 
 const resolveCategoryName = async (value = '') => {
@@ -277,34 +291,108 @@ const getCategoryInputs = (value) => {
   return [];
 };
 
-const resolveProductCategoryNames = async ({ primaryCategory = '', categories = [] }) => {
-  const normalizedPrimaryCategory = String(primaryCategory || '').trim().toLowerCase();
-  const inputs = [primaryCategory, ...getCategoryInputs(categories)]
+const getCategoryIds = (value) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value.split(',');
+  }
+
+  return [];
+};
+
+const getCategoryDisplayName = (category) =>
+  category?.namePath || category?.path || category?.name || '';
+
+const getAllDescendantCategoryIds = async (rootCategoryDoc) => {
+  const ids = [rootCategoryDoc._id];
+  const queue = [rootCategoryDoc._id];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    const currentKey = String(currentId);
+
+    if (visited.has(currentKey)) {
+      continue;
+    }
+
+    visited.add(currentKey);
+
+    const children = await Category.find({ parentCategory: currentId, isActive: true }).select('_id');
+    for (const child of children) {
+      ids.push(child._id);
+      queue.push(child._id);
+    }
+  }
+
+  return ids;
+};
+
+const resolveProductCategoryAssignments = async ({
+  primaryCategory = '',
+  categories = [],
+  primaryCategoryId = '',
+  categoryIds = [],
+  resolveCategory = findCategoryByValue,
+}) => {
+  const primaryInput = String(primaryCategoryId || primaryCategory || '').trim();
+  const inputs = [
+    primaryInput,
+    ...getCategoryIds(categoryIds),
+    ...getCategoryInputs(categories),
+  ]
     .map((value) => String(value || '').trim())
     .filter(Boolean);
   const uniqueInputs = [...new Set(inputs.map((value) => value.toLowerCase()))]
     .map((lowerValue) => inputs.find((value) => value.toLowerCase() === lowerValue));
-  const resolvedCategories = [];
+  const resolvedCategoryDocs = [];
   const invalidCategories = [];
 
   for (const input of uniqueInputs) {
-    const category = await findCategoryByValue(input);
+    const category = await resolveCategory(input);
 
     if (!category) {
       invalidCategories.push(input);
       continue;
     }
 
-    if (!resolvedCategories.some((name) => name.toLowerCase() === category.name.toLowerCase())) {
-      resolvedCategories.push(category.name);
+    if (!resolvedCategoryDocs.some((doc) => String(doc._id) === String(category._id))) {
+      resolvedCategoryDocs.push(category);
     }
   }
 
+  const primaryCategoryDoc = primaryInput
+    ? resolvedCategoryDocs.find((doc) =>
+        [String(doc._id), doc.slug, doc.path, doc.name].some(
+          (value) => String(value || '').toLowerCase() === primaryInput.toLowerCase()
+        )
+      ) || resolvedCategoryDocs[0]
+    : resolvedCategoryDocs[0];
+  const orderedCategoryDocs = primaryCategoryDoc
+    ? [
+        primaryCategoryDoc,
+        ...resolvedCategoryDocs.filter((doc) => String(doc._id) !== String(primaryCategoryDoc._id)),
+      ]
+    : resolvedCategoryDocs;
+  const resolvedCategories = orderedCategoryDocs.map((category) => category.name);
+  const resolvedCategoryIds = orderedCategoryDocs.map((category) => category._id);
+
   return {
     categories: resolvedCategories,
+    categoryRefs: resolvedCategoryIds,
+    categoryDisplayPath: getCategoryDisplayName(orderedCategoryDocs[0]),
     invalidCategories: invalidCategories.filter(
       (categoryName) =>
-        !(resolvedCategories.length > 0 && categoryName.toLowerCase() === normalizedPrimaryCategory)
+        !(
+          resolvedCategories.length > 0 &&
+          (
+            categoryName.toLowerCase() === String(primaryInput).toLowerCase() ||
+            resolvedCategories.some((resolvedName) => resolvedName.toLowerCase() === categoryName.toLowerCase())
+          )
+        )
     ),
   };
 };
@@ -338,18 +426,34 @@ const getAllDescendantCategoryNames = async (rootCategoryDoc) => {
   return names;
 };
 
-const buildCategoryFilter = async (categoryValue) => {
+const buildCategoryFilter = async (categoryValue, options = {}) => {
+  const explicitCategory = String(options.categoryId || options.categoryPath || '').trim();
   const trimmedCategory = String(categoryValue || '').trim();
 
-  if (!trimmedCategory) {
+  if (!trimmedCategory && !explicitCategory) {
     return null;
   }
 
-  const categoryDoc = await findCategoryByValue(trimmedCategory);
+  const categoryDoc = await findCategoryByValue(explicitCategory || trimmedCategory);
   if (!categoryDoc) {
+    if (explicitCategory) {
+      return { _id: null };
+    }
+
     const categoryRegex = new RegExp(`^${escapeRegex(trimmedCategory)}$`, 'i');
     return {
       $or: [{ category: categoryRegex }, { categories: categoryRegex }],
+    };
+  }
+
+  if (explicitCategory || mongoose.Types.ObjectId.isValid(trimmedCategory) || trimmedCategory.includes('/')) {
+    const categoryIds = await getAllDescendantCategoryIds(categoryDoc);
+
+    return {
+      $or: [
+        { categoryRef: { $in: categoryIds } },
+        { categoryRefs: { $in: categoryIds } },
+      ],
     };
   }
 
@@ -391,6 +495,7 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
   const errors = [];
   const name = String(payload.name || '').trim();
   const categoryInput = String(payload.category || '').trim();
+  const categoryIdInput = String(payload.categoryId || payload.categoryRef || '').trim();
   const slug = slugify(payload.slug || name);
   const price = Number(payload.price);
   const countInStock = Number(payload.countInStock ?? 0);
@@ -402,7 +507,7 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
     errors.push('Product name is required');
   }
 
-  if (!categoryInput) {
+  if (!categoryInput && !categoryIdInput) {
     errors.push('Product category is required');
   }
 
@@ -513,10 +618,13 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
 
   const {
     categories: normalizedCategories,
+    categoryRefs,
     invalidCategories,
-  } = await resolveProductCategoryNames({
+  } = await resolveProductCategoryAssignments({
     primaryCategory: categoryInput,
+    primaryCategoryId: categoryIdInput,
     categories: payload.categories,
+    categoryIds: payload.categoryIds || payload.categoryRefs,
   });
 
   if (invalidCategories.length > 0 || normalizedCategories.length === 0) {
@@ -529,7 +637,9 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
       name,
       slug,
       category: normalizedCategories[0] || '',
+      categoryRef: categoryRefs[0] || null,
       categories: normalizedCategories,
+      categoryRefs,
       price: Number.isNaN(price) ? 0 : price,
       compareAtPrice: Number.isNaN(compareAtPrice) ? 0 : compareAtPrice,
       countInStock: Number.isNaN(countInStock) ? 0 : countInStock,
@@ -571,6 +681,8 @@ const getProducts = async (req, res) => {
       active = '',
       bestSeller = '',
       category = '',
+      categoryId = '',
+      categoryPath = '',
       exclude = '',
       featured = '',
       keyword = '',
@@ -617,7 +729,7 @@ const getProducts = async (req, res) => {
       });
     }
 
-    const categoryFilter = await buildCategoryFilter(category);
+    const categoryFilter = await buildCategoryFilter(category, { categoryId, categoryPath });
 
     if (categoryFilter) {
       filters.push(categoryFilter);
@@ -880,7 +992,9 @@ const createProduct = async (req, res) => {
         normalized.shortDescription || normalized.description.slice(0, 160).trim(),
       brand: normalized.brand,
       category: normalized.category,
+      categoryRef: normalized.categoryRef,
       categories: normalized.categories,
+      categoryRefs: normalized.categoryRefs,
       price: normalized.price,
       compareAtPrice: normalized.compareAtPrice,
       countInStock: normalized.countInStock,
@@ -947,7 +1061,9 @@ const updateProduct = async (req, res) => {
     product.images = imagePayload.images;
     product.brand = normalized.brand;
     product.category = normalized.category;
+    product.categoryRef = normalized.categoryRef;
     product.categories = normalized.categories;
+    product.categoryRefs = normalized.categoryRefs;
     product.price = normalized.price;
     product.compareAtPrice = normalized.compareAtPrice;
     product.countInStock = normalized.countInStock;
@@ -993,7 +1109,9 @@ const updateProduct = async (req, res) => {
 
 export {
   DEFAULT_PRODUCT_IMAGE,
+  buildCategoryFilter,
   buildProductImagesForSave,
+  resolveProductCategoryAssignments,
   validateProductPayload,
   getProducts,
   getProductById,

@@ -153,7 +153,7 @@ const getCategoryMetaDescription = (category, productCount = 0) => {
 
 const getCategoryImageUrl = (category = {}) => toAbsoluteUrl(category.seo?.ogImage || category.image);
 
-const getCategoryUrl = (category, siteUrl = getSiteUrl()) => `${siteUrl}/category/${category.path || category.slug}`;
+const getCategoryUrl = (category, siteUrl = getSiteUrl()) => `${siteUrl}/${category.path || category.slug}`;
 
 const getCategoryProductFilter = (categoryNames = []) => {
   const categoryPatterns = categoryNames
@@ -173,6 +173,18 @@ const getCategoryProductFilter = (categoryNames = []) => {
       : {}),
   };
 };
+
+const getCategoryProductFilterByIds = (categoryIds = []) => ({
+  ...SEO_PRODUCT_FILTER,
+  ...(categoryIds.length > 0
+    ? {
+        $or: [
+          { categoryRef: { $in: categoryIds } },
+          { categoryRefs: { $in: categoryIds } },
+        ],
+      }
+    : { _id: null }),
+});
 
 const getDescendantCategoryNames = async (category) => {
   const names = [category.name];
@@ -197,6 +209,31 @@ const getDescendantCategoryNames = async (category) => {
   }
 
   return names;
+};
+
+const getDescendantCategoryIds = async (category) => {
+  const ids = [category._id];
+  const queue = [category._id];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    const currentKey = String(currentId);
+
+    if (visited.has(currentKey)) {
+      continue;
+    }
+
+    visited.add(currentKey);
+
+    const children = await Category.find({ parentCategory: currentId, isActive: true }).select('_id').lean();
+    children.forEach((child) => {
+      ids.push(child._id);
+      queue.push(child._id);
+    });
+  }
+
+  return ids;
 };
 
 const getCategoryAncestors = async (category) => {
@@ -452,12 +489,12 @@ const getCategorySeo = async (req, res) => {
     return res.status(404).json({ message: 'Category not found' });
   }
 
-  const [categoryNames, ancestors, relatedCategories] = await Promise.all([
-    getDescendantCategoryNames(category),
+  const [categoryIds, ancestors, relatedCategories] = await Promise.all([
+    getDescendantCategoryIds(category),
     getCategoryAncestors(category),
     getRelatedCategories(category),
   ]);
-  const products = await Product.find(getCategoryProductFilter(categoryNames))
+  const products = await Product.find(getCategoryProductFilterByIds(categoryIds))
     .select('_id name slug image images updatedAt')
     .sort({ isFeatured: -1, isBestSeller: -1, createdAt: -1 })
     .limit(CATEGORY_ITEMLIST_LIMIT)

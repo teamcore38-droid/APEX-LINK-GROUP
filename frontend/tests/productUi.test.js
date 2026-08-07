@@ -134,7 +134,13 @@ test('product payload preserves primary and additional categories', () => {
     name: 'Evening Heel',
     slug: 'evening-heel',
     category: 'Shoes',
+    categoryId: '64f300000000000000000001',
     categories: ['Shoes', 'Women', 'Occasion Wear', 'Women'],
+    categoryIds: [
+      '64f300000000000000000001',
+      '64f300000000000000000002',
+      '64f300000000000000000001',
+    ],
     price: '1200',
     compareAtPrice: '',
     weight: '',
@@ -160,6 +166,11 @@ test('product payload preserves primary and additional categories', () => {
 
   assert.equal(payload.category, 'Shoes');
   assert.deepEqual(payload.categories, ['Shoes', 'Women', 'Occasion Wear']);
+  assert.equal(payload.categoryId, '64f300000000000000000001');
+  assert.deepEqual(payload.categoryIds, [
+    '64f300000000000000000001',
+    '64f300000000000000000002',
+  ]);
 });
 
 test('product URL helpers build slugged paths and recover database IDs', () => {

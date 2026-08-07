@@ -282,10 +282,12 @@ const ProductPage = () => {
       }
 
       if (categoriesResult.status === 'fulfilled') {
+        const productCategoryId = String(data.categoryRef?._id || data.categoryRef || '');
         const matchingCategory = categoriesResult.value.find(
           (category) =>
+            (productCategoryId && String(category._id) === productCategoryId) ||
             String(category.name || '').trim().toLowerCase() ===
-            String(data.category || '').trim().toLowerCase()
+              String(data.category || '').trim().toLowerCase()
         );
         setCategorySlug(matchingCategory?.slug || '');
         setCategoryUrlPath(matchingCategory?.path || '');

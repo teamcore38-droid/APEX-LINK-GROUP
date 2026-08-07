@@ -9,6 +9,7 @@ import { activeProductFilter, getPersonalizedRecommendations } from '../utils/re
 import { getOrCreateLoyaltyAccount } from '../utils/loyaltyService.js';
 import { emitWebhookEvent } from '../utils/webhookService.js';
 import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
+import { resolveCategoryByPath } from './categoryController.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -44,6 +45,14 @@ const findCategoryByValue = async (value = '') => {
 
   if (!trimmedValue) {
     return null;
+  }
+
+  if (mongoose.Types.ObjectId.isValid(trimmedValue)) {
+    return Category.findById(trimmedValue);
+  }
+
+  if (trimmedValue.includes('/')) {
+    return resolveCategoryByPath(trimmedValue);
   }
 
   const normalizedSlug = trimmedValue
@@ -84,6 +93,31 @@ const getDescendantCategoryNames = async (rootCategory) => {
   return names;
 };
 
+const getDescendantCategoryIds = async (rootCategory) => {
+  const ids = [rootCategory._id];
+  const queue = [rootCategory._id];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    const currentKey = String(currentId);
+
+    if (visited.has(currentKey)) {
+      continue;
+    }
+
+    visited.add(currentKey);
+
+    const children = await Category.find({ parentCategory: currentId, isActive: true }).select('_id');
+    children.forEach((child) => {
+      ids.push(child._id);
+      queue.push(child._id);
+    });
+  }
+
+  return ids;
+};
+
 const resolveSearchCategoryNames = async (category = '') => {
   const categoryDocument = await findCategoryByValue(category);
 
@@ -94,10 +128,31 @@ const resolveSearchCategoryNames = async (category = '') => {
   return getDescendantCategoryNames(categoryDocument);
 };
 
+const resolveSearchCategoryScope = async ({ category = '', categoryId = '', categoryPath = '' }) => {
+  const exactCategoryInput = String(categoryId || categoryPath || '').trim();
+
+  if (exactCategoryInput) {
+    const categoryDocument = await findCategoryByValue(exactCategoryInput);
+
+    return {
+      categoryIds: categoryDocument ? await getDescendantCategoryIds(categoryDocument) : [],
+      categoryNames: [],
+      exactCategory: true,
+    };
+  }
+
+  return {
+    categoryIds: [],
+    categoryNames: category ? await resolveSearchCategoryNames(category) : [],
+    exactCategory: false,
+  };
+};
+
 const buildSearchFilter = (query = {}, options = {}) => {
   const keyword = String(getScalarQueryValue(query.keyword)).trim();
   const category = String(getScalarQueryValue(query.category)).trim();
   const categoryNames = Array.isArray(options.categoryNames) ? options.categoryNames.filter(Boolean) : [];
+  const categoryIds = Array.isArray(options.categoryIds) ? options.categoryIds.filter(Boolean) : [];
   const brand = String(getScalarQueryValue(query.brand)).trim();
   const origin = String(getScalarQueryValue(query.origin)).trim();
   const minPrice = getScalarQueryValue(query.minPrice);
@@ -121,7 +176,16 @@ const buildSearchFilter = (query = {}, options = {}) => {
     });
   }
 
-  if (category) {
+  if (options.exactCategory && categoryIds.length === 0) {
+    filters.push({ _id: null });
+  } else if (categoryIds.length > 0) {
+    filters.push({
+      $or: [
+        { categoryRef: { $in: categoryIds } },
+        { categoryRefs: { $in: categoryIds } },
+      ],
+    });
+  } else if (category) {
     const categoryPattern = (categoryNames.length > 0 ? categoryNames : [category])
       .map((categoryName) => `^${escapeRegex(categoryName)}$`)
       .join('|');
@@ -174,8 +238,10 @@ const getAdvancedSearch = async (req, res) => {
   const limit = Math.min(Math.max(Number.parseInt(req.query.limit, 10) || 12, 1), 48);
   const sort = String(req.query.sort || '');
   const category = String(getScalarQueryValue(req.query.category)).trim();
-  const categoryNames = category ? await resolveSearchCategoryNames(category) : [];
-  const { filter, error } = buildSearchFilter(req.query, { categoryNames });
+  const categoryId = String(getScalarQueryValue(req.query.categoryId)).trim();
+  const categoryPath = String(getScalarQueryValue(req.query.categoryPath)).trim();
+  const categoryScope = await resolveSearchCategoryScope({ category, categoryId, categoryPath });
+  const { filter, error } = buildSearchFilter(req.query, categoryScope);
 
   if (error) {
     return res.status(400).json({ message: error });
@@ -493,6 +559,7 @@ export {
   getRecommendations,
   getSupportTickets,
   recordRecentlyViewed,
+  resolveSearchCategoryScope,
   resolveSearchCategoryNames,
   updateAdminSupportTicket,
   updateNotificationPreferences,

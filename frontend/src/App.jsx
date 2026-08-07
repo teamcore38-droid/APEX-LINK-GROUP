@@ -129,6 +129,7 @@ function App() {
             <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="/admin/orders/:id/invoice" element={<OrderInvoicePage />} />
             <Route path="/admin/orders/:id/packing-slip" element={<AdminPackingSlipPage />} />
+            <Route path="/:slug/*" element={<CategoryPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>

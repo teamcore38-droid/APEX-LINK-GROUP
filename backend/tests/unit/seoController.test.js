@@ -128,13 +128,13 @@ test('buildCategorySeo creates canonical collection metadata', () => {
     }
   );
 
-  assert.equal(seo.canonicalUrl, 'https://www.apexfashion.lk/category/women-shoes');
+  assert.equal(seo.canonicalUrl, 'https://www.apexfashion.lk/women-shoes');
   assert.match(seo.title, /Women's Shoes/);
   assert.match(seo.description, /Women's Shoes/);
   assert.equal(seo.structuredData['@type'], 'CollectionPage');
-  assert.equal(seo.structuredData.mainEntity['@id'], 'https://www.apexfashion.lk/category/women-shoes#itemlist');
+  assert.equal(seo.structuredData.mainEntity['@id'], 'https://www.apexfashion.lk/women-shoes#itemlist');
   assert.equal(seo.breadcrumbs.itemListElement.length, 4);
-  assert.equal(seo.breadcrumbs.itemListElement[2].item, 'https://www.apexfashion.lk/category/women');
+  assert.equal(seo.breadcrumbs.itemListElement[2].item, 'https://www.apexfashion.lk/women');
   assert.equal(seo.itemList['@type'], 'ItemList');
   assert.equal(seo.itemList.numberOfItems, 1);
   assert.equal(seo.itemList.itemListElement[0].position, 1);

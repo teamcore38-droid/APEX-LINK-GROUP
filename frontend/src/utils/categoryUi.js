@@ -22,18 +22,24 @@ export const slugifyCategoryName = (value = '') =>
     .replace(/^-+|-+$/g, '');
 
 export const getPublicCategoryPath = (categoryName = '', categorySlug = '', categoryPath = '') => {
-  const slug = String(categoryPath || '')
+  const path = String(categoryPath || '')
     .split('/')
     .map((segment) => slugifyCategoryName(segment))
     .filter(Boolean)
-    .join('/') || slugifyCategoryName(categorySlug);
+    .join('/');
+  const slug = path || slugifyCategoryName(categorySlug);
+
+  if (path) {
+    return `/${path}`;
+  }
+
   return slug
     ? `/category/${slug}`
     : `/products?category=${encodeURIComponent(String(categoryName || '').trim())}`;
 };
 
 const getCategorySlugFromPathname = (pathname = '') => {
-  const match = String(pathname).match(/^\/category\/(.+?)\/?$/i);
+  const match = String(pathname).match(/^\/(?:category\/)?(.+?)\/?$/i);
   if (!match) return '';
 
   try {
@@ -44,8 +50,9 @@ const getCategorySlugFromPathname = (pathname = '') => {
 };
 
 export const getActiveTopLevelCategoryId = (categories = [], pathname = '', search = '') => {
-  const activeSlug = getCategorySlugFromPathname(pathname);
-  const categoryFilter = /^\/products\/?$/i.test(String(pathname))
+  const isProductsRoute = /^\/products\/?$/i.test(String(pathname));
+  const activeSlug = isProductsRoute ? '' : getCategorySlugFromPathname(pathname);
+  const categoryFilter = isProductsRoute
     ? new URLSearchParams(search).get('category')
     : '';
   const normalizedFilter = slugifyCategoryName(categoryFilter || '');

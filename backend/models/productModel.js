@@ -175,8 +175,18 @@ const productSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
+    categoryRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      default: null,
+    },
     categories: {
       type: [String],
+      default: [],
+    },
+    categoryRefs: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Category',
       default: [],
     },
     price: {
@@ -276,6 +286,8 @@ const productSchema = mongoose.Schema(
 productSchema.index({ isActive: 1, approvalStatus: 1, isFeatured: -1, isBestSeller: -1, createdAt: -1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, category: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, categories: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, categoryRef: 1, createdAt: -1 });
+productSchema.index({ isActive: 1, approvalStatus: 1, categoryRefs: 1, createdAt: -1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, price: 1 });
 productSchema.index({ isActive: 1, approvalStatus: 1, countInStock: 1 });
 productSchema.index({ sku: 1 }, { sparse: true });

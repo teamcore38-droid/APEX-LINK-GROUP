@@ -71,31 +71,65 @@ const getUniqueCategoryNames = (values = []) => {
     .map((lowerValue) => categoryNames.find((value) => value.toLowerCase() === lowerValue));
 };
 
+const getUniqueCategoryIds = (values = []) => [
+  ...new Set(values.map((value) => String(value || '').trim()).filter(Boolean)),
+];
+
 const reconcileProductCategorySelection = (productForm, categoryList = []) => {
+  const categoryById = new Map(categoryList.map((category) => [String(category._id), category]));
   const categoryByName = new Map(categoryList.map((category) => [category.name, category]));
+  const assignedCategoryIds = getUniqueCategoryIds([
+    productForm.categoryId,
+    ...(productForm.categoryIds || []),
+  ]);
   const assignedCategories = getUniqueCategoryNames([
     productForm.category,
     ...(productForm.categories || []),
   ]);
+  const validAssignedIds = assignedCategoryIds.filter((categoryId) => categoryById.has(categoryId));
   const validAssignedCategories = assignedCategories.filter((categoryName) => categoryByName.has(categoryName));
 
-  if (productForm.category && categoryByName.has(productForm.category)) {
+  if (productForm.categoryId && categoryById.has(productForm.categoryId)) {
+    const primaryCategory = categoryById.get(productForm.categoryId);
     return {
       form: {
         ...productForm,
+        category: primaryCategory.name,
+        categoryId: primaryCategory._id,
+        categories: getUniqueCategoryNames([
+          primaryCategory.name,
+          ...validAssignedIds.map((categoryId) => categoryById.get(categoryId)?.name),
+          ...validAssignedCategories,
+        ]),
+        categoryIds: getUniqueCategoryIds([primaryCategory._id, ...validAssignedIds]),
+      },
+      replacedCategory: '',
+    };
+  }
+
+  if (productForm.category && categoryByName.has(productForm.category)) {
+    const primaryCategory = categoryByName.get(productForm.category);
+    return {
+      form: {
+        ...productForm,
+        categoryId: primaryCategory._id,
         categories: assignedCategories,
+        categoryIds: getUniqueCategoryIds([primaryCategory._id, ...validAssignedIds]),
       },
       replacedCategory: '',
     };
   }
 
   const fallbackCategory = validAssignedCategories[validAssignedCategories.length - 1] || '';
+  const fallbackCategoryId = fallbackCategory ? categoryByName.get(fallbackCategory)?._id || '' : '';
 
   return {
     form: {
       ...productForm,
       category: fallbackCategory,
+      categoryId: fallbackCategoryId,
       categories: fallbackCategory ? getUniqueCategoryNames([fallbackCategory, ...validAssignedCategories]) : validAssignedCategories,
+      categoryIds: getUniqueCategoryIds([fallbackCategoryId, ...validAssignedIds]),
     },
     replacedCategory: fallbackCategory ? productForm.category || 'missing primary category' : '',
   };
@@ -106,7 +140,7 @@ const validateForm = (form) => {
     return 'Product name is required.';
   }
 
-  if (!form.category) {
+  if (!form.categoryId && !form.category) {
     return 'Please choose a category.';
   }
 
@@ -306,7 +340,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
       ...categories.map((category) => {
         const fullPath = categoryPathMap.get(category._id) || category.name;
         return {
-          value: category.name,
+          value: category._id,
           label: `${fullPath}${category.isActive ? '' : ' (Inactive)'}`,
         };
       }),
@@ -314,14 +348,14 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
     [categories, categoryPathMap]
   );
 
-  const assignedCategoryNames = useMemo(
-    () => new Set(getUniqueCategoryNames([form.category, ...(form.categories || [])])),
-    [form.categories, form.category]
+  const assignedCategoryIds = useMemo(
+    () => new Set(getUniqueCategoryIds([form.categoryId, ...(form.categoryIds || [])])),
+    [form.categoryId, form.categoryIds]
   );
 
   const additionalCategoryOptions = useMemo(
-    () => categories.filter((category) => category.name !== form.category),
-    [categories, form.category]
+    () => categories.filter((category) => category._id !== form.categoryId),
+    [categories, form.categoryId]
   );
 
   const previewProduct = useMemo(() => {
@@ -344,6 +378,7 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
         price: Number(form.price || 0),
         countInStock: Number(form.countInStock || 0),
         category: form.category,
+        categoryRef: form.categoryId,
       };
     }
   }, [form, id]);
@@ -1371,17 +1406,23 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                   </label>
                   <CustomSelect
                     id="category"
-                    value={form.category}
+                    value={form.categoryId}
                     onChange={(nextValue) => {
                       setError('');
                       setSuccess('');
                       setCategoryNotice('');
+                      const selectedCategory = categories.find((category) => category._id === nextValue);
                       setForm((currentForm) => ({
                         ...currentForm,
-                        category: nextValue,
+                        category: selectedCategory?.name || '',
+                        categoryId: nextValue,
                         categories: getUniqueCategoryNames([
-                          nextValue,
+                          selectedCategory?.name,
                           ...(currentForm.categories || []).filter((categoryName) => categoryName !== currentForm.category),
+                        ]),
+                        categoryIds: getUniqueCategoryIds([
+                          nextValue,
+                          ...(currentForm.categoryIds || []).filter((categoryId) => categoryId !== currentForm.categoryId),
                         ]),
                       }));
                     }}
@@ -1403,13 +1444,13 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                       Additional Categories
                     </label>
                     <span className="text-xs text-gray-500">
-                      {Math.max(assignedCategoryNames.size - (form.category ? 1 : 0), 0)} extra selected
+                      {Math.max(assignedCategoryIds.size - (form.categoryId ? 1 : 0), 0)} extra selected
                     </span>
                   </div>
                   <div className="grid gap-2 rounded-2xl border border-gray-200 bg-[#fff7ee] p-3 sm:grid-cols-2">
                     {additionalCategoryOptions.length > 0 ? (
                       additionalCategoryOptions.map((category) => {
-                        const isChecked = assignedCategoryNames.has(category.name);
+                        const isChecked = assignedCategoryIds.has(category._id);
                         const fullPath = categoryPathMap.get(category._id) || category.name;
 
                         return (
@@ -1432,13 +1473,21 @@ const AdminProductFormPage = ({ mode = 'create' }) => {
                                     currentForm.category,
                                     ...(currentForm.categories || []),
                                   ]);
+                                  const currentCategoryIds = getUniqueCategoryIds([
+                                    currentForm.categoryId,
+                                    ...(currentForm.categoryIds || []),
+                                  ]);
                                   const nextCategories = event.target.checked
                                     ? getUniqueCategoryNames([...currentCategories, category.name])
                                     : currentCategories.filter((categoryName) => categoryName !== category.name);
+                                  const nextCategoryIds = event.target.checked
+                                    ? getUniqueCategoryIds([...currentCategoryIds, category._id])
+                                    : currentCategoryIds.filter((categoryId) => categoryId !== category._id);
 
                                   return {
                                     ...currentForm,
                                     categories: nextCategories,
+                                    categoryIds: nextCategoryIds,
                                   };
                                 });
                               }}

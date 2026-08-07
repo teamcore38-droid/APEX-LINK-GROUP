@@ -280,12 +280,16 @@ const buildProductUpdatePayload = (product, overrides = {}) => ({
   name: product.name || '',
   slug: product.slug || '',
   category: product.category || '',
+  categoryId: product.categoryRef?._id || product.categoryRef || '',
   price: product.price ?? 0,
   compareAtPrice: product.compareAtPrice ?? 0,
   weight: product.weight || '',
   countInStock: product.countInStock ?? 0,
   lowStockThreshold: product.lowStockThreshold ?? 10,
   categories: Array.isArray(product.categories) ? product.categories : [],
+  categoryIds: Array.isArray(product.categoryRefs)
+    ? product.categoryRefs.map((categoryRef) => categoryRef?._id || categoryRef).filter(Boolean)
+    : [],
   variants: Array.isArray(product.variants) ? product.variants : [],
   image: product.image || '',
   imagePublicId: product.imagePublicId || '',

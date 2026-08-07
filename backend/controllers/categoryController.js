@@ -104,11 +104,12 @@ const decorateCategoryPaths = (categories = []) => {
   });
 };
 
-const attachCategoryPath = (category, path) =>
+const attachCategoryPath = (category, path, namePath = '') =>
   category
     ? {
         ...category,
         path: path || category.path || category.slug,
+        namePath: namePath || category.namePath || category.name,
       }
     : null;
 
@@ -127,11 +128,12 @@ const resolveCategoryByPath = async (path = '') => {
       (await Category.findOne({ slug: slugPath[0], parentCategory: null, isActive: true }).lean()) ||
       (await Category.findOne({ slug: slugPath[0], isActive: true }).lean());
 
-    return attachCategoryPath(category, slugPath[0]);
+    return attachCategoryPath(category, slugPath[0], category?.name || '');
   }
 
   let parentCategoryId = null;
   let category = null;
+  const names = [];
 
   for (const slugSegment of slugPath) {
     category = await Category.findOne({
@@ -144,10 +146,11 @@ const resolveCategoryByPath = async (path = '') => {
       return null;
     }
 
+    names.push(category.name);
     parentCategoryId = category._id;
   }
 
-  return attachCategoryPath(category, slugPath.join('/'));
+  return attachCategoryPath(category, slugPath.join('/'), names.join(' / '));
 };
 
 const isDuplicateCategoryKeyError = (error) =>
@@ -498,11 +501,30 @@ const deleteCategory = async (req, res) => {
       });
     }
 
+    const assignedProductFilters = [
+      { categoryRef: category._id },
+      { categoryRefs: category._id },
+    ];
+
+    if (!category.parentCategory) {
+      assignedProductFilters.push(
+        {
+          $and: [
+            { $or: [{ categoryRef: null }, { categoryRef: { $exists: false } }] },
+            { category: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') } },
+          ],
+        },
+        {
+          $and: [
+            { $or: [{ categoryRefs: { $size: 0 } }, { categoryRefs: { $exists: false } }] },
+            { categories: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') } },
+          ],
+        }
+      );
+    }
+
     const assignedProducts = await Product.countDocuments({
-      $or: [
-        { category: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') } },
-        { categories: { $regex: new RegExp(`^${escapeRegex(category.name)}$`, 'i') } },
-      ],
+      $or: assignedProductFilters,
     });
 
     if (assignedProducts > 0) {

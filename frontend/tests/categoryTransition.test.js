@@ -33,3 +33,8 @@ test('category products publish without waiting for every image', () => {
   assert.doesNotMatch(source, /await preloadProductGridImages/);
   assert.match(source, /void preloadProductGridImages\(payload\.products, 4\)/);
 });
+
+test('category product searches send exact category identity', () => {
+  assert.match(source, /categoryId: category\._id/);
+  assert.match(source, /categoryPath: category\.path \|\| categoryPath/);
+});

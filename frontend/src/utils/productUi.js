@@ -40,7 +40,9 @@ export const createInitialProductForm = () => ({
   name: '',
   slug: '',
   category: '',
+  categoryId: '',
   categories: [],
+  categoryIds: [],
   price: '0',
   compareAtPrice: '',
   weight: '',
@@ -373,12 +375,21 @@ export const buildProductFormFromProduct = (product = {}) => {
     .filter(Boolean);
   const uniqueCategories = [...new Set(categories.map((category) => category.toLowerCase()))]
     .map((lowerCategory) => categories.find((category) => category.toLowerCase() === lowerCategory));
+  const categoryIds = [
+    product.categoryRef,
+    ...(Array.isArray(product.categoryRefs) ? product.categoryRefs : []),
+  ]
+    .map((categoryId) => String(categoryId?._id || categoryId || '').trim())
+    .filter(Boolean);
+  const uniqueCategoryIds = [...new Set(categoryIds)];
 
   return {
     name: product.name || '',
     slug: product.slug || '',
     category: product.category || '',
+    categoryId: String(product.categoryRef?._id || product.categoryRef || ''),
     categories: uniqueCategories,
+    categoryIds: uniqueCategoryIds,
     price: product.price ?? 0,
     compareAtPrice: product.compareAtPrice ?? '',
     weight: product.weight || '',
@@ -422,6 +433,13 @@ export const buildProductPayloadFromForm = (form) => {
     .filter(Boolean);
   const categories = [...new Set(categoryInputs.map((category) => category.toLowerCase()))]
     .map((lowerCategory) => categoryInputs.find((category) => category.toLowerCase() === lowerCategory));
+  const categoryIdInputs = [
+    form.categoryId,
+    ...(Array.isArray(form.categoryIds) ? form.categoryIds : []),
+  ]
+    .map((categoryId) => String(categoryId || '').trim())
+    .filter(Boolean);
+  const categoryIds = [...new Set(categoryIdInputs)];
   const variants = JSON.parse(form.variantsJson || '[]').map((variant) => ({
     ...variant,
     price: Number(variant.price || 0),
@@ -448,7 +466,9 @@ export const buildProductPayloadFromForm = (form) => {
     name: form.name.trim(),
     slug: form.slug.trim(),
     category: form.category,
+    categoryId: form.categoryId || form.category,
     categories,
+    categoryIds,
     price: Number(form.price),
     compareAtPrice: form.compareAtPrice === '' ? 0 : Number(form.compareAtPrice),
     weight: form.weight.trim(),
