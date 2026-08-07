@@ -15,7 +15,14 @@ const homePageSource = await readFile(
   'utf8'
 );
 
-const responsiveBackgroundMarkup = homePageSource.match(/<picture[\s\S]*?<\/picture>/)?.[0] || '';
+const pictureMarkup = [...homePageSource.matchAll(/<picture[\s\S]*?<\/picture>/g)].map(
+  ([markup]) => markup
+);
+const responsiveBackgroundMarkup = pictureMarkup[0] || '';
+const mobileHeroMarkMarkup = pictureMarkup.find((markup) => (
+  markup.includes('HOME_MOBILE_HERO_MARK')
+)) || '';
+const mobileHeroMarkImageMarkup = mobileHeroMarkMarkup.match(/<img[\s\S]*?\/>/)?.[0] || '';
 
 test('Home uses one native responsive picture for mutually exclusive hero backgrounds', () => {
   assert.notEqual(responsiveBackgroundMarkup, '');
@@ -42,8 +49,19 @@ test('Home preload URLs and media exactly match the first responsive hero resour
   ]);
 });
 
-test('the separate mobile hero mark remains present outside the background picture', () => {
+test('the separate hero mark remains a high-priority mobile-only picture candidate', () => {
   assert.equal(HOME_MOBILE_HERO_MARK, '/apex-fashion-mobile-hero-512.webp');
-  assert.match(homePageSource, /src=\{HOME_MOBILE_HERO_MARK\}/);
+  assert.notEqual(mobileHeroMarkMarkup, '');
+  assert.match(mobileHeroMarkMarkup, /media=\{HOME_HERO_MOBILE_MEDIA\}/);
+  assert.match(mobileHeroMarkMarkup, /srcSet=\{HOME_MOBILE_HERO_MARK\}/);
+  assert.match(mobileHeroMarkImageMarkup, /fetchPriority="high"/);
+  assert.match(mobileHeroMarkImageMarkup, /width="512"/);
+  assert.match(mobileHeroMarkImageMarkup, /height="512"/);
+  assert.match(mobileHeroMarkImageMarkup, /className="[^"]+md:hidden"/);
   assert.doesNotMatch(responsiveBackgroundMarkup, /HOME_MOBILE_HERO_MARK/);
+});
+
+test('desktop resource selection has no unconditional mobile hero mark URL', () => {
+  assert.doesNotMatch(mobileHeroMarkMarkup, /media=\{HOME_HERO_DESKTOP_MEDIA\}/);
+  assert.doesNotMatch(mobileHeroMarkImageMarkup, /\bsrc(?:Set)?=/);
 });

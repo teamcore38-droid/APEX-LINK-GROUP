@@ -258,18 +258,20 @@ const HomePage = () => {
           <h1 className="mb-4 font-serif text-4xl font-bold leading-tight text-brand-light drop-shadow-lg sm:text-5xl md:mb-6 md:text-7xl">
             Curated Fashion <br /> For Everyday Style
           </h1>
-          <img
-            ref={mobileHeroMarkRef}
-            src={HOME_MOBILE_HERO_MARK}
-            alt="Apex Fashion hero mark"
-            width="512"
-            height="512"
-            fetchPriority="high"
-            decoding="async"
-            onLoad={markMobileHeroReady}
-            onError={markMobileHeroReady}
-            className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
-          />
+          <picture className="contents">
+            <source media={HOME_HERO_MOBILE_MEDIA} srcSet={HOME_MOBILE_HERO_MARK} />
+            <img
+              ref={mobileHeroMarkRef}
+              alt="Apex Fashion hero mark"
+              width="512"
+              height="512"
+              fetchPriority="high"
+              decoding="async"
+              onLoad={markMobileHeroReady}
+              onError={markMobileHeroReady}
+              className="mx-auto mb-8 mt-3 h-44 w-auto object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.35)] md:hidden"
+            />
+          </picture>
           <p className="mx-auto mb-7 hidden max-w-2xl text-base font-light leading-8 text-gray-100 drop-shadow-md md:mb-10 md:block md:text-xl">
             Apex Fashion brings together clothing, footwear, accessories, and style essentials with clear prices, PayHere checkout, delivery updates, and customer-friendly support.
           </p>

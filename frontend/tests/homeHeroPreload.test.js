@@ -24,6 +24,13 @@ const frontendVercelConfig = JSON.parse(await readSource('../vercel.json'));
 const rootVercelConfig = JSON.parse(await readSource('../../vercel.json'));
 
 const HERO_ASSET_URLS = HOME_HERO_PRELOADS.map(({ href }) => href);
+const homePictureMarkup = [...homePageSource.matchAll(/<picture[\s\S]*?<\/picture>/g)].map(
+  ([markup]) => markup
+);
+const mobileHeroMarkMarkup = homePictureMarkup.find((markup) => (
+  markup.includes('HOME_MOBILE_HERO_MARK')
+)) || '';
+const mobileHeroMarkImageMarkup = mobileHeroMarkMarkup.match(/<img[\s\S]*?\/>/)?.[0] || '';
 
 test('the shared application shell contains no Home hero preload declarations', () => {
   assert.doesNotMatch(sharedHtml, /<link[^>]+rel=["']preload["'][^>]+(?:hero-bg|hero-mobile|mobile-hero)/i);
@@ -99,10 +106,11 @@ test('an exact pre-filesystem route serves the generated Home document at the pu
 });
 
 test('Home hero resources retain native priority and the legitimate mobile mark', () => {
-  assert.match(
-    homePageSource,
-    /src=\{HOME_MOBILE_HERO_MARK\}[\s\S]*?className="[^"]+md:hidden"/
-  );
+  assert.match(mobileHeroMarkMarkup, /media=\{HOME_HERO_MOBILE_MEDIA\}/);
+  assert.match(mobileHeroMarkMarkup, /srcSet=\{HOME_MOBILE_HERO_MARK\}/);
+  assert.doesNotMatch(mobileHeroMarkImageMarkup, /\bsrc(?:Set)?=/);
+  assert.match(mobileHeroMarkImageMarkup, /fetchPriority="high"/);
+  assert.match(mobileHeroMarkImageMarkup, /className="[^"]+md:hidden"/);
   assert.match(homePageSource, /fetchPriority=\{activeHeroImage === 0 \? 'high' : 'auto'\}/);
 });
 
