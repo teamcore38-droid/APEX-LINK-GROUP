@@ -91,34 +91,241 @@ export const normalizeProductImageAsset = (entry = {}) => {
 export const getProductImageUrl = (entry = '') =>
   typeof entry === 'string' ? entry : String(entry?.url || entry?.secureUrl || '').trim();
 
+const CLOUDINARY_TRANSFORMATION_KEYS = new Set([
+  'a',
+  'ac',
+  'af',
+  'ar',
+  'b',
+  'bo',
+  'br',
+  'c',
+  'co',
+  'cs',
+  'd',
+  'dl',
+  'dn',
+  'dpr',
+  'du',
+  'e',
+  'eo',
+  'f',
+  'fl',
+  'fn',
+  'fps',
+  'g',
+  'h',
+  'if',
+  'ki',
+  'l',
+  'o',
+  'p',
+  'pg',
+  'q',
+  'r',
+  'so',
+  'sp',
+  't',
+  'u',
+  'vc',
+  'vs',
+  'w',
+  'x',
+  'y',
+  'z',
+]);
+const MANAGED_CLOUDINARY_TRANSFORMS = [
+  { key: 'f', option: 'format', fallback: 'auto' },
+  { key: 'q', option: 'quality', fallback: 'auto:eco' },
+  { key: 'w', option: 'width' },
+  { key: 'h', option: 'height' },
+  { key: 'c', option: 'crop', fallback: 'limit' },
+  { key: 'dpr', option: 'dpr', fallback: 'auto' },
+];
+const MANAGED_CLOUDINARY_KEYS = new Set(
+  MANAGED_CLOUDINARY_TRANSFORMS.map(({ key }) => key)
+);
+
+const getCloudinaryTransformationKey = (directive = '') => {
+  const separatorIndex = directive.indexOf('_');
+  return separatorIndex > 0 ? directive.slice(0, separatorIndex) : '';
+};
+
+const isCloudinaryTransformationDirective = (directive = '') => {
+  if (directive.startsWith('$') || directive === 'if_else' || directive === 'if_end') {
+    return true;
+  }
+
+  return CLOUDINARY_TRANSFORMATION_KEYS.has(getCloudinaryTransformationKey(directive));
+};
+
+const isCloudinaryTransformationSegment = (segment = '') => {
+  if (!segment || /\.[a-z0-9]{2,5}$/i.test(segment)) {
+    return false;
+  }
+
+  const directives = segment.split(',').filter(Boolean);
+  return directives.length > 0 && directives.every(isCloudinaryTransformationDirective);
+};
+
+const parseCloudinaryUploadUrl = (value = '') => {
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(value);
+  } catch {
+    return null;
+  }
+
+  if (
+    !['http:', 'https:'].includes(parsedUrl.protocol) ||
+    parsedUrl.hostname.toLowerCase() !== 'res.cloudinary.com'
+  ) {
+    return null;
+  }
+
+  const pathSegments = parsedUrl.pathname.split('/');
+  const imageIndex = pathSegments.findIndex(
+    (segment, index) => segment === 'image' && pathSegments[index + 1] === 'upload'
+  );
+
+  if (imageIndex < 0) {
+    return null;
+  }
+
+  const uploadIndex = imageIndex + 1;
+  const firstAssetSegment = pathSegments[uploadIndex + 1] || '';
+
+  // Changing a signed delivery URL invalidates its Cloudinary signature.
+  if (/^s--[^/]+--$/.test(firstAssetSegment)) {
+    return null;
+  }
+
+  let assetStartIndex = uploadIndex + 1;
+  while (isCloudinaryTransformationSegment(pathSegments[assetStartIndex])) {
+    assetStartIndex += 1;
+  }
+
+  return {
+    parsedUrl,
+    pathSegments,
+    uploadIndex,
+    assetStartIndex,
+  };
+};
+
+const normalizeCloudinaryTransformationValue = (value, key) => {
+  if (value === false || value === null || value === undefined || value === '') {
+    return '';
+  }
+
+  if (key === 'w' || key === 'h') {
+    const dimension = Math.round(Number(value));
+    return Number.isFinite(dimension) && dimension > 0 ? String(dimension) : '';
+  }
+
+  const normalizedValue = String(value).trim();
+  return /^[a-z0-9:.-]+$/i.test(normalizedValue) ? normalizedValue : '';
+};
+
 export const getOptimizedImageUrl = (entry = '', options = {}) => {
   const url = getProductImageUrl(entry);
+  const cloudinaryUrl = parseCloudinaryUploadUrl(url);
 
-  if (!url.includes('/image/upload/')) {
+  if (!cloudinaryUrl) {
     return url;
   }
 
-  const {
-    width,
-    height,
-    crop = 'limit',
-    quality = 'auto:eco',
-    format = 'auto',
-  } = options;
-  const transformations = [
-    format ? `f_${format}` : '',
-    quality ? `q_${quality}` : '',
-    width ? `w_${width}` : '',
-    height ? `h_${height}` : '',
-    crop ? `c_${crop}` : '',
-    'dpr_auto',
-  ].filter(Boolean);
+  const { parsedUrl, pathSegments, uploadIndex, assetStartIndex } = cloudinaryUrl;
+  const transformationSegments = pathSegments
+    .slice(uploadIndex + 1, assetStartIndex)
+    .map((segment) => segment.split(',').filter(Boolean));
+  const existingManagedTransforms = new Map();
+  let targetSegmentIndex = transformationSegments.length > 0
+    ? transformationSegments.length - 1
+    : 0;
 
-  if (!transformations.length || /\/image\/upload\/[^/]*(?:f_auto|q_auto)/.test(url)) {
+  transformationSegments.forEach((directives, segmentIndex) => {
+    directives.forEach((directive) => {
+      const key = getCloudinaryTransformationKey(directive);
+
+      if (MANAGED_CLOUDINARY_KEYS.has(key)) {
+        existingManagedTransforms.set(key, directive);
+        targetSegmentIndex = segmentIndex;
+      }
+    });
+  });
+
+  const cleanedTransformationSegments = transformationSegments.map((directives) =>
+    directives.filter(
+      (directive) => !MANAGED_CLOUDINARY_KEYS.has(getCloudinaryTransformationKey(directive))
+    )
+  );
+
+  if (cleanedTransformationSegments.length === 0) {
+    cleanedTransformationSegments.push([]);
+    targetSegmentIndex = 0;
+  }
+
+  const mergedManagedTransforms = MANAGED_CLOUDINARY_TRANSFORMS.map(
+    ({ key, option, fallback }) => {
+      if (!Object.hasOwn(options, option) && existingManagedTransforms.has(key)) {
+        return existingManagedTransforms.get(key);
+      }
+
+      const value = Object.hasOwn(options, option) ? options[option] : fallback;
+      const normalizedValue = normalizeCloudinaryTransformationValue(value, key);
+      return normalizedValue ? `${key}_${normalizedValue}` : '';
+    }
+  ).filter(Boolean);
+
+  cleanedTransformationSegments[targetSegmentIndex].push(...mergedManagedTransforms);
+  const mergedTransformationSegments = cleanedTransformationSegments
+    .filter((directives) => directives.length > 0)
+    .map((directives) => directives.join(','));
+
+  if (mergedTransformationSegments.length === 0) {
     return url;
   }
 
-  return url.replace('/image/upload/', `/image/upload/${transformations.join(',')}/`);
+  parsedUrl.pathname = [
+    ...pathSegments.slice(0, uploadIndex + 1),
+    ...mergedTransformationSegments,
+    ...pathSegments.slice(assetStartIndex),
+  ].join('/');
+
+  return parsedUrl.toString();
+};
+
+export const getResponsiveImageSrcSet = (entry = '', options = {}) => {
+  const url = getProductImageUrl(entry);
+
+  if (!parseCloudinaryUploadUrl(url)) {
+    return '';
+  }
+
+  const { widths = [], aspectRatio, ...transformOptions } = options;
+  const normalizedWidths = (Array.isArray(widths) ? widths : [])
+    .map((width) => Math.round(Number(width)))
+    .filter((width) => Number.isFinite(width) && width > 0);
+  const candidateWidths = [...new Set(normalizedWidths)]
+    .sort((left, right) => left - right);
+
+  return candidateWidths
+    .map((width) => {
+      const height = Number(aspectRatio) > 0
+        ? Math.round(width / Number(aspectRatio))
+        : transformOptions.height;
+      const candidateUrl = getOptimizedImageUrl(url, {
+        ...transformOptions,
+        width,
+        height,
+        dpr: false,
+      });
+
+      return `${candidateUrl} ${width}w`;
+    })
+    .join(', ');
 };
 
 export const normalizeProductPayload = (data) => {

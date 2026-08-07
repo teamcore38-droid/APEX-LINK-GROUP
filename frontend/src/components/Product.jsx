@@ -7,8 +7,15 @@ import {
   formatCurrency,
   buildProductPath,
   getOptimizedImageUrl,
+  getResponsiveImageSrcSet,
   getProductBadges,
 } from '../utils/productUi';
+
+const PRODUCT_CARD_IMAGE_WIDTHS = [240, 360, 520, 720];
+const PRODUCT_CARD_IMAGE_SIZES =
+  '(min-width: 1440px) 221px, (min-width: 1280px) 282px, (min-width: 1024px) calc(25vw - 38px), (min-width: 768px) calc(33.333vw - 40px), (min-width: 640px) calc(50vw - 46px), calc(50vw - 30px)';
+const COMPACT_PRODUCT_CARD_IMAGE_SIZES =
+  '(min-width: 1536px) 364px, (min-width: 1024px) calc(25vw - 20px), (min-width: 640px) calc(33.333vw - 21px), calc(50vw - 22px)';
 
 const Product = ({ product, priority = false, compact = false }) => {
   const { addToCart } = useCart();
@@ -17,6 +24,20 @@ const Product = ({ product, priority = false, compact = false }) => {
   const badges = getProductBadges(product);
   const productPath = buildProductPath(product);
   const savedToWishlist = isInWishlist(product);
+  const imageWidth = compact ? 360 : 520;
+  const imageHeight = compact ? 270 : 520;
+  const imageAspectRatio = compact ? 4 / 3 : 1;
+  const productImageUrl = getOptimizedImageUrl(product.image, {
+    width: imageWidth,
+    height: imageHeight,
+    crop: 'fill',
+    dpr: false,
+  });
+  const productImageSrcSet = getResponsiveImageSrcSet(product.image, {
+    widths: PRODUCT_CARD_IMAGE_WIDTHS,
+    aspectRatio: imageAspectRatio,
+    crop: 'fill',
+  });
 
   const handleAddToCart = (event) => {
     event.preventDefault();
@@ -49,22 +70,15 @@ const Product = ({ product, priority = false, compact = false }) => {
             }`}
           >
             <img
-              src={getOptimizedImageUrl(product.image, {
-                width: compact ? 360 : 520,
-                height: compact ? 270 : 520,
-                crop: 'fill',
-              })}
+              src={productImageUrl}
+              srcSet={productImageSrcSet || undefined}
               alt={product.name}
-              width={compact ? 360 : 520}
-              height={compact ? 270 : 520}
+              width={imageWidth}
+              height={imageHeight}
               loading={priority ? 'eager' : 'lazy'}
               fetchPriority={priority ? 'high' : 'auto'}
               decoding="async"
-              sizes={
-                compact
-                  ? '(min-width: 1024px) 22vw, (min-width: 640px) 31vw, 48vw'
-                  : '(min-width: 1280px) 240px, (min-width: 768px) 30vw, 50vw'
-              }
+              sizes={compact ? COMPACT_PRODUCT_CARD_IMAGE_SIZES : PRODUCT_CARD_IMAGE_SIZES}
               className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1f0f0a]/45 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />

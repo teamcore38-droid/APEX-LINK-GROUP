@@ -7,6 +7,7 @@ import {
   getProductIdFromRouteParam,
   getProductBadges,
   getOptimizedImageUrl,
+  getResponsiveImageSrcSet,
   getProductFormGalleryImages,
   getVariantImageAssets,
   getStockPresentation,
@@ -57,6 +58,195 @@ test('getOptimizedImageUrl adds lightweight Cloudinary transforms', () => {
     result,
     'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto:eco,w_600,h_600,c_fill,dpr_auto/v123/products/shoe.jpg'
   );
+});
+
+test('getOptimizedImageUrl merges resize directives with existing automatic format and quality', () => {
+  const cases = [
+    {
+      input: 'https://res.cloudinary.com/demo/image/upload/f_auto/v123/products/shoe.jpg',
+      expected: 'f_auto,q_auto:eco,w_520,h_520,c_fill,dpr_auto',
+    },
+    {
+      input: 'https://res.cloudinary.com/demo/image/upload/q_auto/v123/products/shoe.jpg',
+      expected: 'f_auto,q_auto,w_520,h_520,c_fill,dpr_auto',
+    },
+    {
+      input: 'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v123/products/shoe.jpg',
+      expected: 'f_auto,q_auto,w_520,h_520,c_fill,dpr_auto',
+    },
+    {
+      input: 'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_1200,h_1200,c_fill/v123/products/shoe.jpg',
+      expected: 'f_auto,q_auto,w_520,h_520,c_fill,dpr_auto',
+    },
+  ];
+
+  cases.forEach(({ input, expected }) => {
+    const result = getOptimizedImageUrl(input, { width: 520, height: 520, crop: 'fill' });
+    assert.equal(result, `https://res.cloudinary.com/demo/image/upload/${expected}/v123/products/shoe.jpg`);
+    assert.equal((result.match(/f_auto/g) || []).length, 1);
+    assert.equal((result.match(/q_auto/g) || []).length, 1);
+  });
+});
+
+test('getOptimizedImageUrl preserves useful transformations, folders, versions, and query strings', () => {
+  const result = getOptimizedImageUrl(
+    'https://res.cloudinary.com/demo/image/upload/e_sharpen/f_auto,q_70/v1234567890/catalog/shoes/red-runner.jpg?_a=tracking',
+    { width: 520, height: 520, crop: 'fill' }
+  );
+
+  assert.equal(
+    result,
+    'https://res.cloudinary.com/demo/image/upload/e_sharpen/f_auto,q_70,w_520,h_520,c_fill,dpr_auto/v1234567890/catalog/shoes/red-runner.jpg?_a=tracking'
+  );
+});
+
+test('getOptimizedImageUrl preserves existing quality and crop when they are not overridden', () => {
+  const result = getOptimizedImageUrl(
+    'https://res.cloudinary.com/demo/image/upload/q_75,w_1200,c_fit/v123/catalog/shoe.jpg',
+    { width: 520 }
+  );
+
+  assert.equal(
+    result,
+    'https://res.cloudinary.com/demo/image/upload/f_auto,q_75,w_520,c_fit,dpr_auto/v123/catalog/shoe.jpg'
+  );
+});
+
+test('getOptimizedImageUrl preserves unversioned folders, extensions, queries, and hashes', () => {
+  const result = getOptimizedImageUrl(
+    'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/catalog/shoes/red-runner.png?download=1#detail',
+    { width: 360, height: 270, crop: 'fill', dpr: false }
+  );
+
+  assert.equal(
+    result,
+    'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_360,h_270,c_fill/catalog/shoes/red-runner.png?download=1#detail'
+  );
+});
+
+test('getOptimizedImageUrl applies explicit overrides once across chained transformations', () => {
+  const result = getOptimizedImageUrl(
+    'https://res.cloudinary.com/demo/image/upload/f_jpg,q_90,w_1200,h_900,c_fit,dpr_2.0/e_sharpen/v123/catalog/shoe.jpg',
+    {
+      width: 360,
+      height: 270,
+      crop: 'fill',
+      quality: 'auto:good',
+      format: 'webp',
+      dpr: false,
+    }
+  );
+
+  assert.equal(
+    result,
+    'https://res.cloudinary.com/demo/image/upload/f_webp,q_auto:good,w_360,h_270,c_fill/e_sharpen/v123/catalog/shoe.jpg'
+  );
+  const managedDirectives = new URL(result).pathname
+    .split('/image/upload/')[1]
+    .split('/')[0]
+    .split(',');
+  ['f_', 'q_', 'w_', 'h_', 'c_'].forEach((directive) => {
+    assert.equal(managedDirectives.filter((entry) => entry.startsWith(directive)).length, 1);
+  });
+  assert.doesNotMatch(result, /dpr_/);
+});
+
+test('getOptimizedImageUrl ignores invalid explicit transforms without constructing malformed URLs', () => {
+  const input = 'https://res.cloudinary.com/demo/image/upload/v123/catalog/shoe.jpg';
+  const result = getOptimizedImageUrl(input, {
+    width: 0,
+    height: Number.NaN,
+    crop: 'fill/invalid',
+    quality: false,
+    format: false,
+    dpr: false,
+  });
+
+  assert.equal(result, input);
+});
+
+test('getOptimizedImageUrl supports the existing product image object shape', () => {
+  const result = getOptimizedImageUrl(
+    { secureUrl: 'https://res.cloudinary.com/demo/image/upload/v123/catalog/shoe.jpg' },
+    { width: 240, height: 240, crop: 'fill', dpr: false }
+  );
+
+  assert.equal(
+    result,
+    'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto:eco,w_240,h_240,c_fill/v123/catalog/shoe.jpg'
+  );
+});
+
+test('getOptimizedImageUrl safely preserves non-Cloudinary, signed, private, invalid, and missing images', () => {
+  const unchangedUrls = [
+    'https://images.example.com/image/upload/products/shoe.jpg',
+    '/images/products/shoe.jpg',
+    'data:image/png;base64,abc',
+    'blob:https://www.apexfashion.lk/example',
+    'https://res.cloudinary.com/demo/image/upload/s--signed-token--/w_200/products/shoe.jpg',
+    'https://res.cloudinary.com/demo/image/authenticated/w_200/products/shoe.jpg',
+    'not a valid URL',
+    '',
+  ];
+
+  unchangedUrls.forEach((input) => {
+    assert.equal(getOptimizedImageUrl(input, { width: 520, height: 520 }), input);
+  });
+});
+
+test('getResponsiveImageSrcSet creates practical Cloudinary width candidates without DPR duplication', () => {
+  const result = getResponsiveImageSrcSet(
+    'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/v123/products/shoe.jpg?keep=1',
+    { widths: [720, 240, 520, 360, 520], aspectRatio: 4 / 3, crop: 'fill' }
+  );
+
+  assert.equal(
+    result,
+    [
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_240,h_180,c_fill/v123/products/shoe.jpg?keep=1 240w',
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_360,h_270,c_fill/v123/products/shoe.jpg?keep=1 360w',
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_520,h_390,c_fill/v123/products/shoe.jpg?keep=1 520w',
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto,w_720,h_540,c_fill/v123/products/shoe.jpg?keep=1 720w',
+    ].join(', ')
+  );
+  assert.doesNotMatch(result, /dpr_/);
+});
+
+test('getResponsiveImageSrcSet is omitted for images Cloudinary cannot safely transform', () => {
+  assert.equal(
+    getResponsiveImageSrcSet('https://images.example.com/products/shoe.jpg', {
+      widths: [240, 520],
+      aspectRatio: 1,
+    }),
+    ''
+  );
+  assert.equal(getResponsiveImageSrcSet('', { widths: [240, 520], aspectRatio: 1 }), '');
+});
+
+test('getResponsiveImageSrcSet normalizes, deduplicates, and rejects invalid candidate widths', () => {
+  const result = getResponsiveImageSrcSet(
+    'https://res.cloudinary.com/demo/image/upload/v123/products/shoe.jpg',
+    {
+      widths: [Number.NaN, -1, 0, 359.6, 360, '520', Number.POSITIVE_INFINITY],
+      height: 270,
+      crop: 'fill',
+    }
+  );
+
+  assert.equal(
+    result,
+    [
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto:eco,w_360,h_270,c_fill/v123/products/shoe.jpg 360w',
+      'https://res.cloudinary.com/demo/image/upload/f_auto,q_auto:eco,w_520,h_270,c_fill/v123/products/shoe.jpg 520w',
+    ].join(', ')
+  );
+});
+
+test('getResponsiveImageSrcSet returns an empty value for a missing or invalid width list', () => {
+  const input = 'https://res.cloudinary.com/demo/image/upload/v123/products/shoe.jpg';
+
+  assert.equal(getResponsiveImageSrcSet(input), '');
+  assert.equal(getResponsiveImageSrcSet(input, { widths: 520, aspectRatio: 1 }), '');
 });
 
 test('product gallery helpers preserve primary image ordering', () => {
