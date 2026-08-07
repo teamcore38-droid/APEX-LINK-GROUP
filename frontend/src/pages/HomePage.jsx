@@ -10,10 +10,14 @@ import {
   getCachedHomepageProducts,
   getHomepageProducts,
 } from '../utils/homepageProductCache';
+import {
+  HOME_HERO_BACKGROUND_IMAGES as heroBackgroundImages,
+  HOME_HERO_DESKTOP_MEDIA,
+  HOME_HERO_MOBILE_MEDIA,
+  HOME_MOBILE_HERO_BACKGROUND_IMAGES as mobileHeroBackgroundImages,
+  HOME_MOBILE_HERO_MARK,
+} from '../utils/homeHeroAssets';
 import useScrollReveal from '../hooks/useScrollReveal';
-
-const heroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-bg-${index + 1}.webp`);
-const mobileHeroBackgroundImages = Array.from({ length: 5 }, (_, index) => `/hero/hero-mobile-${index + 1}.webp`);
 
 const createInitialCollectionState = (collection) => {
   const cachedProducts = getCachedHomepageProducts(collection);
@@ -45,8 +49,7 @@ const HomePage = () => {
   const [homeCategories, setHomeCategories] = useState([]);
   const [activeHeroImage, setActiveHeroImage] = useState(0);
   const [initialDesktopViewport] = useState(() => window.matchMedia('(min-width: 768px)').matches);
-  const mobileHeroBackgroundRef = useRef(null);
-  const desktopHeroBackgroundRef = useRef(null);
+  const heroBackgroundRef = useRef(null);
   const mobileHeroMarkRef = useRef(null);
   const [heroAssetsReady, setHeroAssetsReady] = useState(() => ({
     background: false,
@@ -108,9 +111,7 @@ const HomePage = () => {
     }
 
     const completedImageTimer = window.setTimeout(() => {
-      const backgroundImage = initialDesktopViewport
-        ? desktopHeroBackgroundRef.current
-        : mobileHeroBackgroundRef.current;
+      const backgroundImage = heroBackgroundRef.current;
       const mobileMarkReady = initialDesktopViewport || mobileHeroMarkRef.current?.complete;
 
       if (backgroundImage?.complete && mobileMarkReady) {
@@ -195,14 +196,10 @@ const HomePage = () => {
     };
   }, [heroContentReady]);
 
-  const markHeroBackgroundReady = (viewport) => {
-    const isRelevantViewport = viewport === (initialDesktopViewport ? 'desktop' : 'mobile');
-
-    if (isRelevantViewport) {
-      setHeroAssetsReady((current) => (
-        current.background ? current : { ...current, background: true }
-      ));
-    }
+  const markHeroBackgroundReady = () => {
+    setHeroAssetsReady((current) => (
+      current.background ? current : { ...current, background: true }
+    ));
   };
 
   const markMobileHeroReady = () => {
@@ -221,38 +218,30 @@ const HomePage = () => {
               'radial-gradient(ellipse at 20% 20%, rgba(217, 154, 50,0.14), transparent 52%), radial-gradient(ellipse at 80% 75%, rgba(140, 59, 42,0.85), transparent 62%), linear-gradient(155deg, #2a140e 0%, #351a11 45%, #4a2317 100%)',
           }}
         ></div>
-        <img
-          ref={mobileHeroBackgroundRef}
-          key={`mobile-hero-bg-${activeHeroImage}`}
-          src={mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]}
-          alt=""
-          aria-hidden="true"
-          width="864"
-          height="1821"
-          fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
-          loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
-          decoding="async"
-          onLoad={() => markHeroBackgroundReady('mobile')}
-          onError={() => markHeroBackgroundReady('mobile')}
-          className="hero-bg-crossfade pointer-events-none absolute inset-0 h-full w-full object-cover object-center md:hidden"
-          style={{ '--hero-opacity': 0.42 }}
-        />
-        <img
-          ref={desktopHeroBackgroundRef}
-          key={`desktop-hero-bg-${activeHeroImage}`}
-          src={heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]}
-          alt=""
-          aria-hidden="true"
-          width="1717"
-          height="916"
-          fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
-          loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
-          decoding="async"
-          onLoad={() => markHeroBackgroundReady('desktop')}
-          onError={() => markHeroBackgroundReady('desktop')}
-          className="hero-bg-crossfade pointer-events-none absolute inset-0 hidden h-full w-full object-cover object-center md:block"
-          style={{ '--hero-opacity': 0.4 }}
-        />
+        <picture key={`hero-bg-${activeHeroImage}`}>
+          <source
+            media={HOME_HERO_DESKTOP_MEDIA}
+            srcSet={heroBackgroundImages[activeHeroImage % heroBackgroundImages.length]}
+          />
+          <source
+            media={HOME_HERO_MOBILE_MEDIA}
+            srcSet={mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]}
+          />
+          <img
+            ref={heroBackgroundRef}
+            src={mobileHeroBackgroundImages[activeHeroImage % mobileHeroBackgroundImages.length]}
+            alt=""
+            aria-hidden="true"
+            width="1717"
+            height="916"
+            fetchPriority={activeHeroImage === 0 ? 'high' : 'auto'}
+            loading={activeHeroImage === 0 ? 'eager' : 'lazy'}
+            decoding="async"
+            onLoad={markHeroBackgroundReady}
+            onError={markHeroBackgroundReady}
+            className="hero-bg-crossfade pointer-events-none absolute inset-0 h-full w-full object-cover object-center [--hero-opacity:0.42] md:[--hero-opacity:0.4]"
+          />
+        </picture>
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
@@ -271,7 +260,7 @@ const HomePage = () => {
           </h1>
           <img
             ref={mobileHeroMarkRef}
-            src="/apex-fashion-mobile-hero-512.webp"
+            src={HOME_MOBILE_HERO_MARK}
             alt="Apex Fashion hero mark"
             width="512"
             height="512"

@@ -1,17 +1,6 @@
-export const HOME_HERO_PRELOADS = [
-  {
-    href: '/apex-fashion-mobile-hero-512.webp',
-    media: '(max-width: 767px)',
-  },
-  {
-    href: '/hero/hero-mobile-1.webp',
-    media: '(max-width: 767px)',
-  },
-  {
-    href: '/hero/hero-bg-1.webp',
-    media: '(min-width: 768px)',
-  },
-];
+import { HOME_HERO_PRELOADS } from '../src/utils/homeHeroAssets.js';
+
+export { HOME_HERO_PRELOADS };
 
 export const renderHomeHeroPreloads = (route) => {
   if (route !== '/') {

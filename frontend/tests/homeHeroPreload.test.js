@@ -5,21 +5,25 @@ import {
   HOME_HERO_PRELOADS,
   renderHomeHeroPreloads,
 } from '../scripts/homeHeroPreloads.mjs';
+import {
+  HOME_HERO_BACKGROUND_IMAGES,
+  HOME_HERO_DESKTOP_MEDIA,
+  HOME_HERO_MOBILE_MEDIA,
+  HOME_MOBILE_HERO_BACKGROUND_IMAGES,
+  HOME_MOBILE_HERO_MARK,
+} from '../src/utils/homeHeroAssets.js';
 
 const readSource = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const sharedHtml = await readSource('../index.html');
 const homePageSource = await readSource('../src/pages/HomePage.jsx');
 const productsPageSource = await readSource('../src/pages/ProductsPage.jsx');
 const productCardSource = await readSource('../src/components/Product.jsx');
+const productRenderSource = await readSource('../api/render.js');
 const seoGeneratorSource = await readSource('../scripts/generateSeoPages.mjs');
 const frontendVercelConfig = JSON.parse(await readSource('../vercel.json'));
 const rootVercelConfig = JSON.parse(await readSource('../../vercel.json'));
 
-const HERO_ASSET_URLS = [
-  '/apex-fashion-mobile-hero-512.webp',
-  '/hero/hero-mobile-1.webp',
-  '/hero/hero-bg-1.webp',
-];
+const HERO_ASSET_URLS = HOME_HERO_PRELOADS.map(({ href }) => href);
 
 test('the shared application shell contains no Home hero preload declarations', () => {
   assert.doesNotMatch(sharedHtml, /<link[^>]+rel=["']preload["'][^>]+(?:hero-bg|hero-mobile|mobile-hero)/i);
@@ -31,7 +35,11 @@ test('the shared application shell contains no Home hero preload declarations', 
 test('Home receives the existing hero assets as media-scoped high-priority preloads', () => {
   const markup = renderHomeHeroPreloads('/');
 
-  assert.equal(HOME_HERO_PRELOADS.length, 3);
+  assert.deepEqual(HOME_HERO_PRELOADS, [
+    { href: HOME_MOBILE_HERO_MARK, media: HOME_HERO_MOBILE_MEDIA },
+    { href: HOME_MOBILE_HERO_BACKGROUND_IMAGES[0], media: HOME_HERO_MOBILE_MEDIA },
+    { href: HOME_HERO_BACKGROUND_IMAGES[0], media: HOME_HERO_DESKTOP_MEDIA },
+  ]);
   HERO_ASSET_URLS.forEach((url) => assert.match(markup, new RegExp(url.replaceAll('/', '\\/'))));
   assert.equal((markup.match(/media="\(max-width: 767px\)"/g) || []).length, 2);
   assert.equal((markup.match(/media="\(min-width: 768px\)"/g) || []).length, 1);
@@ -57,16 +65,30 @@ test('Shop and other non-Home documents never receive Home hero preload markup',
 test('the SEO build keeps a preload-free shell and emits a dedicated Home document', () => {
   assert.match(seoGeneratorSource, /const homeHeroPreloads = renderHomeHeroPreloads\(route\)/);
   assert.match(seoGeneratorSource, /const homeOutputDirectory = path\.join\(distDirectory, 'home'\)/);
+  assert.match(seoGeneratorSource, /renderHtml\('\/', PUBLIC_ROUTE_SEO\['\/'\]\)/);
+  assert.doesNotMatch(seoGeneratorSource, /renderHtml\('\/home'/);
   assert.doesNotMatch(
     seoGeneratorSource,
     /writeFile\(path\.join\(distDirectory, 'index\.html'\), renderHtml\('\/'/
   );
 });
 
-test('only the root route is rewritten to the generated Home document', () => {
+test('Product Details continues to render from the preload-free shared shell', () => {
+  assert.match(productRenderSource, /fetch\(`\$\{origin\}\/index\.html`/);
+  assert.equal(renderHomeHeroPreloads('/product/example-123456789012345678901234'), '');
+  assert.doesNotMatch(sharedHtml, /data-home-hero-preload/);
+});
+
+test('an exact pre-filesystem route serves the generated Home document at the public root URL', () => {
   [frontendVercelConfig, rootVercelConfig].forEach((config) => {
-    const rootRewrite = config.rewrites.find((rewrite) => rewrite.source === '/');
-    assert.equal(rootRewrite?.destination, '/home/index.html');
+    assert.deepEqual(config.routes?.[0], { src: '^/$', dest: '/home/index.html' });
+    assert.equal(config.rewrites.some((rewrite) => rewrite.source === '/'), false);
+    assert.equal(
+      config.redirects.some(
+        (redirect) => redirect.source === '/' || redirect.destination?.startsWith('/home')
+      ),
+      false
+    );
   });
 
   const productsRewrite = frontendVercelConfig.rewrites.find(
@@ -76,13 +98,12 @@ test('only the root route is rewritten to the generated Home document', () => {
   assert.match(seoGeneratorSource, /renderHtml\(route, seo\)/);
 });
 
-test('Home hero URLs, responsive visibility, and native priority remain unchanged', () => {
-  assert.match(homePageSource, /`\/hero\/hero-bg-\$\{index \+ 1\}\.webp`/);
-  assert.match(homePageSource, /`\/hero\/hero-mobile-\$\{index \+ 1\}\.webp`/);
-  assert.match(homePageSource, /src="\/apex-fashion-mobile-hero-512\.webp"/);
+test('Home hero resources retain native priority and the legitimate mobile mark', () => {
+  assert.match(
+    homePageSource,
+    /src=\{HOME_MOBILE_HERO_MARK\}[\s\S]*?className="[^"]+md:hidden"/
+  );
   assert.match(homePageSource, /fetchPriority=\{activeHeroImage === 0 \? 'high' : 'auto'\}/);
-  assert.match(homePageSource, /className="hero-bg-crossfade[^"']+md:hidden"/);
-  assert.match(homePageSource, /className="hero-bg-crossfade[^"']+hidden[^"']+md:block"/);
 });
 
 test('completed Shop and product-card performance flows remain protected', () => {

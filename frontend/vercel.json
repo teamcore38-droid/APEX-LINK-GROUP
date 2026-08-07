@@ -1,4 +1,7 @@
 {
+  "routes": [
+    { "src": "^/$", "dest": "/home/index.html" }
+  ],
   "redirects": [
     { "source": "/shop", "destination": "/products", "permanent": true }
   ],
@@ -7,7 +10,6 @@
     { "source": "/product-feed.xml", "destination": "/api/product-feed" },
     { "source": "/product/:slugAndId", "destination": "/api/render?type=product&id=:slugAndId" },
     { "source": "/category/:slug", "destination": "/api/render?type=category&slug=:slug" },
-    { "source": "/", "destination": "/home/index.html" },
     { "source": "/products", "destination": "/products/index.html" },
     { "source": "/categories", "destination": "/categories/index.html" },
     { "source": "/about", "destination": "/about/index.html" },
