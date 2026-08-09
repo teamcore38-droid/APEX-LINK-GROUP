@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getCategoryImage, getPublicCategoryPath } from '../utils/categoryUi';
+import {
+  getCategoryImage,
+  getHomeCategoryImageSrcSet,
+  getPublicCategoryPath,
+  HOME_CATEGORY_IMAGE_SIZES,
+} from '../utils/categoryUi';
 
 const SCROLL_EDGE_TOLERANCE = 6;
 
@@ -94,26 +99,33 @@ const HomeCategoryCarousel = ({ categories = [] }) => {
           if (event.key === 'ArrowRight') scrollCategories('right');
         }}
       >
-        {categories.map((category) => (
-          <Link
-            key={category._id || category.slug || category.name}
-            to={getPublicCategoryPath(category.name, category.slug, category.path)}
-            className="group w-[104px] min-w-[104px] snap-start text-center sm:w-[122px] sm:min-w-[122px] md:w-[132px] md:min-w-[132px]"
-          >
-            <div className="mx-auto aspect-[0.78] w-full overflow-hidden rounded-[999px] border-2 border-white bg-[#f2e3d7] shadow-[0_6px_18px_rgba(77,33,22,0.12)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-accent group-hover:shadow-[0_10px_22px_rgba(77,33,22,0.18)]">
-              <img
-                src={getCategoryImage(category)}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover object-center"
-              />
-            </div>
-            <span className="mt-3 block font-serif text-sm font-bold leading-tight text-brand-dark sm:text-base">
-              {category.name}
-            </span>
-          </Link>
-        ))}
+        {categories.map((category) => {
+          const categoryImage = getCategoryImage(category);
+          const categoryImageSrcSet = getHomeCategoryImageSrcSet(category);
+
+          return (
+            <Link
+              key={category._id || category.slug || category.name}
+              to={getPublicCategoryPath(category.name, category.slug, category.path)}
+              className="group w-[104px] min-w-[104px] snap-start text-center sm:w-[122px] sm:min-w-[122px] md:w-[132px] md:min-w-[132px]"
+            >
+              <div className="mx-auto aspect-[0.78] w-full overflow-hidden rounded-[999px] border-2 border-white bg-[#f2e3d7] shadow-[0_6px_18px_rgba(77,33,22,0.12)] transition duration-200 group-hover:-translate-y-1 group-hover:border-brand-accent group-hover:shadow-[0_10px_22px_rgba(77,33,22,0.18)]">
+                <img
+                  src={categoryImage}
+                  srcSet={categoryImageSrcSet || undefined}
+                  sizes={HOME_CATEGORY_IMAGE_SIZES}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover object-center"
+                />
+              </div>
+              <span className="mt-3 block font-serif text-sm font-bold leading-tight text-brand-dark sm:text-base">
+                {category.name}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

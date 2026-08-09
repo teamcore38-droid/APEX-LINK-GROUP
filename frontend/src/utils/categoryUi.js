@@ -1,3 +1,5 @@
+import { getResponsiveImageSrcSet } from './productUi.js';
+
 const CATEGORY_IMAGE_FALLBACKS = {
   women:
     'https://images.pexels.com/photos/6069552/pexels-photo-6069552.jpeg?auto=compress&cs=tinysrgb&w=1400',
@@ -11,6 +13,33 @@ const CATEGORY_IMAGE_FALLBACKS = {
     'https://images.pexels.com/photos/125779/pexels-photo-125779.jpeg?auto=compress&cs=tinysrgb&w=1400',
   'fragrances-perfumes':
     'https://images.pexels.com/photos/965989/pexels-photo-965989.jpeg?auto=compress&cs=tinysrgb&w=1400',
+};
+
+export const HOME_CATEGORY_IMAGE_WIDTHS = [128, 160, 192, 256, 320, 480];
+export const HOME_CATEGORY_IMAGE_SIZES =
+  '(min-width: 768px) 132px, (min-width: 640px) 122px, 104px';
+const HOME_CATEGORY_IMAGE_ASPECT_RATIO = 0.78;
+
+const getPexelsResponsiveImageSrcSet = (url = '') => {
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    return '';
+  }
+
+  if (parsedUrl.hostname.toLowerCase() !== 'images.pexels.com') {
+    return '';
+  }
+
+  return HOME_CATEGORY_IMAGE_WIDTHS
+    .map((width) => {
+      const candidateUrl = new URL(parsedUrl);
+      candidateUrl.searchParams.set('w', String(width));
+      return `${candidateUrl.toString()} ${width}w`;
+    })
+    .join(', ');
 };
 
 export const slugifyCategoryName = (value = '') =>
@@ -90,6 +119,24 @@ export const getActiveTopLevelCategoryId = (categories = [], pathname = '', sear
 export const getCategoryImage = (category) => {
   const [firstCandidate] = getCategoryImageCandidates(category);
   return firstCandidate;
+};
+
+export const getHomeCategoryImageSrcSet = (category) => {
+  const imageUrl = getCategoryImage(category);
+
+  if (!imageUrl) {
+    return '';
+  }
+
+  const cloudinarySrcSet = getResponsiveImageSrcSet(imageUrl, {
+    widths: HOME_CATEGORY_IMAGE_WIDTHS,
+    aspectRatio: HOME_CATEGORY_IMAGE_ASPECT_RATIO,
+    format: 'auto',
+    quality: 'auto',
+    crop: 'fill',
+  });
+
+  return cloudinarySrcSet || getPexelsResponsiveImageSrcSet(imageUrl);
 };
 
 export const getCategoryImageCandidates = (category) => {
