@@ -5,7 +5,6 @@ import HomeCategoryCarousel from '../components/HomeCategoryCarousel';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Award, Globe, ShieldCheck, Truck } from 'lucide-react';
 import { getCategories } from '../utils/categoryApi';
-import { preloadProductGridImages } from '../utils/imagePreloader';
 import {
   getCachedHomepageProducts,
   getHomepageProducts,
@@ -142,9 +141,6 @@ const HomePage = () => {
       if (!isActive) {
         return;
       }
-
-      const preloadCount = getInitialImageCounts()[collection];
-      void preloadProductGridImages(products, preloadCount, 3500);
 
       const setCollectionState = collection === 'featured' ? setFeaturedState : setBestSellersState;
       setCollectionState({ products, loading: false, error: null });
