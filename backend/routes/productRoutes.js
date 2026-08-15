@@ -7,10 +7,12 @@ import {
   uploadProductImages,
   deleteProductImage,
   deleteProduct,
+  bulkMutateProducts,
   createProduct,
   updateProduct,
 } from '../controllers/productController.js';
 import { protect, protectOptional, requirePermission } from '../middleware/authMiddleware.js';
+import { bulkMutationLimiter } from '../middleware/rateLimiters.js';
 import { PERMISSIONS } from '../utils/permissions.js';
 
 const router = express.Router();
@@ -32,6 +34,13 @@ const upload = multer({
 
 router.route('/').get(protectOptional, getProducts).post(protect, requirePermission(PERMISSIONS.CATALOG_WRITE), createProduct);
 router.route('/slug/:slug').get(protectOptional, getProductBySlug);
+router.post(
+  '/bulk',
+  bulkMutationLimiter,
+  protect,
+  requirePermission(PERMISSIONS.BULK_MANAGE),
+  bulkMutateProducts
+);
 router
   .route('/images')
   .post(protect, requirePermission(PERMISSIONS.CATALOG_WRITE), upload.array('images', 12), uploadProductImages)

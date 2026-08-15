@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 import Category from '../models/categoryModel.js';
 import Product from '../models/productModel.js';
+import User from '../models/userModel.js';
 import { resolveCategoryByPath, slugify } from './categoryController.js';
-import { hasPermission } from '../utils/permissions.js';
+import { hasPermission, PERMISSIONS } from '../utils/permissions.js';
 import { recordAuditLog } from '../utils/auditService.js';
 import { PRODUCT_CARD_FIELDS, setPublicCatalogCache } from '../utils/catalogPerformance.js';
 import { notifyIndexNow } from '../utils/indexNowService.js';
@@ -31,6 +32,28 @@ const DEFAULT_PRODUCT_SORT = { isFeatured: -1, isBestSeller: -1, createdAt: -1 }
 const DEFAULT_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=1000';
 const MAX_PRODUCT_IMAGES = 12;
+const MAX_EXPLICIT_BULK_PRODUCT_IDS = 5000;
+const BULK_MEDIA_CLEANUP_BATCH_SIZE = 50;
+const BULK_PRODUCT_OPERATIONS = Object.freeze({
+  activate: { field: 'isActive', value: true, pastTense: 'activated' },
+  deactivate: { field: 'isActive', value: false, pastTense: 'deactivated' },
+  feature: { field: 'isFeatured', value: true, pastTense: 'featured' },
+  unfeature: { field: 'isFeatured', value: false, pastTense: 'unfeatured' },
+  delete: { pastTense: 'deleted' },
+});
+const BULK_FILTER_KEYS = new Set([
+  'active',
+  'bestSeller',
+  'category',
+  'categoryId',
+  'categoryPath',
+  'featured',
+  'keyword',
+  'maxPrice',
+  'minPrice',
+  'sort',
+  'stock',
+]);
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -672,127 +695,134 @@ const validateProductPayload = async (payload, { productId = null } = {}) => {
   };
 };
 
+const buildProductQueryFilter = async (query = {}, reqUser = null) => {
+  const {
+    active = '',
+    bestSeller = '',
+    category = '',
+    categoryId = '',
+    categoryPath = '',
+    exclude = '',
+    featured = '',
+    keyword = '',
+    maxPrice = '',
+    minPrice = '',
+    stock = '',
+  } = query;
+  const filters = [];
+  const canReadCatalog = hasPermission(reqUser, PERMISSIONS.CATALOG_READ);
+  const trimmedKeyword = String(keyword).trim();
+  const normalizedActive = String(active).trim().toLowerCase();
+  const normalizedStock = String(stock).trim().toLowerCase();
+
+  if (!canReadCatalog) {
+    filters.push(buildActiveProductFilter());
+  } else if (normalizedActive === 'true') {
+    filters.push(buildActiveProductFilter());
+  } else if (normalizedActive === 'false') {
+    filters.push({ isActive: false });
+  } else if (normalizedActive && normalizedActive !== 'all') {
+    return { error: 'active must be true, false, or all' };
+  }
+
+  if (trimmedKeyword) {
+    const keywordPattern = new RegExp(escapeRegex(trimmedKeyword), 'i');
+
+    filters.push({
+      $or: [
+        { name: keywordPattern },
+        { shortDescription: keywordPattern },
+        { description: keywordPattern },
+        { brand: keywordPattern },
+        { origin: keywordPattern },
+        { ingredients: keywordPattern },
+        { sku: keywordPattern },
+      ],
+    });
+  }
+
+  const categoryFilter = await buildCategoryFilter(category, { categoryId, categoryPath });
+
+  if (categoryFilter) {
+    filters.push(categoryFilter);
+  }
+
+  const normalizedMinPrice = parseNumericValue(minPrice);
+  const normalizedMaxPrice = parseNumericValue(maxPrice);
+
+  if (Number.isNaN(normalizedMinPrice) || Number.isNaN(normalizedMaxPrice)) {
+    return { error: 'Price filters must be valid numbers' };
+  }
+
+  if (normalizedMinPrice !== null || normalizedMaxPrice !== null) {
+    const priceFilter = {};
+
+    if (normalizedMinPrice !== null) {
+      priceFilter.$gte = normalizedMinPrice;
+    }
+
+    if (normalizedMaxPrice !== null) {
+      priceFilter.$lte = normalizedMaxPrice;
+    }
+
+    filters.push({ price: priceFilter });
+  }
+
+  if (normalizedStock) {
+    if (normalizedStock === 'in-stock') {
+      filters.push({ countInStock: { $gt: 0 } });
+    } else if (normalizedStock === 'out-of-stock') {
+      filters.push({ countInStock: { $lte: 0 } });
+    } else if (normalizedStock === 'low-stock') {
+      filters.push({ countInStock: { $gt: 0, $lte: 10 } });
+    } else {
+      return { error: 'stock must be in-stock, out-of-stock, or low-stock' };
+    }
+  }
+
+  const featuredFilter = parseOptionalBooleanFilter(featured, 'isFeatured');
+
+  if (featuredFilter?.error) {
+    return { error: featuredFilter.error };
+  }
+
+  if (featuredFilter?.filter) {
+    filters.push(featuredFilter.filter);
+  }
+
+  const bestSellerFilter = parseOptionalBooleanFilter(bestSeller, 'isBestSeller');
+
+  if (bestSellerFilter?.error) {
+    return { error: bestSellerFilter.error };
+  }
+
+  if (bestSellerFilter?.filter) {
+    filters.push(bestSellerFilter.filter);
+  }
+
+  if (exclude && mongoose.Types.ObjectId.isValid(exclude)) {
+    filters.push({ _id: { $ne: exclude } });
+  }
+
+  return { filter: filters.length > 0 ? { $and: filters } : {} };
+};
+
 // @desc    Fetch all products
 // @route   GET /api/products
 // @access  Public/Admin(optional for inactive)
 const getProducts = async (req, res) => {
   try {
-    const {
-      active = '',
-      bestSeller = '',
-      category = '',
-      categoryId = '',
-      categoryPath = '',
-      exclude = '',
-      featured = '',
-      keyword = '',
-      limit = '12',
-      maxPrice = '',
-      minPrice = '',
-      page = '1',
-      sort = '',
-      stock = '',
-    } = req.query;
-
-    const filters = [];
-    const isAdmin = hasPermission(req.user, 'catalog:read');
-    const trimmedKeyword = String(keyword).trim();
-    const normalizedActive = String(active).trim().toLowerCase();
-    const normalizedStock = String(stock).trim().toLowerCase();
-    const sortKey = String(sort).trim();
+    const { limit = '12', page = '1', sort = '' } = req.query;
+    const isAdmin = hasPermission(req.user, PERMISSIONS.CATALOG_READ);
     const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
     const limitNumber = Math.min(48, Math.max(1, Number.parseInt(limit, 10) || 12));
+    const sortKey = String(sort).trim();
+    const { filter: queryFilter, error } = await buildProductQueryFilter(req.query, req.user);
 
-    if (!isAdmin) {
-      filters.push(buildActiveProductFilter());
-    } else if (normalizedActive === 'true') {
-      filters.push(buildActiveProductFilter());
-    } else if (normalizedActive === 'false') {
-      filters.push({ isActive: false });
-    } else if (normalizedActive && normalizedActive !== 'all') {
-      return res.status(400).json({ message: 'active must be true, false, or all' });
+    if (error) {
+      return res.status(400).json({ message: error });
     }
 
-    if (trimmedKeyword) {
-      const keywordPattern = new RegExp(escapeRegex(trimmedKeyword), 'i');
-
-      filters.push({
-        $or: [
-          { name: keywordPattern },
-          { shortDescription: keywordPattern },
-          { description: keywordPattern },
-          { brand: keywordPattern },
-          { origin: keywordPattern },
-          { ingredients: keywordPattern },
-          { sku: keywordPattern },
-        ],
-      });
-    }
-
-    const categoryFilter = await buildCategoryFilter(category, { categoryId, categoryPath });
-
-    if (categoryFilter) {
-      filters.push(categoryFilter);
-    }
-
-    const normalizedMinPrice = parseNumericValue(minPrice);
-    const normalizedMaxPrice = parseNumericValue(maxPrice);
-
-    if (Number.isNaN(normalizedMinPrice) || Number.isNaN(normalizedMaxPrice)) {
-      return res.status(400).json({ message: 'Price filters must be valid numbers' });
-    }
-
-    if (normalizedMinPrice !== null || normalizedMaxPrice !== null) {
-      const priceFilter = {};
-
-      if (normalizedMinPrice !== null) {
-        priceFilter.$gte = normalizedMinPrice;
-      }
-
-      if (normalizedMaxPrice !== null) {
-        priceFilter.$lte = normalizedMaxPrice;
-      }
-
-      filters.push({ price: priceFilter });
-    }
-
-    if (normalizedStock) {
-      if (normalizedStock === 'in-stock') {
-        filters.push({ countInStock: { $gt: 0 } });
-      } else if (normalizedStock === 'out-of-stock') {
-        filters.push({ countInStock: { $lte: 0 } });
-      } else if (normalizedStock === 'low-stock') {
-        filters.push({ countInStock: { $gt: 0, $lte: 10 } });
-      } else {
-        return res.status(400).json({ message: 'stock must be in-stock, out-of-stock, or low-stock' });
-      }
-    }
-
-    const featuredFilter = parseOptionalBooleanFilter(featured, 'isFeatured');
-
-    if (featuredFilter?.error) {
-      return res.status(400).json({ message: featuredFilter.error });
-    }
-
-    if (featuredFilter?.filter) {
-      filters.push(featuredFilter.filter);
-    }
-
-    const bestSellerFilter = parseOptionalBooleanFilter(bestSeller, 'isBestSeller');
-
-    if (bestSellerFilter?.error) {
-      return res.status(400).json({ message: bestSellerFilter.error });
-    }
-
-    if (bestSellerFilter?.filter) {
-      filters.push(bestSellerFilter.filter);
-    }
-
-    if (exclude && mongoose.Types.ObjectId.isValid(exclude)) {
-      filters.push({ _id: { $ne: exclude } });
-    }
-
-    const queryFilter = filters.length > 0 ? { $and: filters } : {};
     const totalProducts = await Product.countDocuments(queryFilter);
     const totalPages = totalProducts === 0 ? 1 : Math.ceil(totalProducts / limitNumber);
     const currentPage = totalProducts === 0 ? 1 : Math.min(pageNumber, totalPages);
@@ -968,6 +998,278 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+const getBulkProductPermission = (operation = '') =>
+  operation === 'delete' ? PERMISSIONS.CATALOG_DELETE : PERMISSIONS.CATALOG_WRITE;
+
+const normalizeBulkProductIds = (values, fieldName) => {
+  if (!Array.isArray(values)) {
+    return { error: `${fieldName} must be an array` };
+  }
+
+  if (values.length > MAX_EXPLICIT_BULK_PRODUCT_IDS) {
+    return {
+      error: `${fieldName} cannot contain more than ${MAX_EXPLICIT_BULK_PRODUCT_IDS} product IDs`,
+    };
+  }
+
+  const ids = [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+
+  if (ids.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+    return { error: `${fieldName} contains an invalid product ID` };
+  }
+
+  return { ids };
+};
+
+const buildBulkProductSelection = async (
+  selection = {},
+  reqUser = null,
+  buildFilter = buildProductQueryFilter
+) => {
+  if (!selection || typeof selection !== 'object' || Array.isArray(selection)) {
+    return { error: 'A valid product selection is required' };
+  }
+
+  if (selection.mode === 'explicit') {
+    const normalizedIds = normalizeBulkProductIds(selection.ids, 'selection.ids');
+
+    if (normalizedIds.error) {
+      return normalizedIds;
+    }
+
+    if (normalizedIds.ids.length === 0) {
+      return { error: 'Select at least one product' };
+    }
+
+    return {
+      filter: { _id: { $in: normalizedIds.ids } },
+      mode: 'explicit',
+      requestedCount: normalizedIds.ids.length,
+      selectionMetadata: { mode: 'explicit' },
+    };
+  }
+
+  if (selection.mode !== 'allFiltered') {
+    return { error: 'selection.mode must be explicit or allFiltered' };
+  }
+
+  const filters = selection.filters;
+
+  if (!filters || typeof filters !== 'object' || Array.isArray(filters)) {
+    return { error: 'selection.filters must be an object for allFiltered mode' };
+  }
+
+  const unsupportedFilter = Object.keys(filters).find((key) => !BULK_FILTER_KEYS.has(key));
+
+  if (unsupportedFilter) {
+    return { error: `Unsupported bulk product filter: ${unsupportedFilter}` };
+  }
+
+  const normalizedExclusions = normalizeBulkProductIds(
+    selection.excludedIds || [],
+    'selection.excludedIds'
+  );
+
+  if (normalizedExclusions.error) {
+    return normalizedExclusions;
+  }
+
+  const { filter: filteredResultSet, error } = await buildFilter(filters, reqUser);
+
+  if (error) {
+    return { error };
+  }
+
+  const filter = normalizedExclusions.ids.length > 0
+    ? {
+        $and: [
+          filteredResultSet,
+          { _id: { $nin: normalizedExclusions.ids } },
+        ],
+      }
+    : filteredResultSet;
+
+  return {
+    filter,
+    mode: 'allFiltered',
+    requestedCount: null,
+    selectionMetadata: {
+      mode: 'allFiltered',
+      filters,
+      excludedCount: normalizedExclusions.ids.length,
+    },
+  };
+};
+
+const verifyBulkAdminCredentials = async (
+  authenticatedUser = {},
+  credentials = {},
+  findUserById = async (userId) => User.findById(userId).select('+password')
+) => {
+  const username = String(credentials?.username || '').trim().toLowerCase();
+  const password = typeof credentials?.password === 'string' ? credentials.password : '';
+
+  if (!authenticatedUser?._id || !username || !password) {
+    return false;
+  }
+
+  const currentUser = await findUserById(authenticatedUser._id);
+
+  if (!currentUser) {
+    return false;
+  }
+
+  const validIdentity = [currentUser.email, currentUser.name]
+    .map((value) => String(value || '').trim().toLowerCase())
+    .filter(Boolean)
+    .includes(username);
+
+  if (!validIdentity || typeof currentUser.matchPassword !== 'function') {
+    return false;
+  }
+
+  return currentUser.matchPassword(password);
+};
+
+const executeBulkProductMutation = async ({
+  operation,
+  targetFilter,
+  requestedCount,
+  req,
+  selectionMetadata = {},
+  dependencies = {},
+}) => {
+  const operationConfig = BULK_PRODUCT_OPERATIONS[operation];
+  const findProducts = dependencies.findProducts || (async (filter) =>
+    Product.find(filter)
+      .select('_id name slug image imagePublicId images')
+      .lean());
+  const updateProducts = dependencies.updateProducts || ((filter, update) =>
+    Product.updateMany(filter, update));
+  const deleteProducts = dependencies.deleteProducts || ((filter) => Product.deleteMany(filter));
+  const destroyImages = dependencies.destroyImages || destroyProductImages;
+  const writeAuditLog = dependencies.writeAuditLog || recordAuditLog;
+  const notifySearchEngines = dependencies.notifySearchEngines || notifyIndexNow;
+  const targetProducts = await findProducts(targetFilter);
+  const targetIds = targetProducts.map((product) => product._id);
+  const actualTargetCount = targetProducts.length;
+  const authoritativeRequestedCount = requestedCount ?? actualTargetCount;
+  let affectedCount = 0;
+  let modifiedCount = 0;
+
+  if (actualTargetCount > 0 && operation === 'delete') {
+    const deletionResult = await deleteProducts({ _id: { $in: targetIds } });
+    affectedCount = Number(deletionResult.deletedCount ?? deletionResult.n ?? 0);
+    modifiedCount = affectedCount;
+
+    if (affectedCount === actualTargetCount) {
+      const publicIds = [
+        ...new Set(targetProducts.flatMap((product) => getProductImagePublicIds(product))),
+      ];
+
+      for (let start = 0; start < publicIds.length; start += BULK_MEDIA_CLEANUP_BATCH_SIZE) {
+        await destroyImages(publicIds.slice(start, start + BULK_MEDIA_CLEANUP_BATCH_SIZE));
+      }
+    }
+  } else if (actualTargetCount > 0) {
+    const updateResult = await updateProducts(
+      { _id: { $in: targetIds } },
+      { $set: { [operationConfig.field]: operationConfig.value } }
+    );
+    affectedCount = Number(updateResult.matchedCount ?? updateResult.n ?? 0);
+    modifiedCount = Number(updateResult.modifiedCount ?? updateResult.nModified ?? affectedCount);
+  }
+
+  const skippedCount = Math.max(authoritativeRequestedCount - actualTargetCount, 0);
+  const failedCount = Math.max(actualTargetCount - affectedCount, 0);
+  const unprocessedCount = skippedCount + failedCount;
+
+  if (affectedCount > 0) {
+    await writeAuditLog(req, `catalog.product.bulk.${operation}`, 'Product', '', {
+      operation,
+      requestedCount: authoritativeRequestedCount,
+      matchedCount: actualTargetCount,
+      affectedCount,
+      modifiedCount,
+      failedCount,
+      skippedCount,
+      selection: selectionMetadata,
+    });
+    await notifySearchEngines([
+      ...targetProducts.slice(0, 9998).map((product) => buildProductPath(product)),
+      '/products',
+      '/sitemap.xml',
+    ]);
+  }
+
+  const productWord = affectedCount === 1 ? 'product' : 'products';
+  const message = unprocessedCount > 0
+    ? `${affectedCount} ${productWord} ${operationConfig.pastTense}. ${unprocessedCount} could not be updated.`
+    : `${affectedCount} ${productWord} ${operationConfig.pastTense}.`;
+
+  return {
+    operation,
+    requestedCount: authoritativeRequestedCount,
+    matchedCount: actualTargetCount,
+    affectedCount,
+    modifiedCount,
+    failedCount,
+    skippedCount,
+    failures: failedCount > 0
+      ? [{ message: `${failedCount} matching product${failedCount === 1 ? '' : 's'} could not be updated.` }]
+      : [],
+    message,
+  };
+};
+
+// @desc    Mutate an explicit or all-filtered product selection
+// @route   POST /api/products/bulk
+// @access  Private/Admin with bulk and catalog permission + password re-authentication
+const bulkMutateProducts = async (req, res) => {
+  try {
+    const operation = String(req.body?.operation || '').trim();
+    const operationConfig = BULK_PRODUCT_OPERATIONS[operation];
+
+    if (!operationConfig) {
+      return res.status(400).json({ message: 'Unsupported bulk product operation' });
+    }
+
+    if (!hasPermission(req.user, getBulkProductPermission(operation))) {
+      return res.status(403).json({ message: 'Not authorized for this bulk product operation' });
+    }
+
+    const credentialsAreValid = await verifyBulkAdminCredentials(
+      req.user,
+      req.body?.credentials
+    );
+
+    if (!credentialsAreValid) {
+      return res.status(401).json({
+        message: 'Admin credentials are incorrect. No products were changed.',
+      });
+    }
+
+    const selection = await buildBulkProductSelection(req.body?.selection, req.user);
+
+    if (selection.error) {
+      return res.status(400).json({ message: selection.error });
+    }
+
+    const result = await executeBulkProductMutation({
+      operation,
+      targetFilter: selection.filter,
+      requestedCount: selection.requestedCount,
+      req,
+      selectionMetadata: selection.selectionMetadata,
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('[productController:bulkMutateProducts]', error);
+    return res.status(500).json({ message: 'Unable to complete the bulk product operation' });
+  }
+};
+
 // @desc    Create a product
 // @route   POST /api/products
 // @access  Private/Admin
@@ -1109,9 +1411,16 @@ const updateProduct = async (req, res) => {
 
 export {
   DEFAULT_PRODUCT_IMAGE,
+  BULK_PRODUCT_OPERATIONS,
   buildCategoryFilter,
+  buildProductQueryFilter,
+  buildBulkProductSelection,
   buildProductImagesForSave,
+  bulkMutateProducts,
+  executeBulkProductMutation,
+  getBulkProductPermission,
   resolveProductCategoryAssignments,
+  verifyBulkAdminCredentials,
   validateProductPayload,
   getProducts,
   getProductById,

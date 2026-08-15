@@ -45,6 +45,12 @@ const orderTrackingLimiter = buildLimiter({
   message: 'Too many tracking lookups. Please try again in a few minutes.',
 });
 
+const bulkMutationLimiter = buildLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: 'Too many bulk mutation attempts. Please wait before trying again.',
+});
+
 export {
   authRegisterLimiter,
   authLoginLimiter,
@@ -52,4 +58,5 @@ export {
   resetPasswordLimiter,
   contactSubmitLimiter,
   orderTrackingLimiter,
+  bulkMutationLimiter,
 };

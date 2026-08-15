@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
   Download,
   Edit,
   Eye,
@@ -19,6 +20,7 @@ import {
   Star,
   Trash2,
   Truck,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CustomSelect from '../components/CustomSelect';
@@ -49,6 +51,19 @@ import {
   formatYesNo,
   joinExportList,
 } from '../utils/exportCsv';
+import {
+  buildBulkSelectionPayload,
+  createEmptyProductSelection,
+  describeProductResultFilters,
+  getPageSelectionState,
+  getSelectedProductCount,
+  hasActiveProductResultFilters,
+  isProductSelected,
+  selectAllFilteredProducts,
+  selectProductPage,
+  setProductSelected,
+  unselectProductPage,
+} from '../utils/adminProductBulk';
 
 const INITIAL_PRODUCT_FILTERS = {
   keyword: '',
@@ -56,6 +71,38 @@ const INITIAL_PRODUCT_FILTERS = {
   active: 'all',
   stock: '',
   sort: 'newest',
+};
+
+const BULK_PRODUCT_ACTIONS = [
+  { operation: 'activate', label: 'Activate' },
+  { operation: 'deactivate', label: 'Deactivate' },
+  { operation: 'feature', label: 'Feature' },
+  { operation: 'unfeature', label: 'Unfeature' },
+  { operation: 'delete', label: 'Delete', destructive: true },
+];
+
+const BULK_PRODUCT_ACTION_LABELS = Object.fromEntries(
+  BULK_PRODUCT_ACTIONS.map((action) => [action.operation, action.label])
+);
+
+const IndeterminateCheckbox = ({ indeterminate = false, ...props }) => {
+  const checkboxRef = useRef(null);
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = Boolean(indeterminate);
+    }
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      aria-checked={indeterminate ? 'mixed' : props.checked}
+      className="h-4 w-4 rounded border-gray-300 text-brand-primary accent-brand-primary focus:ring-2 focus:ring-brand-accent focus:ring-offset-2"
+      {...props}
+    />
+  );
 };
 
 const INITIAL_ORDER_FILTERS = {
@@ -329,6 +376,12 @@ const AdminDashboard = () => {
   });
   const [productRefreshToken, setProductRefreshToken] = useState(0);
   const [productActionKey, setProductActionKey] = useState('');
+  const [productSelection, setProductSelection] = useState(createEmptyProductSelection);
+  const [bulkProductDialog, setBulkProductDialog] = useState(null);
+  const [bulkCredentials, setBulkCredentials] = useState({ username: '', password: '' });
+  const [bulkDialogError, setBulkDialogError] = useState('');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const bulkSubmittingRef = useRef(false);
 
   const [orders, setOrders] = useState([]);
   const [orderLoading, setOrderLoading] = useState(false);
@@ -509,10 +562,30 @@ const AdminDashboard = () => {
     fetchOrders();
   }, [activeTab, orderFilters, orderPage, orderRefreshToken, userInfo]);
 
+  const dismissBulkProductDialog = () => {
+    if (bulkSubmittingRef.current) {
+      return;
+    }
+
+    setBulkProductDialog(null);
+    setBulkDialogError('');
+    setBulkCredentials({ username: '', password: '' });
+  };
+
+  const clearProductSelection = () => {
+    setProductSelection(createEmptyProductSelection());
+    setBulkProductDialog(null);
+    setBulkDialogError('');
+    setBulkCredentials({ username: '', password: '' });
+  };
+
   const updateProductFilter = (key, value) => {
     setProductError('');
     setProductSuccess('');
     setProductPage(1);
+    if (key !== 'sort') {
+      clearProductSelection();
+    }
     setProductFilters((currentFilters) => ({
       ...currentFilters,
       [key]: value,
@@ -525,6 +598,88 @@ const AdminDashboard = () => {
     setProductSearchInput('');
     setProductFilters(INITIAL_PRODUCT_FILTERS);
     setProductPage(1);
+    clearProductSelection();
+  };
+
+  const updatePageSelection = (shouldSelect) => {
+    const pageProductIds = products.map((product) => product._id);
+    setProductSelection((currentSelection) => (
+      shouldSelect
+        ? selectProductPage(currentSelection, pageProductIds)
+        : unselectProductPage(currentSelection, pageProductIds)
+    ));
+  };
+
+  const updateIndividualProductSelection = (productId, shouldSelect) => {
+    setProductSelection((currentSelection) =>
+      setProductSelected(currentSelection, productId, shouldSelect));
+  };
+
+  const openBulkProductDialog = (operation) => {
+    if (getSelectedProductCount(productSelection, productMeta.totalProducts) === 0) {
+      return;
+    }
+
+    setProductError('');
+    setProductSuccess('');
+    setBulkDialogError('');
+    setBulkCredentials({ username: '', password: '' });
+    setBulkProductDialog({ operation });
+  };
+
+  const submitBulkProductOperation = async (event) => {
+    event.preventDefault();
+
+    if (!bulkProductDialog || bulkSubmittingRef.current) {
+      return;
+    }
+
+    bulkSubmittingRef.current = true;
+    setBulkSubmitting(true);
+    setBulkDialogError('');
+
+    try {
+      const { data } = await axios.post(
+        '/api/products/bulk',
+        {
+          operation: bulkProductDialog.operation,
+          selection: buildBulkSelectionPayload(productSelection, productFilters),
+          credentials: {
+            username: bulkCredentials.username,
+            password: bulkCredentials.password,
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      setProductSelection(createEmptyProductSelection());
+      setBulkProductDialog(null);
+      setBulkCredentials({ username: '', password: '' });
+      setProductRefreshToken((currentValue) => currentValue + 1);
+
+      if ((data.failedCount || 0) > 0 || (data.skippedCount || 0) > 0) {
+        setProductError(data.message);
+      } else {
+        setProductSuccess(data.message);
+      }
+    } catch (error) {
+      console.error(error);
+      setBulkDialogError(
+        error.response?.data?.message || 'Unable to complete the bulk product operation.'
+      );
+      setBulkCredentials((currentCredentials) => ({
+        ...currentCredentials,
+        password: '',
+      }));
+    } finally {
+      bulkSubmittingRef.current = false;
+      setBulkSubmitting(false);
+    }
   };
 
   const exportProductsHandler = async () => {
@@ -771,6 +926,20 @@ const AdminDashboard = () => {
   const orderPaginationPages = getPaginationRange(orderMeta.currentPage, orderMeta.totalPages);
   const showProductSkeleton = productLoading && products.length === 0;
   const showOrderSkeleton = orderLoading && orders.length === 0;
+  const pageProductIds = products.map((product) => product._id);
+  const pageSelectionState = getPageSelectionState(productSelection, pageProductIds);
+  const selectedProductCount = getSelectedProductCount(
+    productSelection,
+    productMeta.totalProducts
+  );
+  const hasActiveProductFilters = hasActiveProductResultFilters(productFilters);
+  const productFilterDescription = describeProductResultFilters(productFilters);
+  const completeCatalogIsSelected = productSelection.mode === 'allFiltered'
+    && productSelection.excludedIds.length === 0
+    && !hasActiveProductFilters;
+  const bulkOperation = bulkProductDialog?.operation || '';
+  const bulkOperationLabel = BULK_PRODUCT_ACTION_LABELS[bulkOperation] || '';
+  const bulkOperationIsDelete = bulkOperation === 'delete';
   const adminCategoryOptions = [
     { value: '', label: 'All Categories' },
     ...productCategories.map((category) => ({
@@ -905,6 +1074,7 @@ const AdminDashboard = () => {
                           onChange={(event) => {
                             setProductError('');
                             setProductSuccess('');
+                            clearProductSelection();
                             setProductSearchInput(event.target.value);
                           }}
                           placeholder="Search name, origin, SKU, or description"
@@ -981,6 +1151,102 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
+                {!showProductSkeleton && products.length > 0 && (
+                  <div className="overflow-hidden rounded-2xl border border-brand-primary/15 bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-brand-dark">
+                          <IndeterminateCheckbox
+                            checked={pageSelectionState.checked}
+                            indeterminate={pageSelectionState.indeterminate}
+                            onChange={(event) => updatePageSelection(event.target.checked)}
+                            aria-label={`Select all ${pageSelectionState.pageCount} products on this page`}
+                          />
+                          Select all on this page
+                        </label>
+                        <span className="text-sm text-gray-500">
+                          {pageSelectionState.pageCount} product{pageSelectionState.pageCount === 1 ? '' : 's'} on page {productMeta.currentPage}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => updatePageSelection(true)}
+                          className="rounded-full border border-brand-primary/20 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-brand-primary transition hover:bg-brand-light focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                        >
+                          Select Page
+                        </button>
+                        {selectedProductCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearProductSelection}
+                            className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-gray-600 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                          >
+                            Clear Selection
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {pageSelectionState.checked
+                      && productSelection.mode === 'explicit'
+                      && productMeta.totalProducts > pageSelectionState.pageCount && (
+                      <div className="border-t border-brand-primary/10 bg-brand-light px-4 py-3 text-sm text-brand-dark">
+                        All {pageSelectionState.pageCount} products on this page are selected.{' '}
+                        <button
+                          type="button"
+                          onClick={() => setProductSelection(selectAllFilteredProducts())}
+                          className="font-bold text-brand-primary underline decoration-brand-accent underline-offset-4 focus:outline-none focus:ring-2 focus:ring-brand-accent"
+                        >
+                          {hasActiveProductFilters
+                            ? `Select all ${productMeta.totalProducts} products matching these filters.`
+                            : `Select the entire catalog of ${productMeta.totalProducts} products.`}
+                        </button>
+                      </div>
+                    )}
+
+                    {selectedProductCount > 0 && (
+                      <div className="border-t border-brand-primary/10 bg-brand-dark px-4 py-4 text-white">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                          <div aria-live="polite">
+                            <p className="font-semibold">
+                              {selectedProductCount} product{selectedProductCount === 1 ? '' : 's'} selected
+                            </p>
+                            <p className="mt-1 text-xs text-white/70">
+                              {productSelection.mode === 'allFiltered'
+                                ? productSelection.excludedIds.length > 0
+                                  ? `All matching products except ${productSelection.excludedIds.length} manually excluded.`
+                                  : completeCatalogIsSelected
+                                    ? `All ${productMeta.totalProducts} products in the catalog are selected.`
+                                    : `All ${productMeta.totalProducts} products matching the active filters are selected.`
+                                : 'Explicit product selection. Page changes preserve it; filter changes clear it.'}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2" aria-label="Bulk product actions">
+                            {BULK_PRODUCT_ACTIONS.map((action) => (
+                              <button
+                                key={action.operation}
+                                type="button"
+                                onClick={() => openBulkProductDialog(action.operation)}
+                                className={`rounded-full border px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] transition focus:outline-none focus:ring-2 focus:ring-white ${
+                                  action.destructive
+                                    ? 'border-red-300 bg-red-600 text-white hover:bg-red-700'
+                                    : 'border-white/25 bg-white/10 text-white hover:bg-white/20'
+                                }`}
+                                aria-label={`${action.label} ${selectedProductCount} selected products`}
+                              >
+                                {action.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {showProductSkeleton ? (
                   <ProductTableSkeleton />
                 ) : products.length === 0 ? (
@@ -1014,13 +1280,25 @@ const AdminDashboard = () => {
                         const activeActionKey = `${product._id}:active`;
                         const featuredActionKey = `${product._id}:featured`;
                         const deleteActionKey = `${product._id}:delete`;
+                        const productIsSelected = isProductSelected(productSelection, product._id);
 
                         return (
                           <article
                             key={product._id}
-                            className="rounded-3xl border border-gray-100 bg-gradient-to-br from-white to-brand-light p-5 shadow-sm"
+                            className={`rounded-3xl border bg-gradient-to-br from-white to-brand-light p-5 shadow-sm ${
+                              productIsSelected ? 'border-brand-accent ring-2 ring-brand-accent/20' : 'border-gray-100'
+                            }`}
                           >
                             <div className="flex items-start gap-4">
+                              <label className="mt-2 inline-flex shrink-0 cursor-pointer items-center">
+                                <IndeterminateCheckbox
+                                  checked={productIsSelected}
+                                  onChange={(event) =>
+                                    updateIndividualProductSelection(product._id, event.target.checked)}
+                                  aria-label={`Select ${product.name}`}
+                                />
+                                <span className="sr-only">Select {product.name}</span>
+                              </label>
                               <img
                                 src={product.image}
                                 alt={product.name}
@@ -1123,9 +1401,17 @@ const AdminDashboard = () => {
                     </div>
 
                     <div className="hidden overflow-x-auto xl:block">
-                      <table className="min-w-[1120px] w-full border-collapse text-left">
+                      <table className="min-w-[1160px] w-full border-collapse text-left">
                         <thead>
                           <tr className="border-b-2 border-gray-200 bg-gray-50/60 text-xs font-bold uppercase tracking-wider text-gray-500">
+                            <th className="w-12 px-4 py-4">
+                              <IndeterminateCheckbox
+                                checked={pageSelectionState.checked}
+                                indeterminate={pageSelectionState.indeterminate}
+                                onChange={(event) => updatePageSelection(event.target.checked)}
+                                aria-label={`Select all ${pageSelectionState.pageCount} products on this page`}
+                              />
+                            </th>
                             <th className="px-4 py-4">Product</th>
                             <th className="px-4 py-4">Category</th>
                             <th className="px-4 py-4">Price</th>
@@ -1142,9 +1428,23 @@ const AdminDashboard = () => {
                             const activeActionKey = `${product._id}:active`;
                             const featuredActionKey = `${product._id}:featured`;
                             const deleteActionKey = `${product._id}:delete`;
+                            const productIsSelected = isProductSelected(productSelection, product._id);
 
                             return (
-                              <tr key={product._id} className="align-top transition duration-150 hover:bg-gray-50/50">
+                              <tr
+                                key={product._id}
+                                className={`align-top transition duration-150 hover:bg-gray-50/50 ${
+                                  productIsSelected ? 'bg-brand-light/70' : ''
+                                }`}
+                              >
+                                <td className="px-4 py-5">
+                                  <IndeterminateCheckbox
+                                    checked={productIsSelected}
+                                    onChange={(event) =>
+                                      updateIndividualProductSelection(product._id, event.target.checked)}
+                                    aria-label={`Select ${product.name}`}
+                                  />
+                                </td>
                                 <td className="px-4 py-4">
                                   <div className="flex items-center gap-4">
                                     <img
@@ -1666,6 +1966,149 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      {bulkProductDialog && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-brand-dark/65 px-4 py-6 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) dismissBulkProductDialog();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') dismissBulkProductDialog();
+          }}
+          role="presentation"
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-product-dialog-title"
+            aria-describedby="bulk-product-dialog-description"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
+          >
+            <form onSubmit={submitBulkProductOperation}>
+              <div className={`border-b px-6 py-5 ${
+                bulkOperationIsDelete ? 'border-red-100 bg-red-50' : 'border-gray-100 bg-brand-light'
+              }`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full ${
+                      bulkOperationIsDelete ? 'bg-red-100 text-red-700' : 'bg-white text-brand-primary'
+                    }`}>
+                      {bulkOperationIsDelete ? <AlertTriangle size={21} /> : <ShieldCheck size={21} />}
+                    </div>
+                    <h2 id="bulk-product-dialog-title" className="font-serif text-2xl font-bold text-brand-dark">
+                      {bulkOperationLabel} {selectedProductCount} selected product{selectedProductCount === 1 ? '' : 's'}?
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={dismissBulkProductDialog}
+                    disabled={bulkSubmitting}
+                    className="rounded-full p-2 text-gray-500 transition hover:bg-white hover:text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-accent disabled:opacity-50"
+                    aria-label="Close bulk action confirmation"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-5 px-6 py-6">
+                <div id="bulk-product-dialog-description" className="space-y-3 text-sm text-gray-600">
+                  {bulkOperationIsDelete && (
+                    <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-semibold text-red-800">
+                      This action may be permanent and cannot be undone. Existing product deletion and media-cleanup rules will be applied.
+                    </p>
+                  )}
+                  {completeCatalogIsSelected && (
+                    <p className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-900">
+                      High-impact action: all {productMeta.totalProducts} products in the catalog are selected.
+                    </p>
+                  )}
+                  <p>
+                    <span className="font-semibold text-brand-dark">Target context:</span>{' '}
+                    {productFilterDescription}
+                  </p>
+                  <p>
+                    Re-enter the credentials for your currently authenticated admin account. Verification happens securely on the server before any product is changed.
+                  </p>
+                </div>
+
+                {bulkDialogError && (
+                  <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                    {bulkDialogError}
+                  </div>
+                )}
+
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-600">
+                    Admin username (email)
+                  </span>
+                  <input
+                    type="text"
+                    autoComplete="username"
+                    autoFocus
+                    required
+                    value={bulkCredentials.username}
+                    onChange={(event) => setBulkCredentials((currentCredentials) => ({
+                      ...currentCredentials,
+                      username: event.target.value,
+                    }))}
+                    disabled={bulkSubmitting}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 disabled:bg-gray-100"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.18em] text-gray-600">
+                    Admin password
+                  </span>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={bulkCredentials.password}
+                    onChange={(event) => setBulkCredentials((currentCredentials) => ({
+                      ...currentCredentials,
+                      password: event.target.value,
+                    }))}
+                    disabled={bulkSubmitting}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm text-brand-dark outline-none transition focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 disabled:bg-gray-100"
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t border-gray-100 px-6 py-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={dismissBulkProductDialog}
+                  disabled={bulkSubmitting}
+                  className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-accent disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    bulkSubmitting
+                    || !bulkCredentials.username.trim()
+                    || !bulkCredentials.password
+                  }
+                  className={`inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    bulkOperationIsDelete
+                      ? 'bg-red-700 hover:bg-red-800 focus:ring-red-600'
+                      : 'bg-brand-primary hover:bg-brand-dark focus:ring-brand-accent'
+                  }`}
+                >
+                  {bulkSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
+                  {bulkSubmitting
+                    ? `${bulkOperationLabel} in progress…`
+                    : `Verify and ${bulkOperationLabel} ${selectedProductCount}`}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 };
